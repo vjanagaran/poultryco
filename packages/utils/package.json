@@ -1,0 +1,19 @@
+{
+  "name": "@poultryco/utils",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules"
+  },
+  "dependencies": {
+    "zod": "^3.25.76",
+    "date-fns": "^4.1.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2"
+  }
+}
+

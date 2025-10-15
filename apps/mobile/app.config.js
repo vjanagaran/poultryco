@@ -1,0 +1,36 @@
+// Load environment variables from .env.local
+require('dotenv').config({ path: '.env.local' });
+
+module.exports = {
+  expo: {
+    name: "PoultryCo",
+    slug: "poultryco",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "automatic",
+    splash: {
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#2B7A4B"
+    },
+    extra: {
+      supabaseUrl: process.env.SUPABASE_URL,
+      supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
+      eas: {
+        projectId: "your-project-id"
+      }
+    },
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.poultryco.app"
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#2B7A4B"
+      },
+      package: "com.poultryco.app"
+    }
+  }
+};
