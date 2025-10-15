@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoultryCo செயலி வடிவமைப்பு - தமிழ்</title>
+    <!-- Google Fonts for Tamil Support -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Tamil:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans Tamil', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #2B7A4B 0%, #1E3A5F 100%);
+            min-height: 100vh;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Ensure Tamil text renders properly */
+        [lang="ta"] {
+            font-family: 'Noto Sans Tamil', sans-serif !important;
+        }
+
+        .wireframe-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .phone-frame {
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .phone-notch {
+            width: 150px;
+            height: 25px;
+            background: #000;
+            border-radius: 0 0 15px 15px;
+            margin: 0 auto;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+
+        .screen {
+            background: #fff;
+            border-radius: 20px;
+            height: 700px;
+            overflow-y: auto;
+            position: relative;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .screen::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .screen::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .screen::-webkit-scrollbar-thumb {
+            background: #2B7A4B;
+            border-radius: 5px;
+        }
+
+        .status-bar {
+            background: #f8f8f8;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            border-radius: 20px 20px 0 0;
+            font-family: 'Noto Sans Tamil', 'Inter', sans-serif;
+        }
+
+        .nav-header {
+            background: #2B7A4B;
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-header h2 {
+            font-size: 18px;
+            flex: 1;
+            text-align: center;
+            font-family: 'Noto Sans Tamil', sans-serif;
+            font-weight: 600;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .nav-item {
+            text-align: center;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .nav-item.active {
+            color: #2B7A4B;
+        }
+
+        .nav-item-icon {
+            width: 24px;
+            height: 24px;
+            margin: 0 auto 3px;
+            background: #ddd;
+            border-radius: 5px;
+        }
+
+        .nav-item.active .nav-item-icon {
+            background: #2B7A4B;
+        }
+
+        .nav-item-label {
+            font-size: 11px;
+            font-family: 'Noto Sans Tamil', sans-serif;
+            font-weight: 400;
+        }
+
+        /* Component Styles */
+        .profile-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #2B7A4B 0%, #3a8d5d 100%);
+            color: white;
+        }
+
+        .profile-pic {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: #2B7A4B;
+        }
+
+        .profile-name {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .profile-type {
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.9;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .trust-badge {
+            background: #27AE60;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin: 10px auto;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: #f8f8f8;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2B7A4B;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .section {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .info-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .product-card {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .product-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .product-details {
+            font-size: 12px;
+            color: #666;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .chat-list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+
+        .chat-list-item:hover {
+            background: #f8f8f8;
+        }
+
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            background: #2B7A4B;
+            border-radius: 50%;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .chat-info {
+            flex: 1;
+        }
+
+        .chat-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .chat-message {
+            font-size: 14px;
+            color: #666;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .chat-time {
+            font-size: 12px;
+            color: #999;
+            font-family: 'Noto Sans Tamil', 'Inter', sans-serif;
+        }
+
+        .tool-card {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .tool-card:hover {
+            background: #e8f5e9;
+        }
+
+        .tool-icon {
+            width: 40px;
+            height: 40px;
+            background: #2B7A4B;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tool-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .tool-desc {
+            font-size: 13px;
+            color: #666;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .market-widget {
+            background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .widget-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .price-value {
+            font-weight: 600;
+            color: #2B7A4B;
+            font-family: 'Inter', 'Noto Sans Tamil', sans-serif;
+        }
+
+        .search-bar {
+            padding: 10px 15px;
+            background: #f0f0f0;
+            border-radius: 25px;
+            margin: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon {
+            width: 20px;
+            height: 20px;
+            background: #999;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .tab-bar {
+            display: flex;
+            background: #f8f8f8;
+            padding: 5px;
+            margin: 0 15px;
+            border-radius: 10px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .tab.active {
+            background: #2B7A4B;
+            color: white;
+        }
+
+        .screen-label {
+            background: #2B7A4B;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            white-space: nowrap;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .content-area {
+            padding-bottom: 60px;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+
+        .flow-title {
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2B7A4B;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .flow-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .flow-section {
+            flex: 1;
+            min-width: 200px;
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .flow-section-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2B7A4B;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+
+        .flow-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-family: 'Noto Sans Tamil', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="wireframe-container">
+        <div class="header">
+            <h1>PoultryCo செயலி வடிவமைப்பு</h1>
+            <p>விவசாயிகளுக்கு ஏற்ற எளிய பயனர் இடைமுகம்</p>
+        </div>
+
+        <div class="screens-grid">
+            <!-- Screen 1: Home/Feed -->
+            <div class="phone-frame">
+                <div class="screen-label">முகப்பு</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>காலை 9:30</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">☰</div>
+                        <h2>PoultryCo</h2>
+                        <div class="nav-icon">🔔</div>
+                    </div>
+                    <div class="content-area">
+                        <!-- Market Widget -->
+                        <div class="market-widget" style="margin: 15px;">
+                            <div class="widget-title">📊 இன்றைய சந்தை விலை</div>
+                            <div class="price-item">
+                                <span>பிராய்லர் (சென்னை)</span>
+                                <span class="price-value">₹125/கிலோ</span>
+                            </div>
+                            <div class="price-item">
+                                <span>லேயர் தீவனம்</span>
+                                <span class="price-value">₹1,850/மூட்டை</span>
+                            </div>
+                            <div class="price-item">
+                                <span>முட்டை (நாமக்கல்)</span>
+                                <span class="price-value">₹4.85/எண்</span>
+                            </div>
+                        </div>
+
+                        <!-- Weather Widget -->
+                        <div class="market-widget" style="margin: 15px;">
+                            <div class="widget-title">🌤️ வானிலை எச்சரிக்கை</div>
+                            <div class="info-item">வெப்பநிலை: 32°C</div>
+                            <div class="info-item">ஈரப்பதம்: 65%</div>
+                            <div class="info-item">⚠️ பிராய்லருக்கு வெப்ப அழுத்த எச்சரிக்கை</div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="section">
+                            <div class="section-title">விரைவு செயல்கள்</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                                <div class="tool-card" style="text-align: center; padding: 15px;">
+                                    <div class="tool-icon" style="margin: 0 auto;"></div>
+                                    <div style="font-size: 12px;">நிபுணரிடம் கேள்</div>
+                                </div>
+                                <div class="tool-card" style="text-align: center; padding: 15px;">
+                                    <div class="tool-icon" style="margin: 0 auto;"></div>
+                                    <div style="font-size: 12px;">FCR கணக்கீடு</div>
+                                </div>
+                                <div class="tool-card" style="text-align: center; padding: 15px;">
+                                    <div class="tool-icon" style="margin: 0 auto;"></div>
+                                    <div style="font-size: 12px;">அட்டவணை</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Posts -->
+                        <div class="section">
+                            <div class="section-title">சமூக புதுப்பிப்புகள்</div>
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">டா.ர</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">டாக்டர் ரவி குமார் <span class="trust-badge" style="margin-left: 5px;">சரிபார்க்கப்பட்ட கால்நடை மருத்துவர்</span></div>
+                                    <div class="chat-message">குளிர்காலத்திற்கான புதிய தடுப்பூசி அட்டவணை...</div>
+                                    <div class="chat-time">2 மணி நேரம் முன்பு</div>
+                                </div>
+                            </div>
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">குபா</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">குமார் பண்ணை</div>
+                                    <div class="chat-message">இறப்பு விகிதத்தை 2% ஆக குறைத்தோம்...</div>
+                                    <div class="chat-time">5 மணி நேரம் முன்பு</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">முகப்பு</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">தேடல்</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">செய்தி</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">கருவி</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">சுயவிவரம்</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 2: Personal Profile -->
+            <div class="phone-frame">
+                <div class="screen-label">தனிநபர் சுயவிவரம்</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>காலை 9:30</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>என் சுயவிவரம்</h2>
+                        <div class="nav-icon">✏️</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="profile-header">
+                            <div class="profile-pic">👤</div>
+                            <div class="profile-name">ராஜேஷ் குமார்</div>
+                            <div class="profile-type">பிராய்லர் விவசாயி • கால்நடை ஆலோசகர்</div>
+                            <div style="text-align: center;">
+                                <span class="trust-badge">⭐ நம்பகமான உறுப்பினர்</span>
+                            </div>
+                        </div>
+
+                        <div class="stats-row">
+                            <div class="stat-item">
+                                <div class="stat-number">458</div>
+                                <div class="stat-label">தொடர்புகள்</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">89</div>
+                                <div class="stat-label">பதிவுகள்</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">4.8</div>
+                                <div class="stat-label">மதிப்பீடு</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">பற்றி</div>
+                            <div class="info-item">📍 நாமக்கல், தமிழ்நாடு</div>
+                            <div class="info-item">🏢 உரிமையாளர் - ஆர்.கே கோழி பண்ணை</div>
+                            <div class="info-item">📱 +91 98765 43210</div>
+                            <div class="info-item">✉️ rajesh@rkfarms.com</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">பண்ணை விவரங்கள்</div>
+                            <div class="info-item">வகை: பிராய்லர் உற்பத்தி</div>
+                            <div class="info-item">கொள்ளளவு: 50,000 பறவைகள்/சுழற்சி</div>
+                            <div class="info-item">அனுபவம்: 15 ஆண்டுகள்</div>
+                            <div class="info-item">சான்றிதழ்கள்: ISO 9001, HACCP</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">கால்நடை மருத்துவ தகுதிகள்</div>
+                            <div class="info-item">பட்டம்: BVSc & AH, TANUVAS</div>
+                            <div class="info-item">ஆண்டு: 2008</div>
+                            <div class="info-item">சிறப்பு: கோழி நோய் மேலாண்மை</div>
+                            <div class="info-item">அனுபவம்: 15+ ஆண்டுகள்</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">சமீபத்திய செயல்பாடு</div>
+                            <div class="info-item">✅ பதில்: "குளிர்காலத்தில் CRD தடுப்பது எப்படி?"</div>
+                            <div class="info-item">📝 பதிவு: "FCR மேம்படுத்தும் நுட்பங்கள்"</div>
+                            <div class="info-item">🤝 டாக்டர் பிரியா சர்மாவுடன் இணைந்தார்</div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">முகப்பு</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">தேடல்</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">செய்தி</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">கருவி</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">சுயவிவரம்</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 3: Business Profile -->
+            <div class="phone-frame">
+                <div class="screen-label">வணிக சுயவிவரம்</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>காலை 9:30</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>வணிக சுயவிவரம்</h2>
+                        <div class="nav-icon">⚙️</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="profile-header" style="background: linear-gradient(135deg, #1E3A5F 0%, #2B7A4B 100%);">
+                            <div class="profile-pic">🏢</div>
+                            <div class="profile-name">சுப்ரீம் தீவனம் பிரைவேட் லிமிடெட்</div>
+                            <div class="profile-type">தீவன உற்பத்தியாளர் • நிறுவனம்: 1995</div>
+                            <div style="text-align: center;">
+                                <span class="trust-badge">✓ சரிபார்க்கப்பட்ட வணிகம்</span>
+                            </div>
+                        </div>
+
+                        <div class="stats-row">
+                            <div class="stat-item">
+                                <div class="stat-number">2.5K</div>
+                                <div class="stat-label">பின்தொடர்பவர்கள்</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">18</div>
+                                <div class="stat-label">தயாரிப்புகள்</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">4.7</div>
+                                <div class="stat-label">மதிப்பீடு</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">நிறுவன தகவல்</div>
+                            <div class="info-item">📍 தலைமை அலுவலகம்: கோவை, தமிழ்நாடு</div>
+                            <div class="info-item">📞 1800-123-4567</div>
+                            <div class="info-item">🌐 www.supremefeeds.com</div>
+                            <div class="info-item">📧 info@supremefeeds.com</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">தயாரிப்புகள் & சேவைகள்</div>
+                            <div class="product-card">
+                                <div class="product-name">பிராய்லர் ஆரம்ப தீவனம்</div>
+                                <div class="product-details">புரதம்: 22% | பேக்: 50கிலோ | ₹1,950/மூட்டை</div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-name">லேயர் தீவனம் பிரீமியம்</div>
+                                <div class="product-details">புரதம்: 18% | பேக்: 50கிலோ | ₹1,850/மூட்டை</div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-name">பிரீடர் தீவனம் சிறப்பு</div>
+                                <div class="product-details">புரதம்: 20% | பேக்: 50கிலோ | ₹2,100/மூட்டை</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">சேவை பகுதிகள்</div>
+                            <div class="info-item">✓ தமிழ்நாடு - அனைத்து மாவட்டங்கள்</div>
+                            <div class="info-item">✓ கர்நாடகா - பெங்களூரு, மைசூர்</div>
+                            <div class="info-item">✓ கேரளா - பாலக்காடு, திருச்சூர்</div>
+                            <div class="info-item">✓ ஆந்திரா - சித்தூர்</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">சான்றிதழ்கள்</div>
+                            <div class="info-item">✅ ISO 9001:2015</div>
+                            <div class="info-item">✅ FSSAI அங்கீகாரம்</div>
+                            <div class="info-item">✅ BIS சான்றிதழ்</div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">முகப்பு</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">தேடல்</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">செய்தி</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">கருவி</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">சுயவிவரம்</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 4: Search/Directory -->
+            <div class="phone-frame">
+                <div class="screen-label">தேடல் அட்டவணை</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>காலை 9:30</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>அட்டவணை</h2>
+                        <div class="nav-icon">🔍</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="search-bar">
+                            <div class="search-icon"></div>
+                            <input class="search-input" placeholder="நிபுணர்கள், வணிகங்கள், தயாரிப்புகள் தேடுங்கள்..." />
+                        </div>
+
+                        <div class="tab-bar">
+                            <div class="tab active">அனைத்தும்</div>
+                            <div class="tab">நபர்கள்</div>
+                            <div class="tab">வணிகம்</div>
+                            <div class="tab">தயாரிப்பு</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">வகைவாரி வடிகட்டு</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">விவசாயிகள்</span>
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">கால்நடை மருத்துவர்கள்</span>
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">தீவன ஆலைகள்</span>
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">குஞ்சு பொரிக்கும் இடம்</span>
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">உபகரணங்கள்</span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">தேடல் முடிவுகள்</div>
+                            
+                            <!-- Person Result -->
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">டா.சு</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">டாக்டர் சுரேஷ் <span class="trust-badge" style="margin-left: 5px;">கால்நடை</span></div>
+                                    <div class="chat-message">கோழி நோய் நிபுணர் • நாமக்கல்</div>
+                                    <div class="chat-time">⭐ 4.9 மதிப்பீடு • 500+ ஆலோசனைகள்</div>
+                                </div>
+                            </div>
+
+                            <!-- Business Result -->
+                            <div class="chat-list-item">
+                                <div class="chat-avatar" style="background: #1E3A5F;">சதீ</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">சக்தி தீவனங்கள்</div>
+                                    <div class="chat-message">தீவன உற்பத்தியாளர் • அனைத்து கோழி தீவனங்கள்</div>
+                                    <div class="chat-time">📍 ஈரோடு • 2K பின்தொடர்பவர்கள்</div>
+                                </div>
+                            </div>
+
+                            <!-- Product Result -->
+                            <div class="chat-list-item">
+                                <div class="chat-avatar" style="background: #E67E22;">த</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">பிராய்லர் இறுதி தீவனம்</div>
+                                    <div class="chat-message">சுப்ரீம் தீவனம் மூலம் • ₹1,900/மூட்டை</div>
+                                    <div class="chat-time">18% புரதம் • 50கிலோ கிடைக்கும்</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">உங்கள் அருகில்</div>
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">வெகு</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">வெங்கட் குஞ்சு பொரிக்கும் இடம்</div>
+                                    <div class="chat-message">ஒருநாள் குஞ்சு வழங்குபவர்</div>
+                                    <div class="chat-time">📍 5 கி.மீ தொலைவில் • இப்போது திறந்துள்ளது</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">முகப்பு</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">தேடல்</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">செய்தி</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">கருவி</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">சுயவிவரம்</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 5: Messages/Chat -->
+            <div class="phone-frame">
+                <div class="screen-label">செய்திகள்</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>காலை 9:30</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>செய்திகள்</h2>
+                        <div class="nav-icon">+</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="search-bar">
+                            <div class="search-icon"></div>
+                            <input class="search-input" placeholder="செய்திகள் தேடுக..." />
+                        </div>
+
+                        <div class="tab-bar">
+                            <div class="tab active">அரட்டை</div>
+                            <div class="tab">குழுக்கள்</div>
+                            <div class="tab">ஒளிபரப்பு</div>
+                        </div>
+
+                        <div style="padding: 0 15px;">
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">டா.பி</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">டாக்டர் பிரியா (கால்நடை)</div>
+                                    <div class="chat-message">தடுப்பூசி அட்டவணைக்கு நன்றி 👍</div>
+                                </div>
+                                <div class="chat-time">10:30 AM</div>
+                            </div>
+
+                            <div class="chat-list-item">
+                                <div class="chat-avatar" style="background: #E67E22;">கு</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">நாமக்கல் விவசாயிகள் குழு</div>
+                                    <div class="chat-message">குமார்: புதிய தீவன விலை புதுப்பிக்கப்பட்டது</div>
+                                </div>
+                                <div class="chat-time">9:45 AM</div>
+                            </div>
+
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">சுதீ</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">சுப்ரீம் தீவனங்கள்</div>
+                                    <div class="chat-message">உங்கள் ஆர்டர் #1234 தயார்</div>
+                                </div>
+                                <div class="chat-time">நேற்று</div>
+                            </div>
+
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">முகு</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">முத்து குமார்</div>
+                                    <div class="chat-message">FCR கணக்கீடு பகிர முடியுமா?</div>
+                                </div>
+                                <div class="chat-time">நேற்று</div>
+                            </div>
+
+                            <div class="chat-list-item">
+                                <div class="chat-avatar" style="background: #27AE60;">கு</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">பிராய்லர் மேலாண்மை குறிப்புகள்</div>
+                                    <div class="chat-message">நிர்வாகி: வாரம் 3 உணவு வழிகாட்டி பதிவிடப்பட்டது</div>
+                                </div>
+                                <div class="chat-time">2 நாட்கள் முன்பு</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">செய்தி கோரிக்கைகள் (3)</div>
+                            <div style="padding: 10px; background: #f8f8f8; border-radius: 10px;">
+                                <div style="font-size: 13px; color: #666;">சரிபார்க்கப்பட்ட உறுப்பினர்களிடமிருந்து புதிய இணைப்பு கோரிக்கைகள்</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">முகப்பு</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">தேடல்</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">செய்தி</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">கருவி</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">சுயவிவரம்</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 6: Tools & Learning -->
+            <div class="phone-frame">
+                <div class="screen-label">கருவிகள் & கற்றல்</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>காலை 9:30</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>கருவிகள் & கற்றல்</h2>
+                        <div class="nav-icon">📚</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="section">
+                            <div class="section-title">விரைவு கணக்கீட்டாளர்கள்</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="tool-card">
+                                    <div class="tool-icon"></div>
+                                    <div class="tool-name">FCR கணக்கீடு</div>
+                                    <div class="tool-desc">தீவன மாற்று விகிதம்</div>
+                                </div>
+                                <div class="tool-card">
+                                    <div class="tool-icon" style="background: #E67E22;"></div>
+                                    <div class="tool-name">தீவன கணிப்பு</div>
+                                    <div class="tool-desc">தீவன தேவை மதிப்பீடு</div>
+                                </div>
+                                <div class="tool-card">
+                                    <div class="tool-icon" style="background: #3498DB;"></div>
+                                    <div class="tool-name">இறப்பு கணக்கீடு</div>
+                                    <div class="tool-desc">கூட்டம் இறப்பு விகிதம் %</div>
+                                </div>
+                                <div class="tool-card">
+                                    <div class="tool-icon" style="background: #9B59B6;"></div>
+                                    <div class="tool-name">சூத்திர மேம்பாடு</div>
+                                    <div class="tool-desc">தீவன சூத்திரம் சிறந்ததாக்கு</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">கற்றல் வழிகாட்டிகள்</div>
+                            <div class="product-card">
+                                <div class="product-name">📖 பிராய்லர் மேலாண்மை வழிகாட்டி</div>
+                                <div class="product-details">முழுமையான 6-வார திட்டம் • 45 பாடங்கள்</div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-name">📖 லேயர் பண்ணை SOPகள்</div>
+                                <div class="product-details">நிலையான நடைமுறைகள் • 28 தலைப்புகள்</div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-name">📖 நோய் தடுப்பு</div>
+                                <div class="product-details">பொதுவான நோய்கள் & தடுப்பூசிகள் • 15 பகுதிகள்</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">தொழில் சொற்களஞ்சியம்</div>
+                            <div class="product-card">
+                                <div class="product-name">அ-ஃ கோழி சொற்கள்</div>
+                                <div class="product-details">500+ சொற்கள் தமிழ் மொழிபெயர்ப்புடன்</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">சிறந்த நடைமுறைகள்</div>
+                            <div class="info-item">✓ கோடைகால மேலாண்மை குறிப்புகள்</div>
+                            <div class="info-item">✓ உயிர்பாதுகாப்பு நெறிமுறைகள்</div>
+                            <div class="info-item">✓ தீவன சேமிப்பு வழிகாட்டுதல்கள்</div>
+                            <div class="info-item">✓ தடுப்பூசி நாட்காட்டி 2025</div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">முகப்பு</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">தேடல்</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">செய்தி</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">கருவி</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">சுயவிவரம்</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information Architecture -->
+        <div class="flow-diagram">
+            <h2 class="flow-title">PoultryCo செயலி - தகவல் கட்டமைப்பு</h2>
+            <div class="flow-container">
+                <div class="flow-section">
+                    <div class="flow-section-title">🏠 முகப்பு ஊட்டம்</div>
+                    <div class="flow-item">சந்தை விலை விட்ஜெட்</div>
+                    <div class="flow-item">வானிலை எச்சரிக்கைகள்</div>
+                    <div class="flow-item">விரைவு செயல்கள்</div>
+                    <div class="flow-item">சமூக புதுப்பிப்புகள்</div>
+                    <div class="flow-item">நிபுணர் கே&ஏ</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">👤 சுயவிவரங்கள்</div>
+                    <div class="flow-item">தனிநபர் சுயவிவரம்</div>
+                    <div class="flow-item">பல பங்குதாரர் தகவல்</div>
+                    <div class="flow-item">வணிக சுயவிவரம்</div>
+                    <div class="flow-item">தயாரிப்பு பட்டியல்</div>
+                    <div class="flow-item">நம்பிக்கை மதிப்பெண்கள்</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">🔍 அட்டவணை</div>
+                    <div class="flow-item">நபர்கள் தேடுக</div>
+                    <div class="flow-item">வணிகங்கள் தேடுக</div>
+                    <div class="flow-item">தயாரிப்புகள் தேடுக</div>
+                    <div class="flow-item">இடம் சார்ந்த</div>
+                    <div class="flow-item">வகை வடிப்பான்கள்</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">💬 தொடர்பு</div>
+                    <div class="flow-item">1:1 அரட்டை</div>
+                    <div class="flow-item">குழு அரட்டை</div>
+                    <div class="flow-item">ஒளிபரப்பு பட்டியல்கள்</div>
+                    <div class="flow-item">குரல் குறிப்புகள்</div>
+                    <div class="flow-item">ஊடக பகிர்வு</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">🛠️ கருவிகள்</div>
+                    <div class="flow-item">FCR கணக்கீடு</div>
+                    <div class="flow-item">தீவன கணிப்பு</div>
+                    <div class="flow-item">சூத்திர மேம்படுத்தி</div>
+                    <div class="flow-item">இறப்பு கண்காணிப்பு</div>
+                    <div class="flow-item">லாப கணக்கீடு</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">📚 கற்றல்</div>
+                    <div class="flow-item">இன தரநிலைகள்</div>
+                    <div class="flow-item">தொழில் சொற்களஞ்சியம்</div>
+                    <div class="flow-item">SOPகள் நூலகம்</div>
+                    <div class="flow-item">சிறந்த நடைமுறைகள்</div>
+                    <div class="flow-item">வீடியோ பயிற்சிகள்</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

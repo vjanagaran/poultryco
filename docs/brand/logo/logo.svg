@@ -1,0 +1,36 @@
+<svg width="320" height="80" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- PoultryCo Primary Horizontal Logo -->
+  <!-- Icon + Wordmark in Brand Color #2B7A4B -->
+  
+  <!-- Three Circles Icon -->
+  <g transform="translate(10, 10)">
+    <!-- Circle 1 - Top Center -->
+    <circle cx="30" cy="18" r="16" 
+            fill="none" 
+            stroke="#2B7A4B" 
+            stroke-width="3" 
+            stroke-linecap="round"/>
+    
+    <!-- Circle 2 - Bottom Left -->
+    <circle cx="18" cy="36" r="16" 
+            fill="none" 
+            stroke="#2B7A4B" 
+            stroke-width="3" 
+            stroke-linecap="round"/>
+    
+    <!-- Circle 3 - Bottom Right -->
+    <circle cx="42" cy="36" r="16" 
+            fill="none" 
+            stroke="#2B7A4B" 
+            stroke-width="3" 
+            stroke-linecap="round"/>
+  </g>
+  
+  <!-- PoultryCo Text -->
+  <text x="90" y="48" 
+        font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+        font-size="32" 
+        font-weight="700" 
+        fill="#2B7A4B" 
+        letter-spacing="-0.02em">PoultryCo</text>
+</svg>

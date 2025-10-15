@@ -1,0 +1,25 @@
+<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <!-- PoultryCo Icon: Three Interconnected Circles - White Version -->
+  <!-- For use on dark backgrounds: PoultryCo Green, Deep Navy, or black -->
+  
+  <!-- Circle 1 - Top Center -->
+  <circle cx="40" cy="25" r="18" 
+          fill="none" 
+          stroke="#FFFFFF" 
+          stroke-width="4" 
+          stroke-linecap="round"/>
+  
+  <!-- Circle 2 - Bottom Left -->
+  <circle cx="25" cy="50" r="18" 
+          fill="none" 
+          stroke="#FFFFFF" 
+          stroke-width="4" 
+          stroke-linecap="round"/>
+  
+  <!-- Circle 3 - Bottom Right -->
+  <circle cx="55" cy="50" r="18" 
+          fill="none" 
+          stroke="#FFFFFF" 
+          stroke-width="4" 
+          stroke-linecap="round"/>
+</svg>

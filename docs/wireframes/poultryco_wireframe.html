@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoultryCo App Wireframes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #2B7A4B 0%, #1E3A5F 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .wireframe-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .screens-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .phone-frame {
+            background: #000;
+            border-radius: 30px;
+            padding: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .phone-notch {
+            width: 150px;
+            height: 25px;
+            background: #000;
+            border-radius: 0 0 15px 15px;
+            margin: 0 auto;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+        }
+
+        .screen {
+            background: #fff;
+            border-radius: 20px;
+            height: 700px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .screen::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .screen::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .screen::-webkit-scrollbar-thumb {
+            background: #2B7A4B;
+            border-radius: 5px;
+        }
+
+        .status-bar {
+            background: #f8f8f8;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .nav-header {
+            background: #2B7A4B;
+            color: white;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-header h2 {
+            font-size: 18px;
+            flex: 1;
+            text-align: center;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-radius: 0 0 20px 20px;
+        }
+
+        .nav-item {
+            text-align: center;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .nav-item.active {
+            color: #2B7A4B;
+        }
+
+        .nav-item-icon {
+            width: 24px;
+            height: 24px;
+            margin: 0 auto 3px;
+            background: #ddd;
+            border-radius: 5px;
+        }
+
+        .nav-item.active .nav-item-icon {
+            background: #2B7A4B;
+        }
+
+        .nav-item-label {
+            font-size: 11px;
+        }
+
+        /* Component Styles */
+        .profile-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #2B7A4B 0%, #3a8d5d 100%);
+            color: white;
+        }
+
+        .profile-pic {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: #2B7A4B;
+        }
+
+        .profile-name {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .profile-type {
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .trust-badge {
+            background: #27AE60;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-block;
+            margin: 10px auto;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            background: #f8f8f8;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2B7A4B;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .section {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .info-item {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .product-card {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .product-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .product-details {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .chat-list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+        }
+
+        .chat-list-item:hover {
+            background: #f8f8f8;
+        }
+
+        .chat-avatar {
+            width: 50px;
+            height: 50px;
+            background: #2B7A4B;
+            border-radius: 50%;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .chat-info {
+            flex: 1;
+        }
+
+        .chat-name {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .chat-message {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .chat-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .tool-card {
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .tool-card:hover {
+            background: #e8f5e9;
+        }
+
+        .tool-icon {
+            width: 40px;
+            height: 40px;
+            background: #2B7A4B;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tool-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .tool-desc {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .market-widget {
+            background: linear-gradient(135deg, #f8f8f8 0%, #e8e8e8 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .widget-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .price-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .price-value {
+            font-weight: 600;
+            color: #2B7A4B;
+        }
+
+        .search-bar {
+            padding: 10px 15px;
+            background: #f0f0f0;
+            border-radius: 25px;
+            margin: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-icon {
+            width: 20px;
+            height: 20px;
+            background: #999;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .tab-bar {
+            display: flex;
+            background: #f8f8f8;
+            padding: 5px;
+            margin: 0 15px;
+            border-radius: 10px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: #2B7A4B;
+            color: white;
+        }
+
+        .screen-label {
+            background: #2B7A4B;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            position: absolute;
+            top: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .content-area {
+            padding-bottom: 60px;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+        }
+
+        .flow-title {
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 30px;
+            color: #2B7A4B;
+        }
+
+        .flow-container {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .flow-section {
+            flex: 1;
+            min-width: 200px;
+            background: #f8f8f8;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .flow-section-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2B7A4B;
+        }
+
+        .flow-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wireframe-container">
+        <div class="header">
+            <h1>PoultryCo App Wireframes</h1>
+            <p>Farmer-Friendly Mobile Interface Design</p>
+        </div>
+
+        <div class="screens-grid">
+            <!-- Screen 1: Home/Feed -->
+            <div class="phone-frame">
+                <div class="screen-label">Home Feed</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>9:30 AM</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">☰</div>
+                        <h2>PoultryCo</h2>
+                        <div class="nav-icon">🔔</div>
+                    </div>
+                    <div class="content-area">
+                        <!-- Market Widget -->
+                        <div class="market-widget" style="margin: 15px;">
+                            <div class="widget-title">📊 Today's Market</div>
+                            <div class="price-item">
+                                <span>Broiler (Chennai)</span>
+                                <span class="price-value">₹125/kg</span>
+                            </div>
+                            <div class="price-item">
+                                <span>Layer Feed</span>
+                                <span class="price-value">₹1,850/bag</span>
+                            </div>
+                            <div class="price-item">
+                                <span>Egg (Namakkal)</span>
+                                <span class="price-value">₹4.85/pc</span>
+                            </div>
+                        </div>
+
+                        <!-- Weather Widget -->
+                        <div class="market-widget" style="margin: 15px;">
+                            <div class="widget-title">🌤️ Weather Alert</div>
+                            <div class="info-item">Temperature: 32°C</div>
+                            <div class="info-item">Humidity: 65%</div>
+                            <div class="info-item">⚠️ Heat stress warning for broilers</div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="section">
+                            <div class="section-title">Quick Actions</div>
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                                <div class="tool-card" style="text-align: center; padding: 15px;">
+                                    <div class="tool-icon" style="margin: 0 auto;"></div>
+                                    <div style="font-size: 12px;">Ask Expert</div>
+                                </div>
+                                <div class="tool-card" style="text-align: center; padding: 15px;">
+                                    <div class="tool-icon" style="margin: 0 auto;"></div>
+                                    <div style="font-size: 12px;">FCR Calc</div>
+                                </div>
+                                <div class="tool-card" style="text-align: center; padding: 15px;">
+                                    <div class="tool-icon" style="margin: 0 auto;"></div>
+                                    <div style="font-size: 12px;">Directory</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Posts -->
+                        <div class="section">
+                            <div class="section-title">Community Updates</div>
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">Dr.R</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Dr. Ravi Kumar <span class="trust-badge" style="margin-left: 5px;">Verified Vet</span></div>
+                                    <div class="chat-message">New vaccination schedule for winter season...</div>
+                                    <div class="chat-time">2 hours ago</div>
+                                </div>
+                            </div>
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">KF</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Kumar Farms</div>
+                                    <div class="chat-message">Successfully reduced mortality to 2% using...</div>
+                                    <div class="chat-time">5 hours ago</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Home</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Search</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Messages</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Tools</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Profile</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 2: Personal Profile -->
+            <div class="phone-frame">
+                <div class="screen-label">Personal Profile</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>9:30 AM</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>My Profile</h2>
+                        <div class="nav-icon">✏️</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="profile-header">
+                            <div class="profile-pic">👤</div>
+                            <div class="profile-name">Rajesh Kumar</div>
+                            <div class="profile-type">Broiler Farmer • Veterinary Consultant</div>
+                            <div style="text-align: center;">
+                                <span class="trust-badge">⭐ Trusted Member</span>
+                            </div>
+                        </div>
+
+                        <div class="stats-row">
+                            <div class="stat-item">
+                                <div class="stat-number">458</div>
+                                <div class="stat-label">Connections</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">89</div>
+                                <div class="stat-label">Posts</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">4.8</div>
+                                <div class="stat-label">Rating</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">About</div>
+                            <div class="info-item">📍 Namakkal, Tamil Nadu</div>
+                            <div class="info-item">🏢 Owner at RK Poultry Farms</div>
+                            <div class="info-item">📱 +91 98765 43210</div>
+                            <div class="info-item">✉️ rajesh@rkfarms.com</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Farm Details</div>
+                            <div class="info-item">Type: Broiler Production</div>
+                            <div class="info-item">Capacity: 50,000 birds/cycle</div>
+                            <div class="info-item">Experience: 15 years</div>
+                            <div class="info-item">Certifications: ISO 9001, HACCP</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Veterinary Credentials</div>
+                            <div class="info-item">Degree: BVSc & AH, TANUVAS</div>
+                            <div class="info-item">Year: 2008</div>
+                            <div class="info-item">Specialization: Poultry Disease Management</div>
+                            <div class="info-item">Experience: 15+ years</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Recent Activity</div>
+                            <div class="info-item">✅ Answered: "How to prevent CRD in winter?"</div>
+                            <div class="info-item">📝 Posted: "FCR improvement techniques"</div>
+                            <div class="info-item">🤝 Connected with Dr. Priya Sharma</div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Home</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Search</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Messages</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Tools</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Profile</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 3: Business Profile -->
+            <div class="phone-frame">
+                <div class="screen-label">Business Profile</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>9:30 AM</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>Business Profile</h2>
+                        <div class="nav-icon">⚙️</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="profile-header" style="background: linear-gradient(135deg, #1E3A5F 0%, #2B7A4B 100%);">
+                            <div class="profile-pic">🏢</div>
+                            <div class="profile-name">Supreme Feeds Pvt Ltd</div>
+                            <div class="profile-type">Feed Manufacturer • Est. 1995</div>
+                            <div style="text-align: center;">
+                                <span class="trust-badge">✓ Verified Business</span>
+                            </div>
+                        </div>
+
+                        <div class="stats-row">
+                            <div class="stat-item">
+                                <div class="stat-number">2.5K</div>
+                                <div class="stat-label">Followers</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">18</div>
+                                <div class="stat-label">Products</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">4.7</div>
+                                <div class="stat-label">Rating</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Company Info</div>
+                            <div class="info-item">📍 Head Office: Coimbatore, TN</div>
+                            <div class="info-item">📞 1800-123-4567</div>
+                            <div class="info-item">🌐 www.supremefeeds.com</div>
+                            <div class="info-item">📧 info@supremefeeds.com</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Products & Services</div>
+                            <div class="product-card">
+                                <div class="product-name">Broiler Starter Feed</div>
+                                <div class="product-details">Protein: 22% | Pack: 50kg | ₹1,950/bag</div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-name">Layer Feed Premium</div>
+                                <div class="product-details">Protein: 18% | Pack: 50kg | ₹1,850/bag</div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-name">Breeder Feed Special</div>
+                                <div class="product-details">Protein: 20% | Pack: 50kg | ₹2,100/bag</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Service Areas</div>
+                            <div class="info-item">✓ Tamil Nadu - All districts</div>
+                            <div class="info-item">✓ Karnataka - Bangalore, Mysore</div>
+                            <div class="info-item">✓ Kerala - Palakkad, Thrissur</div>
+                            <div class="info-item">✓ Andhra Pradesh - Chittoor</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Certifications</div>
+                            <div class="info-item">✅ ISO 9001:2015</div>
+                            <div class="info-item">✅ FSSAI Licensed</div>
+                            <div class="info-item">✅ BIS Certified</div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Home</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Search</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Messages</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Tools</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Profile</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 4: Search/Directory -->
+            <div class="phone-frame">
+                <div class="screen-label">Search Directory</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>9:30 AM</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>Directory</h2>
+                        <div class="nav-icon">🔍</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="search-bar">
+                            <div class="search-icon"></div>
+                            <input class="search-input" placeholder="Search professionals, businesses, products..." />
+                        </div>
+
+                        <div class="tab-bar">
+                            <div class="tab active">All</div>
+                            <div class="tab">People</div>
+                            <div class="tab">Business</div>
+                            <div class="tab">Products</div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Filter by Category</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">Farmers</span>
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">Veterinarians</span>
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">Feed Mills</span>
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">Hatcheries</span>
+                                <span style="background: #e8f5e9; padding: 5px 10px; border-radius: 15px; font-size: 13px;">Equipment</span>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Search Results</div>
+                            
+                            <!-- Person Result -->
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">Dr.S</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Dr. Suresh <span class="trust-badge" style="margin-left: 5px;">Vet</span></div>
+                                    <div class="chat-message">Poultry Disease Specialist • Namakkal</div>
+                                    <div class="chat-time">⭐ 4.9 rating • 500+ consultations</div>
+                                </div>
+                            </div>
+
+                            <!-- Business Result -->
+                            <div class="chat-list-item">
+                                <div class="chat-avatar" style="background: #1E3A5F;">SF</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Sakthi Feeds</div>
+                                    <div class="chat-message">Feed Manufacturer • All poultry feeds</div>
+                                    <div class="chat-time">📍 Erode • 2K followers</div>
+                                </div>
+                            </div>
+
+                            <!-- Product Result -->
+                            <div class="chat-list-item">
+                                <div class="chat-avatar" style="background: #E67E22;">P</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Broiler Finisher Feed</div>
+                                    <div class="chat-message">By Supreme Feeds • ₹1,900/bag</div>
+                                    <div class="chat-time">18% Protein • Available in 50kg</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Near You</div>
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">VH</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Venkat Hatcheries</div>
+                                    <div class="chat-message">Day-old chicks supplier</div>
+                                    <div class="chat-time">📍 5 km away • Open now</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Home</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Search</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Messages</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Tools</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Profile</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 5: Messages/Chat -->
+            <div class="phone-frame">
+                <div class="screen-label">Messages</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>9:30 AM</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>Messages</h2>
+                        <div class="nav-icon">+</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="search-bar">
+                            <div class="search-icon"></div>
+                            <input class="search-input" placeholder="Search messages..." />
+                        </div>
+
+                        <div class="tab-bar">
+                            <div class="tab active">Chats</div>
+                            <div class="tab">Groups</div>
+                            <div class="tab">Broadcast</div>
+                        </div>
+
+                        <div style="padding: 0 15px;">
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">Dr.P</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Dr. Priya (Vet)</div>
+                                    <div class="chat-message">Thanks for the vaccination schedule 👍</div>
+                                </div>
+                                <div class="chat-time">10:30 AM</div>
+                            </div>
+
+                            <div class="chat-list-item">
+                                <div class="chat-avatar" style="background: #E67E22;">G</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Namakkal Farmers Group</div>
+                                    <div class="chat-message">Kumar: New feed prices updated</div>
+                                </div>
+                                <div class="chat-time">9:45 AM</div>
+                            </div>
+
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">SF</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Supreme Feeds</div>
+                                    <div class="chat-message">Your order #1234 is ready</div>
+                                </div>
+                                <div class="chat-time">Yesterday</div>
+                            </div>
+
+                            <div class="chat-list-item">
+                                <div class="chat-avatar">MK</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Muthu Kumar</div>
+                                    <div class="chat-message">Can you share FCR calculation?</div>
+                                </div>
+                                <div class="chat-time">Yesterday</div>
+                            </div>
+
+                            <div class="chat-list-item">
+                                <div class="chat-avatar" style="background: #27AE60;">G</div>
+                                <div class="chat-info">
+                                    <div class="chat-name">Broiler Management Tips</div>
+                                    <div class="chat-message">Admin: Week 3 feeding guide posted</div>
+                                </div>
+                                <div class="chat-time">2 days ago</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Message Requests (3)</div>
+                            <div style="padding: 10px; background: #f8f8f8; border-radius: 10px;">
+                                <div style="font-size: 13px; color: #666;">New connection requests from verified members</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Home</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Search</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Messages</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Tools</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Profile</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen 6: Tools & Learning -->
+            <div class="phone-frame">
+                <div class="screen-label">Tools & Learning</div>
+                <div class="phone-notch"></div>
+                <div class="screen">
+                    <div class="status-bar">
+                        <span>9:30 AM</span>
+                        <span>🔋 85%</span>
+                    </div>
+                    <div class="nav-header">
+                        <div class="nav-icon">←</div>
+                        <h2>Tools & Learning</h2>
+                        <div class="nav-icon">📚</div>
+                    </div>
+                    <div class="content-area">
+                        <div class="section">
+                            <div class="section-title">Quick Calculators</div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="tool-card">
+                                    <div class="tool-icon"></div>
+                                    <div class="tool-name">FCR Calculator</div>
+                                    <div class="tool-desc">Calculate feed conversion ratio</div>
+                                </div>
+                                <div class="tool-card">
+                                    <div class="tool-icon" style="background: #E67E22;"></div>
+                                    <div class="tool-name">Feed Projection</div>
+                                    <div class="tool-desc">Estimate feed requirements</div>
+                                </div>
+                                <div class="tool-card">
+                                    <div class="tool-icon" style="background: #3498DB;"></div>
+                                    <div class="tool-name">Mortality Calc</div>
+                                    <div class="tool-desc">Track flock mortality %</div>
+                                </div>
+                                <div class="tool-card">
+                                    <div class="tool-icon" style="background: #9B59B6;"></div>
+                                    <div class="tool-name">Formula Optimizer</div>
+                                    <div class="tool-desc">Optimize feed formula</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Learning Guides</div>
+                            <div class="product-card">
+                                <div class="product-name">📖 Broiler Management Guide</div>
+                                <div class="product-details">Complete 6-week program • 45 lessons</div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-name">📖 Layer Farm SOPs</div>
+                                <div class="product-details">Standard procedures • 28 topics</div>
+                            </div>
+                            <div class="product-card">
+                                <div class="product-name">📖 Disease Prevention</div>
+                                <div class="product-details">Common diseases & vaccines • 15 modules</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Industry Glossary</div>
+                            <div class="product-card">
+                                <div class="product-name">A-Z Poultry Terms</div>
+                                <div class="product-details">500+ terms with Tamil translations</div>
+                            </div>
+                        </div>
+
+                        <div class="section">
+                            <div class="section-title">Best Practices</div>
+                            <div class="info-item">✓ Summer Management Tips</div>
+                            <div class="info-item">✓ Biosecurity Protocols</div>
+                            <div class="info-item">✓ Feed Storage Guidelines</div>
+                            <div class="info-item">✓ Vaccination Calendar 2025</div>
+                        </div>
+                    </div>
+                    <div class="bottom-nav">
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Home</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Search</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Messages</div>
+                        </div>
+                        <div class="nav-item active">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Tools</div>
+                        </div>
+                        <div class="nav-item">
+                            <div class="nav-item-icon"></div>
+                            <div class="nav-item-label">Profile</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Information Architecture -->
+        <div class="flow-diagram">
+            <h2 class="flow-title">PoultryCo App - Information Architecture</h2>
+            <div class="flow-container">
+                <div class="flow-section">
+                    <div class="flow-section-title">🏠 Home Feed</div>
+                    <div class="flow-item">Market Prices Widget</div>
+                    <div class="flow-item">Weather Alerts</div>
+                    <div class="flow-item">Quick Actions</div>
+                    <div class="flow-item">Community Updates</div>
+                    <div class="flow-item">Expert Q&A</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">👤 Profiles</div>
+                    <div class="flow-item">Personal Profile</div>
+                    <div class="flow-item">Multi-stakeholder Info</div>
+                    <div class="flow-item">Business Profile</div>
+                    <div class="flow-item">Product Catalog</div>
+                    <div class="flow-item">Trust Scores</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">🔍 Directory</div>
+                    <div class="flow-item">Search People</div>
+                    <div class="flow-item">Search Businesses</div>
+                    <div class="flow-item">Search Products</div>
+                    <div class="flow-item">Location-based</div>
+                    <div class="flow-item">Category Filters</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">💬 Communication</div>
+                    <div class="flow-item">1:1 Chat</div>
+                    <div class="flow-item">Group Chat</div>
+                    <div class="flow-item">Broadcast Lists</div>
+                    <div class="flow-item">Voice Notes</div>
+                    <div class="flow-item">Media Sharing</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">🛠️ Tools</div>
+                    <div class="flow-item">FCR Calculator</div>
+                    <div class="flow-item">Feed Projection</div>
+                    <div class="flow-item">Formula Optimizer</div>
+                    <div class="flow-item">Mortality Tracker</div>
+                    <div class="flow-item">Profit Calculator</div>
+                </div>
+
+                <div class="flow-section">
+                    <div class="flow-section-title">📚 Learning</div>
+                    <div class="flow-item">Breed Standards</div>
+                    <div class="flow-item">Industry Glossary</div>
+                    <div class="flow-item">SOPs Library</div>
+                    <div class="flow-item">Best Practices</div>
+                    <div class="flow-item">Video Tutorials</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
