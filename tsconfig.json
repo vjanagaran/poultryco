@@ -13,7 +13,16 @@
     "declarationMap": true,
     "sourceMap": true,
     "composite": true,
-    "incremental": true
+    "incremental": true,
+    "baseUrl": ".",
+    "paths": {
+      "@poultryco/design-system": ["./packages/design-system/src"],
+      "@poultryco/ui": ["./packages/ui/src"],
+      "@poultryco/api": ["./packages/api/src"],
+      "@poultryco/types": ["./packages/types/src"],
+      "@poultryco/utils": ["./packages/utils/src"],
+      "@poultryco/config": ["./packages/config/src"]
+    }
   },
   "exclude": ["node_modules", "dist", ".next", ".expo"]
 }

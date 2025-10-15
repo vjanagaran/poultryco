@@ -10,7 +10,8 @@
       "@utils/*": ["src/utils/*"],
       "@hooks/*": ["src/hooks/*"],
       "@services/*": ["src/services/*"],
-      "@types/*": ["src/types/*"]
+      "@types/*": ["src/types/*"],
+      "@poultryco/design-system": ["../../packages/design-system/src"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
