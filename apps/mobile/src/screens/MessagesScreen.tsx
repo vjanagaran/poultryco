@@ -6,31 +6,39 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '@poultryco/design-system';
+import { BackIcon } from '../components/icons/HeaderIcons';
+
+const AddIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ width: size - 8, height: 2, backgroundColor: color }} />
+    <View style={{ width: 2, height: size - 8, backgroundColor: color, position: 'absolute' }} />
+  </View>
+);
 
 export default function MessagesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('Chats');
+  const insets = useSafeAreaInsets();
 
   const tabs = ['Chats', 'Groups', 'Broadcast'];
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <SafeAreaView style={styles.safeArea}>
       
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.backIcon}>←</Text>
-        </View>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <TouchableOpacity style={styles.headerLeft}>
+          <BackIcon color={colors.white} size={24} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Messages</Text>
-        <View style={styles.headerRight}>
-          <Text style={styles.addIcon}>+</Text>
-        </View>
+        <TouchableOpacity style={styles.headerRight}>
+          <AddIcon color={colors.white} size={24} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -133,17 +141,12 @@ export default function MessagesScreen() {
           </View>
         </View>
       </ScrollView>
-      </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.primary,
-  },
-  safeArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
@@ -157,24 +160,20 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerRight: {
     width: 40,
-    alignItems: 'flex-end',
-  },
-  backIcon: {
-    fontSize: 24,
-    color: colors.white,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: typography.fontSize.h3,
     fontWeight: typography.fontWeight.semibold,
     color: colors.white,
-  },
-  addIcon: {
-    fontSize: 32,
-    color: colors.white,
-    fontWeight: typography.fontWeight.regular,
   },
   content: {
     flex: 1,

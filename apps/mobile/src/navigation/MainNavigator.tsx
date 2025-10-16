@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '@poultryco/design-system';
 import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ToolsScreen from '../screens/ToolsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import { HomeIcon, SearchIcon, MessagesIcon, ToolsIcon, ProfileIcon } from '../components/icons/TabIcons';
 
 type TabScreen = 'Home' | 'Search' | 'Messages' | 'Tools' | 'Profile';
 
 export default function MainNavigator() {
   const [activeTab, setActiveTab] = useState<TabScreen>('Home');
+  const insets = useSafeAreaInsets();
 
   const renderScreen = () => {
     switch (activeTab) {
@@ -35,18 +38,12 @@ export default function MainNavigator() {
       <View style={styles.screenContainer}>{renderScreen()}</View>
 
       {/* Bottom Tab Navigation */}
-      <SafeAreaView style={styles.bottomNavSafeArea}>
-        <View style={styles.bottomNav}>
+      <View style={[styles.bottomNav, { paddingBottom: insets.bottom }]}>
           <TouchableOpacity
             style={styles.navItem}
             onPress={() => setActiveTab('Home')}
           >
-            <Text style={[
-              styles.navIcon,
-              activeTab === 'Home' && styles.navIconActive,
-            ]}>
-              🏠
-            </Text>
+            <HomeIcon active={activeTab === 'Home'} size={24} />
             <Text
               style={[
                 styles.navLabel,
@@ -61,12 +58,7 @@ export default function MainNavigator() {
             style={styles.navItem}
             onPress={() => setActiveTab('Search')}
           >
-            <Text style={[
-              styles.navIcon,
-              activeTab === 'Search' && styles.navIconActive,
-            ]}>
-              🔍
-            </Text>
+            <SearchIcon active={activeTab === 'Search'} size={24} />
             <Text
               style={[
                 styles.navLabel,
@@ -81,12 +73,7 @@ export default function MainNavigator() {
             style={styles.navItem}
             onPress={() => setActiveTab('Messages')}
           >
-            <Text style={[
-              styles.navIcon,
-              activeTab === 'Messages' && styles.navIconActive,
-            ]}>
-              💬
-            </Text>
+            <MessagesIcon active={activeTab === 'Messages'} size={24} />
             <Text
               style={[
                 styles.navLabel,
@@ -101,12 +88,7 @@ export default function MainNavigator() {
             style={styles.navItem}
             onPress={() => setActiveTab('Tools')}
           >
-            <Text style={[
-              styles.navIcon,
-              activeTab === 'Tools' && styles.navIconActive,
-            ]}>
-              🛠️
-            </Text>
+            <ToolsIcon active={activeTab === 'Tools'} size={24} />
             <Text
               style={[
                 styles.navLabel,
@@ -121,12 +103,7 @@ export default function MainNavigator() {
             style={styles.navItem}
             onPress={() => setActiveTab('Profile')}
           >
-            <Text style={[
-              styles.navIcon,
-              activeTab === 'Profile' && styles.navIconActive,
-            ]}>
-              👤
-            </Text>
+            <ProfileIcon active={activeTab === 'Profile'} size={24} />
             <Text
               style={[
                 styles.navLabel,
@@ -137,7 +114,6 @@ export default function MainNavigator() {
             </Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
     </View>
   );
 }
@@ -150,15 +126,13 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
   },
-  bottomNavSafeArea: {
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: colors.white,
     paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
@@ -170,18 +144,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: spacing.xs,
-  },
-  navIcon: {
-    fontSize: 24,
-    marginBottom: 2,
-    opacity: 0.5,
-  },
-  navIconActive: {
-    opacity: 1,
+    gap: 4,
   },
   navLabel: {
     fontSize: typography.fontSize.tiny,
     color: colors.textTertiary,
+    marginTop: 2,
   },
   navLabelActive: {
     color: colors.primary,

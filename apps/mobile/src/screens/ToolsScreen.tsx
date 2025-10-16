@@ -5,26 +5,38 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '@poultryco/design-system';
+import { BackIcon } from '../components/icons/HeaderIcons';
+
+const LibraryIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={{ width: size - 8, height: size - 4, borderWidth: 2, borderColor: color, borderRadius: 2 }}>
+      <View style={{ width: '80%', height: 2, backgroundColor: color, marginTop: 4, marginLeft: 2 }} />
+      <View style={{ width: '80%', height: 2, backgroundColor: color, marginTop: 2, marginLeft: 2 }} />
+      <View style={{ width: '80%', height: 2, backgroundColor: color, marginTop: 2, marginLeft: 2 }} />
+    </View>
+  </View>
+);
 
 export default function ToolsScreen() {
+  const insets = useSafeAreaInsets();
+  
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <SafeAreaView style={styles.safeArea}>
       
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.backIcon}>←</Text>
-        </View>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <TouchableOpacity style={styles.headerLeft}>
+          <BackIcon color={colors.white} size={24} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Tools & Learning</Text>
-        <View style={styles.headerRight}>
-          <Text style={styles.libraryIcon}>📚</Text>
-        </View>
+        <TouchableOpacity style={styles.headerRight}>
+          <LibraryIcon color={colors.white} size={24} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -112,17 +124,12 @@ export default function ToolsScreen() {
           </View>
         </View>
       </ScrollView>
-      </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.primary,
-  },
-  safeArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
@@ -136,22 +143,20 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerRight: {
     width: 40,
-    alignItems: 'flex-end',
-  },
-  backIcon: {
-    fontSize: 24,
-    color: colors.white,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: typography.fontSize.h3,
     fontWeight: typography.fontWeight.semibold,
     color: colors.white,
-  },
-  libraryIcon: {
-    fontSize: 24,
   },
   content: {
     flex: 1,

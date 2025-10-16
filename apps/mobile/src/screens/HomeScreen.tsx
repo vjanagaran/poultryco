@@ -5,29 +5,31 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '@poultryco/design-system';
 import { useAuth } from '../contexts/AuthContext';
+import { MenuIcon, NotificationIcon } from '../components/icons/HeaderIcons';
+import { AskExpertIcon, FCRCalcIcon, DirectoryIcon } from '../components/icons/ActionIcons';
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <SafeAreaView style={styles.safeArea}>
       
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </View>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
+        <TouchableOpacity style={styles.headerLeft}>
+          <MenuIcon color={colors.white} size={24} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>PoultryCo</Text>
-        <View style={styles.headerRight}>
-          <Text style={styles.notificationIcon}>🔔</Text>
-        </View>
+        <TouchableOpacity style={styles.headerRight}>
+          <NotificationIcon color={colors.white} size={24} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -61,15 +63,21 @@ export default function HomeScreen() {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             <TouchableOpacity style={styles.actionCard}>
-              <View style={styles.actionIcon} />
+              <View style={styles.actionIcon}>
+                <AskExpertIcon color={colors.white} size={32} />
+              </View>
               <Text style={styles.actionText}>Ask Expert</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionCard}>
-              <View style={styles.actionIcon} />
+              <View style={styles.actionIcon}>
+                <FCRCalcIcon color={colors.white} size={32} />
+              </View>
               <Text style={styles.actionText}>FCR Calc</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionCard}>
-              <View style={styles.actionIcon} />
+              <View style={styles.actionIcon}>
+                <DirectoryIcon color={colors.white} size={32} />
+              </View>
               <Text style={styles.actionText}>Directory</Text>
             </TouchableOpacity>
           </View>
@@ -115,17 +123,12 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-      </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: colors.primary,
-  },
-  safeArea: {
     flex: 1,
     backgroundColor: colors.background,
   },
@@ -139,22 +142,20 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerRight: {
     width: 40,
-    alignItems: 'flex-end',
-  },
-  menuIcon: {
-    fontSize: 24,
-    color: colors.white,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: typography.fontSize.h3,
     fontWeight: typography.fontWeight.semibold,
     color: colors.white,
-  },
-  notificationIcon: {
-    fontSize: 24,
   },
   content: {
     flex: 1,
@@ -225,11 +226,13 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.xs,
   },
   actionIcon: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
     backgroundColor: colors.primary,
     borderRadius: spacing.borderRadius.md,
     marginBottom: spacing.xs,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   actionText: {
     fontSize: typography.fontSize.small,
