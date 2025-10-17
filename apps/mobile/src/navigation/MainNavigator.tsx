@@ -6,7 +6,7 @@ import HomeScreen from '../screens/HomeScreen';
 import SearchScreen from '../screens/SearchScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import ToolsScreen from '../screens/ToolsScreen';
-import ProfileScreen from '../screens/ProfileScreen';
+import EnhancedProfileScreen from '../screens/profile/EnhancedProfileScreen';
 import { HomeIcon, SearchIcon, MessagesIcon, ToolsIcon, ProfileIcon } from '../components/icons/TabIcons';
 
 type TabScreen = 'Home' | 'Search' | 'Messages' | 'Tools' | 'Profile';
@@ -26,7 +26,7 @@ export default function MainNavigator() {
       case 'Tools':
         return <ToolsScreen />;
       case 'Profile':
-        return <ProfileScreen />;
+        return <EnhancedProfileScreen />;
       default:
         return <HomeScreen />;
     }

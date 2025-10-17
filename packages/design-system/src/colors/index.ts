@@ -30,6 +30,8 @@ export const colors = {
   // Neutral Colors
   white: '#FFFFFF',
   black: '#000000',
+  gray: '#999999',
+  lightGray: '#E0E0E0',
   
   // Background Colors
   background: '#FFFFFF',
