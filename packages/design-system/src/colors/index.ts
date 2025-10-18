@@ -7,6 +7,7 @@ export const colors = {
   // Primary Brand Colors
   primary: '#2B7A4B',        // PoultryCo Green
   primaryLight: '#3a8d5d',   // Lighter green for gradients
+  primaryLightest: '#E8F5E9', // Very light green for backgrounds (WCAG AAA compliant)
   primaryDark: '#1f5a37',    // Darker green for pressed states
   
   secondary: '#1E3A5F',      // Deep Navy

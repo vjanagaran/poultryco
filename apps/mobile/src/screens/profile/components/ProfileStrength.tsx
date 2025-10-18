@@ -134,18 +134,19 @@ const styles = StyleSheet.create({
   motivation: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    padding: spacing.sm,
+    backgroundColor: colors.primaryLightest, // Light green background for better readability
+    padding: spacing.md,
     borderRadius: 8,
     gap: spacing.sm,
   },
   motivationIcon: {
-    fontSize: 16,
+    fontSize: 20,
   },
   motivationText: {
     ...typography.caption,
-    color: colors.primary,
+    color: colors.primaryDark, // Dark green text for WCAG AAA contrast
     flex: 1,
+    lineHeight: 18,
   },
 });
 

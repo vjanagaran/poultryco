@@ -10,7 +10,7 @@ interface Education {
   field_of_study: string | null;
   start_year: number;
   end_year: number | null;
-  is_current: boolean;
+  is_ongoing: boolean; // Changed from is_current to match schema
   grade: string | null;
   description: string | null;
 }
@@ -34,7 +34,7 @@ export default function EducationList({ profileId, editMode }: Props) {
         .from('profile_education')
         .select('*')
         .eq('profile_id', profileId)
-        .order('is_current', { ascending: false })
+        .order('is_ongoing', { ascending: false }) // Changed from is_current
         .order('end_year', { ascending: false });
 
       if (error) throw error;
@@ -100,7 +100,7 @@ export default function EducationList({ profileId, editMode }: Props) {
             </Text>
             <Text style={styles.institutionName}>{edu.institution_name}</Text>
             <Text style={styles.duration}>
-              {edu.start_year} - {edu.is_current ? 'Present' : edu.end_year || 'N/A'}
+              {edu.start_year} - {edu.is_ongoing ? 'Present' : edu.end_year || 'N/A'}
             </Text>
 
             {edu.grade && (

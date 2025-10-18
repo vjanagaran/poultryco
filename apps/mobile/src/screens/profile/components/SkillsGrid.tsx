@@ -24,27 +24,40 @@ export default function SkillsGrid({ profileId, editMode }: Props) {
 
   const fetchSkills = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch profile skills with skill details
+      const { data: profileSkills, error: skillsError } = await supabase
         .from('profile_skills')
         .select(`
+          id,
           skill_id,
-          endorsement_count,
           skills (
             skill_name
           )
         `)
-        .eq('profile_id', profileId)
-        .order('endorsement_count', { ascending: false });
+        .eq('profile_id', profileId);
 
-      if (error) throw error;
+      if (skillsError) throw skillsError;
 
-      const formattedSkills = (data || []).map((item: any) => ({
-        skill_id: item.skill_id,
-        skill_name: item.skills.skill_name,
-        endorsement_count: item.endorsement_count,
-      }));
+      // For each skill, count endorsements
+      const skillsWithEndorsements = await Promise.all(
+        (profileSkills || []).map(async (item: any) => {
+          const { count } = await supabase
+            .from('skill_endorsements')
+            .select('*', { count: 'exact', head: true })
+            .eq('profile_skill_id', item.id);
 
-      setSkills(formattedSkills);
+          return {
+            skill_id: item.skill_id,
+            skill_name: item.skills.skill_name,
+            endorsement_count: count || 0,
+          };
+        })
+      );
+
+      // Sort by endorsement count
+      skillsWithEndorsements.sort((a, b) => b.endorsement_count - a.endorsement_count);
+
+      setSkills(skillsWithEndorsements);
     } catch (error) {
       console.error('Error fetching skills:', error);
     } finally {
