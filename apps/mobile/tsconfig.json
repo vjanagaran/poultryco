@@ -11,7 +11,7 @@
       "@hooks/*": ["src/hooks/*"],
       "@services/*": ["src/services/*"],
       "@types/*": ["src/types/*"],
-      "@poultryco/design-system": ["../../packages/design-system/src"]
+      "@poultryco/design-system": ["src/design-system"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],

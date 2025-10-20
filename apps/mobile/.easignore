@@ -1,0 +1,15 @@
+# Ignore monorepo root files and structure
+../../*
+!../../apps/mobile
+
+# But we need to keep our own directory
+# Ignore local files
+.expo
+.expo-shared
+node_modules
+*.log
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+

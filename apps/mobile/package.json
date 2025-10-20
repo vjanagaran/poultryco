@@ -9,6 +9,10 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "expo export",
+    "build:android": "eas build --platform android --profile production",
+    "build:android:preview": "eas build --platform android --profile preview",
+    "build:ios": "eas build --platform ios --profile production",
+    "eas-build-pre-install": "echo 'Preparing for EAS Build...' && rm -f ../../package.json ../../package-lock.json || true",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf .expo node_modules"
