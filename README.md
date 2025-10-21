@@ -11,16 +11,18 @@ This project uses a monorepo architecture powered by Turborepo and npm workspace
 ```
 poultryco/
 ├── apps/
-│   ├── mobile/          # Expo React Native mobile app (iOS/Android)
-│   └── web/             # Next.js web app (coming soon)
+│   ├── mobile/          # Expo React Native app (iOS/Android) ✅
+│   ├── web/             # Next.js marketing website ✅
+│   └── admin/           # Next.js admin portal ✅
 ├── packages/
+│   ├── design-system/   # Brand colors, typography, spacing ✅
+│   ├── types/           # Shared TypeScript types
 │   ├── ui/              # Shared UI components
 │   ├── api/             # Supabase client & API calls
-│   ├── types/           # Shared TypeScript types
 │   ├── utils/           # Shared utilities
 │   └── config/          # Shared configuration
-├── supabase/            # Supabase backend (Edge Functions, migrations)
-└── docs/                # Documentation & brand assets
+├── supabase/schema/     # Database schema (59 tables) ✅
+└── docs/                # Documentation & brand assets ✅
 ```
 
 ## 🚀 Getting Started
@@ -47,77 +49,101 @@ npm run dev
 ### Development Commands
 
 ```bash
-# Run mobile app
-npm run mobile
+# Run individual apps
+npm run mobile   # Mobile app (Expo dev server)
+npm run web      # Marketing website (port 3000)
+npm run admin    # Admin portal (port 3001)
 
-# Run web app (when available)
-npm run web
-
-# Build all apps
-npm run build
-
-# Lint all packages
-npm run lint
-
-# Type check all packages
-npm run type-check
-
-# Format code
-npm run format
-
-# Clean all build artifacts
-npm run clean
-```
-
-## 📱 Apps
-
-### Mobile App (`apps/mobile`)
-
-React Native mobile application built with Expo.
-
-**Tech Stack:**
-- Expo SDK 54
-- React Native 0.81
-- TypeScript
-- React Navigation
-- Supabase
-- NativeWind (Tailwind CSS)
-- Zustand (State Management)
-- React Query
-
-**Run:**
-```bash
-cd apps/mobile
+# Run all apps simultaneously
 npm run dev
+
+# Build & maintenance
+npm run build        # Build all packages
+npm run lint         # Lint all packages
+npm run type-check   # Type check all packages
+npm run format       # Format code
+npm run clean        # Clean build artifacts
 ```
 
-### Web App (`apps/web`) - Coming Soon
+## 📱 Applications
 
-Next.js web application with unified marketing site and app.
+### Mobile App (`apps/mobile`) - ✅ MVP Ready
+
+React Native mobile app for iOS & Android.
+
+**Status:** Authentication ✅ | Profile System ✅ | Networking 🔄
 
 **Tech Stack:**
-- Next.js 14+ (App Router)
-- TypeScript
-- Tailwind CSS
-- Supabase
-- React Query
+- Expo SDK 54, React Native 0.81
+- TypeScript, React Navigation 7
+- Supabase Auth & Database
+- NativeWind (Tailwind CSS for RN)
+- Zustand + React Query
+
+**Features:**
+- Login, Signup, Forgot Password
+- 4-step Profile Creation Wizard
+- Enhanced Profile Screen
+- Multi-role support (8 roles)
+
+### Web App (`apps/web`) - ✅ Marketing Site Ready
+
+Next.js marketing website + future web app platform.
+
+**Status:** Marketing Pages ✅ | User Auth ⏳ | SEO Profiles ⏳
+
+**Tech Stack:**
+- Next.js 15, React 19
+- TypeScript, Tailwind CSS
+- Supabase integration ready
+- Google Analytics, SEO optimized
+
+**Features:**
+- Home, Features, About, Blog
+- Early Access Registration
+- Contact Form
+- Responsive design
+
+**URL:** www.poultryco.net (dev: localhost:3000)
+
+### Admin Portal (`apps/admin`) - ✅ Base Ready
+
+Next.js admin dashboard for platform management.
+
+**Status:** Auth ✅ | Dashboard ✅ | CMS 📋 | Analytics 📋
+
+**Tech Stack:**
+- Next.js 15, React 19
+- TypeScript, Tailwind CSS
+- Supabase with admin_users table
+- Role-Based Access Control (5 roles)
+
+**Features:**
+- Admin Authentication
+- Dashboard with metrics
+- Navigation with sidebar
+- User profile display
+
+**URL:** admin.poultryco.net (dev: localhost:3001)
+
+**Admin Roles:** Super Admin, Content Manager, User Manager, Marketing Manager, Community Manager
 
 ## 📦 Shared Packages
 
-### `@poultryco/ui`
-Shared UI components for mobile and web.
-
-### `@poultryco/api`
-Supabase client and API calls.
+### `@poultryco/design-system` ✅
+Brand colors, typography, spacing constants.
 
 ### `@poultryco/types`
-Shared TypeScript types and interfaces.
+Shared TypeScript types and interfaces (planned).
+
+### `@poultryco/ui`
+Shared UI components for mobile and web (planned).
+
+### `@poultryco/api`
+Supabase client wrappers and API calls (planned).
 
 ### `@poultryco/utils`
-Shared utility functions and helpers.
-
-### `@poultryco/config`
-Shared configuration (colors, constants, etc.).
+Shared utility functions and helpers (planned).
 
 ## 🎨 Brand Colors
 
@@ -131,18 +157,43 @@ brown: '#8D6E3B'        // Earth Brown
 
 ## 🗄️ Backend
 
-PoultryCo uses Supabase as the backend:
-- PostgreSQL database
-- Authentication (email/password, social)
+**Provider:** Supabase (PostgreSQL)
+
+**Database:**
+- 59 tables (58 core + 1 admin)
+- Row Level Security (RLS) enabled
+- Full-text search ready
+- SEO-friendly slugs
+- Multi-role system (8 roles)
+
+**Features:**
+- Authentication (JWT-based)
 - Real-time subscriptions
 - Edge Functions
-- Storage
+- Storage (media uploads)
+- Admin role management
+
+**Project:** https://ceknyafzwqlchzxipsqx.supabase.co
 
 ## 📚 Documentation
 
+### Getting Started
+- [Platform Overview](./PLATFORM_OVERVIEW.md) - **START HERE** - Complete platform guide
 - [Quick Start Guide](./QUICK_START.md) - Get started in 5 minutes
-- [Team Onboarding Guide](./docs/poultryco-team-onboarding.md) - Complete setup guide
-- [Brand Guidelines](./docs/brand/poultryco_brand_guidelines.md) - Brand assets & colors
+- [Team Onboarding Guide](./docs/poultryco-team-onboarding.md) - New developer guide
+- [Contributing Guide](./CONTRIBUTING.md) - How to contribute
+
+### App-Specific
+- [Mobile App README](./apps/mobile/README.md)
+- [Web App README](./apps/web/README.md)
+- [Admin Portal README](./apps/admin/README.md)
+- [Admin Portal Docs](./docs/admin/) - Complete admin documentation
+- [Website Docs](./docs/website/) - Marketing website strategy
+
+### Reference
+- [Brand Guidelines](./docs/brand/poultryco_brand_guidelines.md) - 40-page brand bible
+- [Database Schema](./supabase/schema/) - 59 tables documentation
+- [Current Status](./docs/CURRENT_STATUS.md) - Project progress
 - [Wireframes](./docs/wireframes/) - UI designs (English & Tamil)
 
 ## 🤝 Contributing

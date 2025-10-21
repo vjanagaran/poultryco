@@ -15,7 +15,8 @@
     "clean": "turbo run clean",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "mobile": "npm run dev --workspace=@poultryco/mobile",
-    "web": "npm run dev --workspace=@poultryco/web"
+    "web": "npm run dev --workspace=@poultryco/web",
+    "admin": "npm run dev --workspace=@poultryco/admin"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
