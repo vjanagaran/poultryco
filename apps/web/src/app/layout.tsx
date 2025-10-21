@@ -4,6 +4,9 @@ import "./globals.css";
 import { siteConfig } from "@/config/site";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 
+// Force dynamic rendering to prevent SSG errors with client components
+export const dynamic = 'force-dynamic'
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
