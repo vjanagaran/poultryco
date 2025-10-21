@@ -195,7 +195,7 @@ export default async function CategoryPage({
               <div className="mt-12 flex justify-center items-center gap-2">
                 {page > 1 && (
                   <Link
-                    href={`/blog/category/${params.slug}?page=${page - 1}`}
+                    href={`/blog/category/${slug}?page=${page - 1}`}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     ← Previous
@@ -212,7 +212,7 @@ export default async function CategoryPage({
                       return (
                         <Link
                           key={pageNum}
-                          href={`/blog/category/${params.slug}?page=${pageNum}`}
+                          href={`/blog/category/${slug}?page=${pageNum}`}
                           className={`px-4 py-2 rounded-lg ${
                             pageNum === page
                               ? 'bg-green-600 text-white'
@@ -234,7 +234,7 @@ export default async function CategoryPage({
 
                 {page < totalPages && (
                   <Link
-                    href={`/blog/category/${params.slug}?page=${page + 1}`}
+                    href={`/blog/category/${slug}?page=${page + 1}`}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Next →

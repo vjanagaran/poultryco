@@ -65,9 +65,9 @@ export function EarlyAccessForm() {
         organization: "",
         country: "",
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error submitting form:', err);
-      setError(err.message || "Something went wrong. Please try again.");
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

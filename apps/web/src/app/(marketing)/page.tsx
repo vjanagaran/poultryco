@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button, Container } from "@/components/ui";
-import { siteConfig } from "@/config/site";
+// import { siteConfig } from "@/config/site";
 
 export default function HomePage() {
   return (

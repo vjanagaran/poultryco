@@ -101,7 +101,7 @@ async function getPostTags(postId: string) {
     .eq('post_id', postId)
 
   if (error || !data) return []
-  return data.map(item => item.blog_tags).filter(Boolean) as Tag[]
+  return data.map(item => item.blog_tags).flat().filter(Boolean) as Tag[]
 }
 
 async function getNextPost(publishedAt: string, currentPostId: string) {
@@ -349,14 +349,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                   <div className="p-6">
                     {relatedPost.blog_categories && (
                       <Link
-                        href={`/blog/category/${relatedPost.blog_categories.slug}`}
+                        href={`/blog/category/${
+                          Array.isArray(relatedPost.blog_categories)
+                            ? relatedPost.blog_categories[0]?.slug
+                            : (relatedPost.blog_categories as { slug: string }).slug
+                        }`}
                         className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-3"
                         style={{
-                          backgroundColor: relatedPost.blog_categories.color || '#2B7A4B',
+                          backgroundColor: Array.isArray(relatedPost.blog_categories)
+                            ? relatedPost.blog_categories[0]?.color || '#2B7A4B'
+                            : (relatedPost.blog_categories as { color: string }).color || '#2B7A4B',
                           color: 'white',
                         }}
                       >
-                        {relatedPost.blog_categories.name}
+                        {Array.isArray(relatedPost.blog_categories)
+                          ? relatedPost.blog_categories[0]?.name
+                          : (relatedPost.blog_categories as { name: string }).name}
                       </Link>
                     )}
                     <h3 className="text-lg font-bold text-gray-900 mb-2">
