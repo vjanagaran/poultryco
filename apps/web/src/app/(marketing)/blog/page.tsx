@@ -24,6 +24,10 @@ interface BlogPost {
     name: string
     slug: string
     color: string | null
+  }[] | {
+    name: string
+    slug: string
+    color: string | null
   } | null
 }
 
