@@ -171,14 +171,22 @@ export default async function BlogPage({
                   <div className="p-8">
                     {featuredPost.blog_categories && (
                       <Link
-                        href={`/blog/category/${featuredPost.blog_categories.slug}`}
+                        href={`/blog/category/${
+                          Array.isArray(featuredPost.blog_categories)
+                            ? featuredPost.blog_categories[0]?.slug
+                            : featuredPost.blog_categories.slug
+                        }`}
                         className="inline-block px-3 py-1 rounded-full text-sm font-medium mb-4"
                         style={{
-                          backgroundColor: featuredPost.blog_categories.color || '#2B7A4B',
+                          backgroundColor: (Array.isArray(featuredPost.blog_categories)
+                            ? featuredPost.blog_categories[0]?.color
+                            : featuredPost.blog_categories.color) || '#2B7A4B',
                           color: 'white',
                         }}
                       >
-                        {featuredPost.blog_categories.name}
+                        {Array.isArray(featuredPost.blog_categories)
+                          ? featuredPost.blog_categories[0]?.name
+                          : featuredPost.blog_categories.name}
                       </Link>
                     )}
                     <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -236,14 +244,22 @@ export default async function BlogPage({
                     <div className="p-6">
                       {post.blog_categories && (
                         <Link
-                          href={`/blog/category/${post.blog_categories.slug}`}
+                          href={`/blog/category/${
+                            Array.isArray(post.blog_categories)
+                              ? post.blog_categories[0]?.slug
+                              : post.blog_categories.slug
+                          }`}
                           className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-3"
                           style={{
-                            backgroundColor: post.blog_categories.color || '#2B7A4B',
+                            backgroundColor: (Array.isArray(post.blog_categories)
+                              ? post.blog_categories[0]?.color
+                              : post.blog_categories.color) || '#2B7A4B',
                             color: 'white',
                           }}
                         >
-                          {post.blog_categories.name}
+                          {Array.isArray(post.blog_categories)
+                            ? post.blog_categories[0]?.name
+                            : post.blog_categories.name}
                         </Link>
                       )}
                       <h3 className="text-xl font-bold text-gray-900 mb-2">
