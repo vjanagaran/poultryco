@@ -31,6 +31,10 @@ interface BlogPost {
     name: string
     slug: string
     color: string | null
+  }[] | {
+    name: string
+    slug: string
+    color: string | null
   } | null
 }
 
@@ -195,14 +199,22 @@ export default async function TagPage({
                   <div className="p-6">
                     {post.blog_categories && (
                       <Link
-                        href={`/blog/category/${post.blog_categories.slug}`}
+                        href={`/blog/category/${
+                          Array.isArray(post.blog_categories)
+                            ? post.blog_categories[0]?.slug
+                            : post.blog_categories.slug
+                        }`}
                         className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-3"
                         style={{
-                          backgroundColor: post.blog_categories.color || '#2B7A4B',
+                          backgroundColor: (Array.isArray(post.blog_categories)
+                            ? post.blog_categories[0]?.color
+                            : post.blog_categories.color) || '#2B7A4B',
                           color: 'white',
                         }}
                       >
-                        {post.blog_categories.name}
+                        {Array.isArray(post.blog_categories)
+                          ? post.blog_categories[0]?.name
+                          : post.blog_categories.name}
                       </Link>
                     )}
                     <h3 className="text-xl font-bold text-gray-900 mb-2">
