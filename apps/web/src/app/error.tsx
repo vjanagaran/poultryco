@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import Link from 'next/link'
 
 export default function Error({
   error,
@@ -16,25 +15,66 @@ export default function Error({
 
   return (
     <html lang="en">
-      <body>
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-gray-900 px-4">
-          <h2 className="text-4xl font-bold text-red-600 mb-4">Something went wrong!</h2>
-          <p className="text-lg text-gray-600 mb-8 text-center max-w-md">
+      <head>
+        <title>Error | PoultryCo</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
+      <body style={{ margin: 0, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          minHeight: '100vh', 
+          background: '#fafaf9', 
+          color: '#18181b',
+          padding: '1rem'
+        }}>
+          <h2 style={{ 
+            fontSize: '2.25rem', 
+            fontWeight: 'bold', 
+            color: '#dc2626', 
+            marginBottom: '1rem',
+            margin: '0 0 1rem 0'
+          }}>Something went wrong!</h2>
+          <p style={{ 
+            fontSize: '1.125rem', 
+            color: '#52525b', 
+            marginBottom: '2rem',
+            textAlign: 'center',
+            maxWidth: '28rem',
+            margin: '0 0 2rem 0'
+          }}>
             We apologize for the inconvenience. Please try again.
           </p>
-          <div className="flex gap-4">
+          <div style={{ display: 'flex', gap: '1rem' }}>
             <button
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: '#2563eb',
+                color: 'white',
+                borderRadius: '0.5rem',
+                border: 'none',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
               onClick={() => reset()}
             >
               Try again
             </button>
-            <Link 
+            <a 
               href="/" 
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              style={{
+                padding: '0.75rem 1.5rem',
+                background: '#16a34a',
+                color: 'white',
+                borderRadius: '0.5rem',
+                textDecoration: 'none',
+                fontWeight: '500'
+              }}
             >
               Go to Homepage
-            </Link>
+            </a>
           </div>
         </div>
       </body>
