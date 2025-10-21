@@ -86,43 +86,48 @@ React Native mobile app for iOS & Android.
 - Enhanced Profile Screen
 - Multi-role support (8 roles)
 
-### Web App (`apps/web`) - ✅ Marketing Site Ready
+### Web App (`apps/web`) - ✅ Production Ready
 
-Next.js marketing website + future web app platform.
+Next.js marketing website + blog platform.
 
-**Status:** Marketing Pages ✅ | User Auth ⏳ | SEO Profiles ⏳
+**Status:** Marketing Pages ✅ | Blog ✅ | Forms ✅ | SEO ✅
 
 **Tech Stack:**
 - Next.js 15, React 19
 - TypeScript, Tailwind CSS
-- Supabase integration ready
+- Supabase integration
 - Google Analytics, SEO optimized
 
 **Features:**
 - Home, Features, About, Blog
+- Blog with pagination, categories, tags
 - Early Access Registration
-- Contact Form
+- Contact Form + Newsletter
 - Responsive design
+- Favicons & PWA manifest
 
 **URL:** www.poultryco.net (dev: localhost:3000)
 
-### Admin Portal (`apps/admin`) - ✅ Base Ready
+### Admin Portal (`apps/admin`) - ✅ Production Ready
 
-Next.js admin dashboard for platform management.
+Next.js admin dashboard for content & marketing management.
 
-**Status:** Auth ✅ | Dashboard ✅ | CMS 📋 | Analytics 📋
+**Status:** Auth ✅ | Dashboard ✅ | Blog CMS ✅ | Forms Management ✅
 
 **Tech Stack:**
 - Next.js 15, React 19
 - TypeScript, Tailwind CSS
 - Supabase with admin_users table
 - Role-Based Access Control (5 roles)
+- Rich Text Editor (Tiptap)
 
 **Features:**
 - Admin Authentication
-- Dashboard with metrics
-- Navigation with sidebar
-- User profile display
+- Blog CMS (create, edit, schedule, publish)
+- Category & tag management
+- Image upload to Supabase CDN
+- Forms management (Early Access, Newsletter, Contact)
+- CSV export for all submissions
 
 **URL:** admin.poultryco.net (dev: localhost:3001)
 
@@ -160,11 +165,12 @@ brown: '#8D6E3B'        // Earth Brown
 **Provider:** Supabase (PostgreSQL)
 
 **Database:**
-- 59 tables (58 core + 1 admin)
+- 64 tables (58 core + 1 admin + 5 marketing/CMS)
 - Row Level Security (RLS) enabled
 - Full-text search ready
 - SEO-friendly slugs
 - Multi-role system (8 roles)
+- Blog, categories, tags, forms
 
 **Features:**
 - Authentication (JWT-based)
@@ -183,16 +189,22 @@ brown: '#8D6E3B'        // Earth Brown
 - [Team Onboarding Guide](./docs/poultryco-team-onboarding.md) - New developer guide
 - [Contributing Guide](./CONTRIBUTING.md) - How to contribute
 
+### Deployment 🚀
+- [Deployment Summary](./DEPLOYMENT_SUMMARY.md) - **Quick reference** - Visual guide
+- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - **Complete guide** - Step-by-step instructions
+- [Hosting Comparison](./HOSTING_COMPARISON.md) - Compare 7 hosting platforms
+- [Deploy Script](./deploy-vercel.sh) - Automated deployment to Vercel
+
 ### App-Specific
 - [Mobile App README](./apps/mobile/README.md)
 - [Web App README](./apps/web/README.md)
 - [Admin Portal README](./apps/admin/README.md)
-- [Admin Portal Docs](./docs/admin/) - Complete admin documentation
-- [Website Docs](./docs/website/) - Marketing website strategy
+- [Blog CMS Documentation](./BLOG_CMS_ENHANCED.md) - Complete CMS guide
+- [Setup Blog CMS](./SETUP_BLOG_CMS.md) - Quick setup guide
 
 ### Reference
 - [Brand Guidelines](./docs/brand/poultryco_brand_guidelines.md) - 40-page brand bible
-- [Database Schema](./supabase/schema/) - 59 tables documentation
+- [Database Schema](./supabase/schema/) - 64 tables documentation
 - [Current Status](./docs/CURRENT_STATUS.md) - Project progress
 - [Wireframes](./docs/wireframes/) - UI designs (English & Tamil)
 
