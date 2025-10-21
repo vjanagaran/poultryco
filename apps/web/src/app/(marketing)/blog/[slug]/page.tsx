@@ -35,11 +35,12 @@ interface Tag {
   slug: string
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
   const { data: post } = await supabase
     .from('blog_posts')
     .select('title, meta_title, meta_description, excerpt, featured_image')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .eq('status', 'published')
     .single()
 
@@ -164,8 +165,9 @@ async function getRelatedPosts(categoryId: string | null, currentPostId: string)
   return data
 }
 
-export default async function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = await getPost(params.slug)
+export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const post = await getPost(slug)
 
   if (!post) {
     notFound()

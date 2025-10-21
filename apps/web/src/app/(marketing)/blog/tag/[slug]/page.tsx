@@ -34,11 +34,12 @@ interface BlogPost {
   } | null
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
   const { data: tag } = await supabase
     .from('blog_tags')
     .select('name')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .single()
 
   if (!tag) {
@@ -125,16 +126,18 @@ export default async function TagPage({
   params,
   searchParams,
 }: {
-  params: { slug: string }
-  searchParams: { page?: string }
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ page?: string }>
 }) {
-  const tag = await getTag(params.slug)
+  const { slug } = await params
+  const { page: pageParam } = await searchParams
+  const tag = await getTag(slug)
 
   if (!tag) {
     notFound()
   }
 
-  const page = parseInt(searchParams.page || '1')
+  const page = parseInt(pageParam || '1')
   const { posts, totalPages } = await getTagPosts(tag.id, page)
 
   return (
@@ -228,7 +231,7 @@ export default async function TagPage({
               <div className="mt-12 flex justify-center items-center gap-2">
                 {page > 1 && (
                   <Link
-                    href={`/blog/tag/${params.slug}?page=${page - 1}`}
+                    href={`/blog/tag/${slug}?page=${page - 1}`}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     ← Previous
@@ -245,7 +248,7 @@ export default async function TagPage({
                       return (
                         <Link
                           key={pageNum}
-                          href={`/blog/tag/${params.slug}?page=${pageNum}`}
+                          href={`/blog/tag/${slug}?page=${pageNum}`}
                           className={`px-4 py-2 rounded-lg ${
                             pageNum === page
                               ? 'bg-green-600 text-white'
@@ -267,7 +270,7 @@ export default async function TagPage({
 
                 {page < totalPages && (
                   <Link
-                    href={`/blog/tag/${params.slug}?page=${page + 1}`}
+                    href={`/blog/tag/${slug}?page=${page + 1}`}
                     className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Next →

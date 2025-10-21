@@ -1,0 +1,24 @@
+# PoultryCo Website - Robots.txt
+# Last Updated: October 21, 2025
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://www.poultryco.net/sitemap.xml
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+
+# Allow crawling of public pages
+Allow: /blog/
+Allow: /features/
+Allow: /about/
+Allow: /contact/
+Allow: /early-access/
+
+# Crawl-delay (optional, for aggressive bots)
+Crawl-delay: 1
+

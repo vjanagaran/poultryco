@@ -31,11 +31,12 @@ interface BlogPost {
   author_name: string | null
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
   const { data: category } = await supabase
     .from('blog_categories')
     .select('name, description')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .eq('is_active', true)
     .single()
 
@@ -91,16 +92,18 @@ export default async function CategoryPage({
   params,
   searchParams,
 }: {
-  params: { slug: string }
-  searchParams: { page?: string }
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ page?: string }>
 }) {
-  const category = await getCategory(params.slug)
+  const { slug } = await params
+  const { page: pageParam } = await searchParams
+  const category = await getCategory(slug)
 
   if (!category) {
     notFound()
   }
 
-  const page = parseInt(searchParams.page || '1')
+  const page = parseInt(pageParam || '1')
   const { posts, totalPages } = await getCategoryPosts(category.id, page)
 
   return (

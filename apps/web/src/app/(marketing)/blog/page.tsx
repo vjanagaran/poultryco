@@ -120,9 +120,10 @@ async function getCategories() {
 export default async function BlogPage({
   searchParams,
 }: {
-  searchParams: { page?: string }
+  searchParams: Promise<{ page?: string }>
 }) {
-  const page = parseInt(searchParams.page || '1')
+  const params = await searchParams
+  const page = parseInt(params.page || '1')
   const { posts, totalPages, currentPage } = await getBlogPosts(page)
   const featuredPost = await getFeaturedPost()
   const categories = await getCategories()
