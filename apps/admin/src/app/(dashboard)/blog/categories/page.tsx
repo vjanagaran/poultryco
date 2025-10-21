@@ -100,9 +100,9 @@ export default function CategoriesPage() {
       setShowForm(false)
       setEditingCategory(null)
       fetchCategories()
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error:', error)
-      alert(error.message || 'Failed to save category')
+      alert(error instanceof Error ? error.message : 'Failed to save category')
     }
   }
 
@@ -131,9 +131,9 @@ export default function CategoriesPage() {
       if (error) throw error
       alert('Category deleted successfully')
       fetchCategories()
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error:', error)
-      alert(error.message || 'Failed to delete category')
+      alert(error instanceof Error ? error.message : 'Failed to delete category')
     }
   }
 

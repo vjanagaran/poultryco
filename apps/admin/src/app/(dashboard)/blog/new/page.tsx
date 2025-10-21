@@ -208,9 +208,9 @@ export default function NewBlogPostPageEnhanced() {
 
       alert(`Post ${action === 'publish' ? 'published' : action === 'schedule' ? 'scheduled' : 'saved'} successfully!`)
       router.push('/blog')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving post:', error)
-      alert(error.message || 'Failed to save post')
+      alert(error instanceof Error ? error.message : 'Failed to save post')
     } finally {
       setLoading(false)
     }

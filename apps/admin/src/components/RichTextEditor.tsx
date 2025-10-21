@@ -196,7 +196,7 @@ export default function RichTextEditor({ content, onChange, onImageUpload }: Ric
             }`}
             title="Blockquote"
           >
-            " Quote
+            &quot; Quote
           </button>
         </div>
 

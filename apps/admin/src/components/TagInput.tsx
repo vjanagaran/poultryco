@@ -154,7 +154,7 @@ export default function TagInput({
               onClick={createAndAddTag}
               className="w-full text-left px-4 py-2 border-t border-gray-200 hover:bg-green-50 text-green-700 font-medium"
             >
-              + Create new tag: "{input}"
+              + Create new tag: &quot;{input}&quot;
             </button>
           )}
         </div>

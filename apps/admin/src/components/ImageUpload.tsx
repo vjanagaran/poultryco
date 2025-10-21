@@ -71,9 +71,9 @@ export default function ImageUpload({
         .getPublicUrl(data.path)
 
       onUploadComplete(publicUrl)
-    } catch (err: any) {
+    } catch (err) {
       console.error('Upload error:', err)
-      setError(err.message || 'Upload failed')
+      setError(err instanceof Error ? err.message : 'Upload failed')
       setPreview(null)
     } finally {
       setUploading(false)

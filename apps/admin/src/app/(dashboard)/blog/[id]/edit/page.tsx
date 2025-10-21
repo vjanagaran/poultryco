@@ -19,6 +19,7 @@ interface Tag {
   slug: string
 }
 
+/* Commented out - not currently used
 interface BlogPost {
   id: string
   title: string
@@ -33,6 +34,7 @@ interface BlogPost {
   featured_image: string | null
   featured_image_alt: string | null
 }
+*/
 
 export default function EditBlogPostPage() {
   const router = useRouter()
@@ -108,9 +110,9 @@ export default function EditBlogPostPage() {
       })
 
       setSelectedTags(postTags?.map(pt => pt.tag_id) || [])
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching post:', error)
-      alert(error.message || 'Failed to load post')
+      alert(error instanceof Error ? error.message : 'Failed to load post')
       router.push('/blog')
     } finally {
       setFetching(false)
@@ -219,6 +221,7 @@ export default function EditBlogPostPage() {
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
 
       const now = new Date().toISOString()
       let status = formData.status
@@ -281,9 +284,9 @@ export default function EditBlogPostPage() {
 
       alert(`Post ${action === 'publish' ? 'published' : action === 'schedule' ? 'scheduled' : 'updated'} successfully!`)
       router.push('/blog')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating post:', error)
-      alert(error.message || 'Failed to update post')
+      alert(error instanceof Error ? error.message : 'Failed to update post')
     } finally {
       setLoading(false)
     }
