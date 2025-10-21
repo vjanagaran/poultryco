@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Button, Input, Textarea } from "@/components/ui";
+import { supabase } from "@/lib/supabase";
 
 interface FormData {
   name: string;
@@ -34,10 +35,20 @@ export function ContactForm() {
     setError("");
 
     try {
-      // TODO: Integrate with actual API endpoint
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const { error: insertError } = await supabase
+        .from('contact_submissions')
+        .insert([{
+          full_name: formData.name,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+          inquiry_type: 'general',
+          source: 'contact-page',
+          referrer: typeof window !== 'undefined' ? document.referrer : null,
+        }])
+
+      if (insertError) throw insertError;
       
-      console.log("Contact form submitted:", formData);
       setIsSuccess(true);
       
       // Reset form
@@ -47,8 +58,9 @@ export function ContactForm() {
         subject: "",
         message: "",
       });
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
+    } catch (err: any) {
+      console.error('Error submitting form:', err);
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Button, Input } from "@/components/ui";
+import { supabase } from "@/lib/supabase";
 
 interface FormData {
   fullName: string;
@@ -38,10 +39,21 @@ export function EarlyAccessForm() {
     setError("");
 
     try {
-      // TODO: Integrate with actual API endpoint
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const { error: insertError } = await supabase
+        .from('early_access_signups')
+        .insert([{
+          full_name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone || null,
+          role: formData.role,
+          company_name: formData.organization || null,
+          country: formData.country,
+          source: 'early-access-page',
+          referrer: typeof window !== 'undefined' ? document.referrer : null,
+        }])
+
+      if (insertError) throw insertError;
       
-      console.log("Form submitted:", formData);
       setIsSuccess(true);
       
       // Reset form
@@ -53,8 +65,9 @@ export function EarlyAccessForm() {
         organization: "",
         country: "",
       });
-    } catch (err) {
-      setError("Something went wrong. Please try again.");
+    } catch (err: any) {
+      console.error('Error submitting form:', err);
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

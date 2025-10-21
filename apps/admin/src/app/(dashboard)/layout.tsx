@@ -32,7 +32,7 @@ export default async function DashboardLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
             <a
               href="/dashboard"
               className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -40,36 +40,66 @@ export default async function DashboardLayout({
               <span>📊</span>
               <span className="font-medium">Dashboard</span>
             </a>
+            
+            {/* Blog */}
             <a
-              href="/dashboard/content/blog"
+              href="/blog"
               className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <span>📝</span>
               <span className="font-medium">Blog Posts</span>
             </a>
+            
+            {/* Forms Section */}
+            <div className="pt-4 pb-2 px-4">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Forms
+              </div>
+            </div>
             <a
-              href="/dashboard/users"
+              href="/forms/early-access"
+              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <span>🎯</span>
+              <span className="font-medium">Early Access</span>
+            </a>
+            <a
+              href="/forms/newsletter"
+              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <span>📰</span>
+              <span className="font-medium">Newsletter</span>
+            </a>
+            <a
+              href="/forms/contact"
+              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <span>✉️</span>
+              <span className="font-medium">Contact</span>
+            </a>
+            
+            {/* Other Sections */}
+            <div className="pt-4 pb-2 px-4">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                Platform
+              </div>
+            </div>
+            <a
+              href="/users"
               className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <span>👥</span>
               <span className="font-medium">Users</span>
             </a>
             <a
-              href="/dashboard/analytics"
+              href="/analytics"
               className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <span>📈</span>
               <span className="font-medium">Analytics</span>
             </a>
             <a
-              href="/dashboard/marketing"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>📧</span>
-              <span className="font-medium">Marketing</span>
-            </a>
-            <a
-              href="/dashboard/settings"
+              href="/settings"
               className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <span>⚙️</span>

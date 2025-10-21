@@ -22,7 +22,9 @@ Execute files in this exact order:
 | 10 | `10_network_connections.sql` | 4 | 320 | Connections, follows, blocks |
 | 11 | `11_stats_metrics.sql` | 3 | 275 | Statistics tables |
 | 12 | `12_rls_policies.sql` | 0 | 445 | Security policies |
-| **TOTAL** | **12 files** | **58 tables** | **~4,100 lines** | **Complete schema** |
+| 13 | `13_admin_roles.sql` | 1 | 129 | Admin user roles & permissions |
+| 14 | `14_marketing_cms.sql` | 7 | 620 | Blog, forms, newsletter |
+| **TOTAL** | **14 files** | **66 tables** | **~4,850 lines** | **Complete schema** |
 
 ---
 
