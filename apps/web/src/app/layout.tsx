@@ -4,9 +4,6 @@ import "./globals.css";
 import { siteConfig } from "@/config/site";
 import Script from "next/script";
 
-// Force dynamic rendering to prevent SSG errors with client components
-export const dynamic = 'force-dynamic'
-
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
