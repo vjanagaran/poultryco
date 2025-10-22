@@ -3,7 +3,16 @@
   "rules": {
     "@typescript-eslint/no-unused-vars": "warn",
     "@typescript-eslint/no-explicit-any": "warn",
-    "react/no-unescaped-entities": "off"
-  }
+    "react/no-unescaped-entities": "off",
+    "@next/next/no-img-element": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["src/app/not-found.tsx", "src/app/error.tsx", "src/app/global-error.tsx"],
+      "rules": {
+        "@next/next/no-html-link-for-pages": "off"
+      }
+    }
+  ]
 }
 

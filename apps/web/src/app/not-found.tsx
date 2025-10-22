@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 export default function NotFound() {
   return (
     <html lang="en">
@@ -41,8 +39,8 @@ export default function NotFound() {
           }}>
             Sorry, we couldn&apos;t find the page you&apos;re looking for.
           </p>
-          <Link 
-            href="/" 
+          <a 
+            href="/"
             style={{
               padding: '0.75rem 1.5rem',
               background: '#16a34a',
@@ -50,11 +48,12 @@ export default function NotFound() {
               borderRadius: '0.5rem',
               textDecoration: 'none',
               fontWeight: '500',
-              transition: 'background 0.2s'
+              transition: 'background 0.2s',
+              display: 'inline-block'
             }}
           >
             Go to Homepage
-          </Link>
+          </a>
         </div>
       </body>
     </html>
