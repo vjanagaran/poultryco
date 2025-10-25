@@ -46,13 +46,18 @@ export default function WelcomeFlow() {
     setSurveyData(prev => ({ ...prev, [field]: value }));
   };
 
-  const toggleArrayValue = (field: string, value: string) => {
-    setSurveyData(prev => ({
-      ...prev,
-      [field]: prev[field as keyof typeof surveyData].includes(value)
-        ? (prev[field as keyof typeof surveyData] as string[]).filter(v => v !== value)
-        : [...(prev[field as keyof typeof surveyData] as string[]), value],
-    }));
+  const toggleArrayValue = (field: 'current_solutions' | 'feature_priorities', value: string) => {
+    setSurveyData(prev => {
+      const currentArray = prev[field];
+      const newArray = currentArray.includes(value)
+        ? currentArray.filter(v => v !== value)
+        : [...currentArray, value];
+      
+      return {
+        ...prev,
+        [field]: newArray,
+      };
+    });
   };
 
   const handleSkipSurvey = () => {
