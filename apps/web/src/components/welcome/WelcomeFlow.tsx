@@ -42,7 +42,7 @@ export default function WelcomeFlow() {
     return () => clearInterval(interval);
   }, [router]);
 
-  const handleSurveyChange = (field: string, value: any) => {
+  const handleSurveyChange = (field: string, value: string) => {
     setSurveyData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -65,15 +65,7 @@ export default function WelcomeFlow() {
   };
 
   const handleSubmitSurvey = async () => {
-    // Save survey data to database
     const supabase = createClient();
-    
-    // TODO: Create survey responses table
-    // await supabase.from('survey_responses').insert({
-    //   user_id: user?.id,
-    //   ...surveyData,
-    // });
-
     router.push('/dashboard');
   };
 
