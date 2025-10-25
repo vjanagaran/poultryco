@@ -3,6 +3,8 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
 import Script from "next/script";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -92,7 +94,11 @@ export default function RootLayout({
             />
           </>
         ) : null}
-        {children}
+        <AuthProvider>
+          <ProfileProvider>
+            {children}
+          </ProfileProvider>
+        </AuthProvider>
       </body>
     </html>
   );

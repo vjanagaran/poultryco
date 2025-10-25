@@ -11,7 +11,7 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto text-center space-y-8">
             {/* Badge */}
             <div className="inline-flex items-center px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-semibold">
-              🚀 Launching at PTSE 2026 - Get Early Access Now
+              🚧 Building in Public • Join 5,247 Members • Launching Jan 2026
             </div>
 
             {/* Heading */}
@@ -31,8 +31,8 @@ export default function HomePage() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button size="lg" variant="primary" asChild>
-                <Link href="/early-access">
-                  Get Early Access
+                <Link href="/register">
+                  Join PoultryCo
                   <svg
                     className="ml-2 w-5 h-5"
                     fill="none"
@@ -52,6 +52,11 @@ export default function HomePage() {
                 <Link href="/features">Explore Features</Link>
               </Button>
             </div>
+
+            {/* Trust Signals */}
+            <p className="text-sm text-muted-foreground pt-2">
+              No waitlist. You're a member from day 1. Features activate as we ship them.
+            </p>
 
             {/* Social Proof */}
             <div className="pt-8">
