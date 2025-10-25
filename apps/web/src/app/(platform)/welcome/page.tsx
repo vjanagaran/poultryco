@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import WelcomeFlow from '@/components/welcome/WelcomeFlow';
+import { WelcomeFlow } from '@/components/welcome/WelcomeFlow';
 
 export const metadata: Metadata = {
   title: 'Welcome to PoultryCo!',
