@@ -59,7 +59,7 @@ export async function syncPendingPosts(userId: string): Promise<{
       await removePendingPost(post.temp_id);
       
       // Revoke blob URLs
-      post.media_urls.forEach((url) => URL.revokeObjectURL(url));
+      post.media_urls.forEach((url: string) => URL.revokeObjectURL(url));
     } else {
       results.failed++;
       results.errors.push(result.error || 'Unknown error');

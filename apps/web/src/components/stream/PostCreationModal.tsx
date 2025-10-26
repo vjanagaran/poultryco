@@ -264,12 +264,14 @@ export function PostCreationModal({
       }
 
       // Create mention notifications
-      await createMentionNotifications(
-        post.id,
-        content.trim(),
-        user.id,
-        user.user_metadata?.full_name || 'Someone'
-      );
+      if (user && post.id) {
+        await createMentionNotifications(
+          post.id,
+          content.trim(),
+          user.id,
+          user.user_metadata?.full_name || 'Someone'
+        );
+      }
 
       // Success!
       onPostCreated();
