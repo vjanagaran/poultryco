@@ -7,6 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function MyProfilePage() {
-  return <ProfileView />;
+  return <ProfileView isOwnProfile={true} />;
 }
-

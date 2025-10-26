@@ -1,14 +1,6 @@
-import { Metadata } from 'next';
-import DashboardContent from '@/components/dashboard/DashboardContent';
-
-export const metadata: Metadata = {
-  title: 'Dashboard | PoultryCo',
-  description: 'Your PoultryCo dashboard',
-};
-
-export const dynamic = 'force-dynamic';
+import { redirect } from 'next/navigation';
 
 export default function DashboardPage() {
-  return <DashboardContent />;
+  // Redirect dashboard to home (home is the new homepage for authenticated users)
+  redirect('/home');
 }
-

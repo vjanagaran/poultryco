@@ -9,6 +9,7 @@ interface Profile {
   full_name: string;
   profile_slug: string;
   profile_photo_url: string | null;
+  cover_photo_url: string | null;
   headline: string | null;
   bio: string | null;
   location_state: string;

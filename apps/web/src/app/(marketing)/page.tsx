@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { Button, Container } from "@/components/ui";
+import { HomepageRouter } from "@/components/HomepageRouter";
 // import { siteConfig } from "@/config/site";
 
 export default function HomePage() {
   return (
     <>
+      <HomepageRouter />
       {/* Hero Section */}
       <section className="section-py bg-gradient-to-b from-background to-muted/30">
         <Container>

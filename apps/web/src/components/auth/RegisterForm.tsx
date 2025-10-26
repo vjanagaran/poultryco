@@ -4,6 +4,16 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+// Generate unique slug from name
+function generateSlug(fullName: string): string {
+  return fullName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .trim();
+}
+
 export default function RegisterForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -73,6 +83,48 @@ export default function RegisterForm() {
       if (signUpError) throw signUpError;
 
       if (authData.user) {
+        // Generate unique slug
+        const baseSlug = generateSlug(formData.fullName);
+        let slug = baseSlug;
+        let counter = 1;
+
+        // Check if slug already exists and make it unique
+        while (true) {
+          const { data: existing } = await supabase
+            .from('profiles')
+            .select('profile_slug')
+            .eq('profile_slug', slug)
+            .single();
+
+          if (!existing) break; // Slug is unique
+          
+          slug = `${baseSlug}-${counter}`;
+          counter++;
+        }
+
+        // Create profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([
+            {
+              id: authData.user.id,
+              full_name: formData.fullName,
+              email: formData.email,
+              phone_number: formData.phone,
+              whatsapp_number: formData.phone,
+              profile_slug: slug,
+              profile_type: 'personal',
+              country: 'India', // Default
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ]);
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw new Error('Failed to create profile. Please contact support.');
+        }
+
         // Redirect to welcome screen
         router.push('/welcome');
       }

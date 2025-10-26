@@ -65,10 +65,10 @@ export function Header() {
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center space-x-4">
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">Login</Link>
+              <Link href="/login">Sign in</Link>
             </Button>
             <Button variant="primary" size="sm" asChild>
-              <Link href="/early-access">Get Early Access</Link>
+              <Link href="/register">Join now</Link>
             </Button>
           </div>
 
@@ -130,10 +130,10 @@ export function Header() {
             ))}
             <div className="pt-4 space-y-2">
               <Button variant="outline" size="md" className="w-full" asChild>
-                <Link href="/login">Login</Link>
+                <Link href="/login">Sign in</Link>
               </Button>
               <Button variant="primary" size="md" className="w-full" asChild>
-                <Link href="/early-access">Get Early Access</Link>
+                <Link href="/register">Join now</Link>
               </Button>
             </div>
           </div>

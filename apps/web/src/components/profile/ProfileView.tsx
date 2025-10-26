@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/contexts/ProfileContext';
+import { createClient } from '@/lib/supabase/client';
 import { Container } from '@/components/ui';
 import { ProfileHeader } from '@/components/profile/sections/ProfileHeader';
 import { ProfileStrengthCard } from '@/components/profile/sections/ProfileStrengthCard';
@@ -12,16 +12,67 @@ import { ExperienceSection } from '@/components/profile/sections/ExperienceSecti
 import { EducationSection } from '@/components/profile/sections/EducationSection';
 import { SkillsSection } from '@/components/profile/sections/SkillsSection';
 
-export function ProfileView() {
+interface ProfileViewProps {
+  profileSlug?: string;
+  isOwnProfile: boolean;
+}
+
+export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
   const { user } = useAuth();
-  const { profile, loading, fetchProfile } = useProfile();
-  const [isOwner, setIsOwner] = useState(true); // For now, always viewing own profile
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
-    if (user && !profile) {
-      fetchProfile();
-    }
-  }, [user, profile, fetchProfile]);
+    const fetchProfile = async () => {
+      const supabase = createClient();
+      
+      try {
+        let query = supabase
+          .from('profiles')
+          .select(`
+            *,
+            roles:profile_roles(*),
+            experiences:profile_experience(*),
+            education:profile_education(*),
+            skills:profile_skills(*)
+          `);
+
+        if (isOwnProfile) {
+          // Viewing own profile - use user ID
+          if (!user) {
+            window.location.href = '/login';
+            return;
+          }
+          query = query.eq('id', user.id);
+        } else {
+          // Viewing someone else's profile by slug
+          if (!profileSlug) {
+            setLoading(false);
+            return;
+          }
+          query = query.eq('profile_slug', profileSlug);
+        }
+
+        const { data, error } = await query.single();
+
+        if (error) throw error;
+
+        setProfile(data);
+        
+        // Check if current user is the profile owner
+        if (user && data.id === user.id) {
+          setIsOwner(true);
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [user, profileSlug, isOwnProfile]);
 
   if (loading) {
     return (
@@ -41,7 +92,10 @@ export function ProfileView() {
       <Container className="py-8">
         <div className="max-w-5xl mx-auto">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-600">Failed to load profile. Please try again.</p>
+            <p className="text-red-600">Profile not found.</p>
+            <a href="/members" className="mt-4 inline-block text-green-600 hover:text-green-700 font-medium">
+              Browse Members →
+            </a>
           </div>
         </div>
       </Container>
@@ -75,7 +129,7 @@ export function ProfileView() {
 
           {/* Right Column - Profile Strength & Suggestions */}
           <div className="lg:col-span-1 space-y-6">
-            {isOwner && <ProfileStrengthCard profile={profile} />}
+            <ProfileStrengthCard profile={profile} isOwner={isOwner} />
           </div>
         </div>
       </div>

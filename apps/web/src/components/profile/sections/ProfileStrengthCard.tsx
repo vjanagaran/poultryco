@@ -1,148 +1,88 @@
 'use client';
 
+import { useMemo } from 'react';
+import {
+  calculateProfileStrength,
+  getStrengthMessage,
+  getStrengthColor,
+} from '@/lib/profile/profileStrength';
+
 interface ProfileStrengthCardProps {
   profile: any;
+  isOwner: boolean;
 }
 
-export function ProfileStrengthCard({ profile }: ProfileStrengthCardProps) {
-  const strength = profile.profile_strength || 0;
+export function ProfileStrengthCard({ profile, isOwner }: ProfileStrengthCardProps) {
+  const strength = useMemo(() => calculateProfileStrength(profile), [profile]);
+  const colors = useMemo(() => getStrengthColor(strength.percentage), [strength.percentage]);
+  const message = useMemo(() => getStrengthMessage(strength.percentage), [strength.percentage]);
 
-  // Calculate what's missing
-  const suggestions = [];
-  
-  if (!profile.profile_photo_url) {
-    suggestions.push({
-      title: 'Add a profile photo',
-      description: 'Profiles with photos get 21x more views',
-      points: 15,
-      action: 'Add photo',
-    });
-  }
-
-  if (!profile.headline) {
-    suggestions.push({
-      title: 'Write a headline',
-      description: 'Tell people what you do in one line',
-      points: 10,
-      action: 'Add headline',
-    });
-  }
-
-  if (!profile.bio) {
-    suggestions.push({
-      title: 'Add an about section',
-      description: 'Help others understand your expertise',
-      points: 15,
-      action: 'Add about',
-    });
-  }
-
-  if (!profile.roles || profile.roles.length === 0) {
-    suggestions.push({
-      title: 'Add your roles',
-      description: 'Show what you do in the poultry industry',
-      points: 20,
-      action: 'Add roles',
-    });
-  }
-
-  // Get strength level and color
-  let strengthLevel = 'Beginner';
-  let strengthColor = 'bg-red-500';
-  
-  if (strength >= 80) {
-    strengthLevel = 'All-star';
-    strengthColor = 'bg-green-600';
-  } else if (strength >= 60) {
-    strengthLevel = 'Advanced';
-    strengthColor = 'bg-blue-500';
-  } else if (strength >= 40) {
-    strengthLevel = 'Intermediate';
-    strengthColor = 'bg-yellow-500';
-  }
+  if (!isOwner) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 sticky top-6">
-      {/* Profile Strength */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-gray-900">Profile Strength</h3>
-          <span className="text-sm font-medium text-gray-600">{strengthLevel}</span>
-        </div>
-        
-        {/* Progress Bar */}
-        <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className={`absolute top-0 left-0 h-full ${strengthColor} transition-all duration-500`}
-            style={{ width: `${strength}%` }}
-          ></div>
-        </div>
-        
-        <p className="text-xs text-gray-500 mt-1">{strength}% complete</p>
+    <div className={`rounded-lg shadow-lg p-6 border-2 ${colors.bg} ${colors.border}`}>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-gray-900">Profile Strength</h2>
+        <span className={`text-2xl font-bold ${colors.text}`}>{strength.percentage}%</span>
       </div>
 
-      {/* Suggestions */}
-      {suggestions.length > 0 && (
-        <div>
-          <h4 className="font-semibold text-gray-900 mb-3">
-            Complete your profile
-          </h4>
-          <div className="space-y-3">
-            {suggestions.map((suggestion, index) => (
-              <div
-                key={index}
-                className="p-3 bg-green-50 border border-green-100 rounded-lg hover:bg-green-100 transition-colors cursor-pointer"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">
-                      {suggestion.title}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-1">
-                      {suggestion.description}
-                    </p>
-                  </div>
-                  <span className="text-xs font-semibold text-green-600">
-                    +{suggestion.points}%
-                  </span>
-                </div>
-                <button className="mt-2 text-xs font-medium text-green-600 hover:text-green-700">
-                  {suggestion.action} →
-                </button>
+      {/* Progress Bar */}
+      <div className="relative w-full h-3 bg-gray-200 rounded-full overflow-hidden mb-4">
+        <div
+          className={`absolute top-0 left-0 h-full ${colors.progress} transition-all duration-500 ease-out`}
+          style={{ width: `${strength.percentage}%` }}
+        />
+      </div>
+
+      {/* Message */}
+      <p className="text-sm text-gray-700 mb-4">{message}</p>
+
+      {/* Missing Fields */}
+      {strength.missingFields.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2">
+            Complete your profile to reach {strength.nextMilestone}%:
+          </h3>
+          {strength.missingFields.slice(0, 3).map((field) => (
+            <div
+              key={field.field}
+              className="flex items-start gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-green-500 transition-colors"
+            >
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-xs font-bold text-green-600">+{field.points}</span>
               </div>
-            ))}
-          </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">{field.label}</p>
+                <p className="text-xs text-gray-600">{field.tip}</p>
+              </div>
+              <svg
+                className="flex-shrink-0 w-5 h-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* All Star Message */}
-      {strength >= 80 && (
-        <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">⭐</span>
-            <h4 className="font-semibold text-gray-900">All-star profile!</h4>
-          </div>
-          <p className="text-sm text-gray-700">
-            Your profile is among the top profiles on PoultryCo. Keep it updated!
+      {/* Completion Badge */}
+      {strength.percentage === 100 && (
+        <div className="mt-4 p-4 bg-gradient-to-r from-green-500 to-blue-500 rounded-lg text-center">
+          <div className="text-4xl mb-2">🏆</div>
+          <p className="text-white font-bold text-lg">Profile Champion!</p>
+          <p className="text-white text-sm opacity-90">
+            You&apos;ve completed your profile. People are 10x more likely to connect with you!
           </p>
         </div>
       )}
-
-      {/* Profile Views (Coming Soon) */}
-      <div className="mt-6 pt-6 border-t border-gray-200">
-        <h4 className="font-semibold text-gray-900 mb-3">Profile Analytics</h4>
-        <div className="space-y-2 text-sm text-gray-600">
-          <div className="flex justify-between">
-            <span>Profile views</span>
-            <span className="font-medium text-gray-400">Coming soon</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Search appearances</span>
-            <span className="font-medium text-gray-400">Coming soon</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
-
