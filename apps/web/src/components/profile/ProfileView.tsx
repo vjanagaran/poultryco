@@ -58,6 +58,12 @@ export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
 
         if (error) throw error;
 
+        console.log('Fetched profile data:', {
+          profile_photo_url: data.profile_photo_url,
+          cover_photo_url: data.cover_photo_url,
+          full_name: data.full_name
+        });
+
         setProfile(data);
         
         // Check if current user is the profile owner

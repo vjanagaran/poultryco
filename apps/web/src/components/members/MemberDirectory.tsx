@@ -244,7 +244,7 @@ function MemberCard({ member }: { member: Member }) {
   
   return (
     <Link
-      href={`/${member.profile_slug}`}
+      href={`/me/${member.profile_slug}`}
       className="block bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow p-6 border border-gray-200"
     >
       <div className="flex items-start gap-4">
