@@ -13,10 +13,12 @@ export function PlatformHeader() {
   const { user, loading: authLoading } = useAuth();
   const { profile } = useProfile();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
   const loading = authLoading;
+  const userMenuRef = React.useRef<HTMLDivElement>(null);
 
   const platformNav = [
     { title: "Home", href: "/home", icon: "🏠" },
@@ -34,6 +36,18 @@ export function PlatformHeader() {
     await supabase.auth.signOut();
     router.push('/');
   };
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (loading) {
     return (
@@ -112,44 +126,79 @@ export function PlatformHeader() {
           <div className="hidden md:flex items-center space-x-3">
             <NotificationBell />
 
-            <Link
-              href="/me"
-              className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2"
-            >
-              {profile?.profile_photo_url ? (
-                <img
-                  src={profile.profile_photo_url}
-                  alt="Me"
-                  className="w-8 h-8 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-medium text-sm">
-                    {profile?.full_name?.[0] || user?.user_metadata?.full_name?.[0] || 'U'}
-                  </span>
+            {/* User Dropdown */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2"
+              >
+                {profile?.profile_photo_url ? (
+                  <img
+                    src={profile.profile_photo_url}
+                    alt="Me"
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-medium text-sm">
+                      {profile?.full_name?.[0] || user?.user_metadata?.full_name?.[0] || 'U'}
+                    </span>
+                  </div>
+                )}
+                <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                  <Link
+                    href="/me"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span>👤</span>
+                      <span>My Profile</span>
+                    </div>
+                  </Link>
+                  
+                  <Link
+                    href="/settings/email-preferences"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span>📧</span>
+                      <span>Email Preferences</span>
+                    </div>
+                  </Link>
+                  
+                  <Link
+                    href="/settings"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span>⚙️</span>
+                      <span>Settings</span>
+                    </div>
+                  </Link>
+                  
+                  <hr className="my-2 border-gray-200" />
+                  
+                  <button
+                    onClick={handleSignOut}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span>🚪</span>
+                      <span>Sign Out</span>
+                    </div>
+                  </button>
                 </div>
               )}
-              <span className="text-sm font-medium text-gray-700">
-                Me
-              </span>
-            </Link>
-
-            <Button
-              onClick={handleSignOut}
-              variant="ghost"
-              size="sm"
-              className="p-2"
-              title="Sign out"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-            </Button>
+            </div>
           </div>
 
           {/* Mobile Menu Button */}

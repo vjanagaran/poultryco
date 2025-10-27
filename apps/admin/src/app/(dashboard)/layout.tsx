@@ -102,6 +102,20 @@ export default async function DashboardLayout({
               <span className="font-medium">Analytics</span>
             </a>
             <a
+              href="/email-campaigns"
+              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <span>📧</span>
+              <span className="font-medium">Email Campaigns</span>
+            </a>
+            <a
+              href="/feedback"
+              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <span>💬</span>
+              <span className="font-medium">Feedback</span>
+            </a>
+            <a
               href="/settings"
               className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
