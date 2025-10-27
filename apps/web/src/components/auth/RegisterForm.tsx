@@ -100,26 +100,24 @@ export default function RegisterForm() {
           counter++;
         }
 
-        // Create profile with minimal required fields
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: authData.user.id,
-              full_name: formData.fullName,
-              email: formData.email,
-              phone: '', // Empty, will be collected in onboarding
-              phone_verified: false,
-              email_verified: false,
-              profile_slug: slug,
-              location_state: '', // Empty until user sets it
-              country: '', // Empty until user sets it
-            },
-          ]);
+        // Create profile using RPC function (bypasses RLS issues)
+        const { data: profileData, error: profileError } = await supabase
+          .rpc('create_profile_for_user', {
+            p_user_id: authData.user.id,
+            p_full_name: formData.fullName,
+            p_email: formData.email,
+            p_slug: slug,
+          });
 
         if (profileError) {
           console.error('Profile creation error:', profileError);
           throw new Error('Failed to create profile. Please contact support.');
+        }
+
+        // Check if profile creation was successful
+        if (!profileData || profileData.success === false) {
+          console.error('Profile creation failed:', profileData);
+          throw new Error(profileData?.error || 'Failed to create profile');
         }
 
         // Redirect to welcome screen
