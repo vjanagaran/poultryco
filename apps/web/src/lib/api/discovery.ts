@@ -140,8 +140,8 @@ export async function searchMembers(params: SearchParams): Promise<{ data: Membe
   
   let queryBuilder = supabase
     .from('profiles')
-    .select('*', { count: 'exact' })
-    .eq('is_active', true);
+    .select('*', { count: 'exact' });
+    // Note: is_active filter removed until column is added to schema
   
   // Search query
   if (query) {
