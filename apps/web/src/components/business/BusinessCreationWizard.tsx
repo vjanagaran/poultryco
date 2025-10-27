@@ -116,6 +116,7 @@ export function BusinessCreationWizard() {
           logo_url: businessData.logo_url,
           cover_photo_url: businessData.cover_photo_url,
           owner_id: user.id,
+          is_verified: true,  // Auto-verify business profiles
         })
         .select()
         .single();
@@ -172,8 +173,9 @@ export function BusinessCreationWizard() {
           show_on_page: true,
         });
 
-      // Redirect to new business profile
-      router.push(`/com/${business.business_slug}`);
+      // Show success message and redirect to edit page
+      alert('Business profile created successfully! You can now edit and manage your profile.');
+      router.push(`/com/${business.business_slug}/edit`);
     } catch (error: any) {
       console.error('Error creating business:', error);
       alert(error.message || 'Failed to create business profile');

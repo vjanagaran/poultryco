@@ -100,7 +100,7 @@ BEGIN
     p_business_name,
     p_business_slug,
     p_business_type_id,
-    false
+    true  -- Set verified by default
   )
   RETURNING id INTO v_business_id;
   

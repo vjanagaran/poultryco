@@ -23,6 +23,7 @@ export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
+  const [ownedBusinesses, setOwnedBusinesses] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -70,6 +71,16 @@ export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
         // Check if current user is the profile owner
         if (user && data.id === user.id) {
           setIsOwner(true);
+          
+          // Fetch owned business profiles
+          const { data: businesses, error: bizError } = await supabase
+            .from('business_profiles')
+            .select('id, business_name, business_slug, logo_url')
+            .eq('owner_id', user.id);
+          
+          if (!bizError && businesses) {
+            setOwnedBusinesses(businesses);
+          }
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -138,23 +149,59 @@ export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
           <div className="lg:col-span-1 space-y-6">
             <ProfileStrengthCard profile={profile} isOwner={isOwner} />
             
-            {/* Create Business Profile CTA */}
+            {/* Business Profiles - Show existing or create new */}
             {isOwner && (
               <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl border border-green-200 p-6">
                 <div className="text-center">
                   <div className="text-4xl mb-3">🏢</div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Showcase Your Business
+                    {ownedBusinesses.length > 0 ? 'Your Business Profiles' : 'Showcase Your Business'}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Create a business profile to list products, services, and connect with buyers.
-                  </p>
-                  <Link
-                    href="/com/create"
-                    className="inline-block w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-center"
-                  >
-                    Create Business Profile →
-                  </Link>
+                  
+                  {ownedBusinesses.length > 0 ? (
+                    <>
+                      <div className="space-y-2 mb-4">
+                        {ownedBusinesses.map((business) => (
+                          <div key={business.id} className="bg-white rounded-lg p-3 flex items-center gap-3 border border-gray-200">
+                            {business.logo_url && (
+                              <img 
+                                src={business.logo_url} 
+                                alt={business.business_name}
+                                className="w-10 h-10 rounded-lg object-cover"
+                              />
+                            )}
+                            <div className="flex-1 text-left">
+                              <p className="font-medium text-gray-900 text-sm">{business.business_name}</p>
+                            </div>
+                            <Link
+                              href={`/com/${business.business_slug}/edit`}
+                              className="text-xs px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+                            >
+                              Edit
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                      <Link
+                        href="/com/create"
+                        className="inline-block w-full px-4 py-2 border border-green-600 text-green-600 rounded-lg hover:bg-green-50 transition-colors font-medium text-center"
+                      >
+                        + Add Another Business
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Create a business profile to list products, services, and connect with buyers.
+                      </p>
+                      <Link
+                        href="/com/create"
+                        className="inline-block w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-center"
+                      >
+                        Create Business Profile →
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             )}

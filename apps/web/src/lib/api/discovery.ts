@@ -201,8 +201,7 @@ export async function searchBusinesses(params: SearchParams): Promise<{ data: Bu
   
   let queryBuilder = supabase
     .from('business_profiles')
-    .select('*, business_type:business_types(name)', { count: 'exact' })
-    .eq('is_active', true);
+    .select('*, business_type:business_types(name)', { count: 'exact' });
   
   if (query) {
     queryBuilder = queryBuilder.or(`business_name.ilike.%${query}%,tagline.ilike.%${query}%`);
