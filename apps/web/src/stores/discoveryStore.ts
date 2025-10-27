@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type DiscoveryType = 'all' | 'members' | 'businesses' | 'products' | 'organizations' | 'events' | 'jobs';
-export type ViewMode = 'grid' | 'list' | 'map';
+export type ViewMode = 'grid' | 'list' | 'map' | 'calendar';
 export type SortOption = 'relevant' | 'recent' | 'rating' | 'nearby' | 'price_low' | 'price_high';
 
 export interface FilterChip {
