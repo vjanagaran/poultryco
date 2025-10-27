@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
 import { Container } from '@/components/ui';
@@ -136,6 +137,27 @@ export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
           {/* Right Column - Profile Strength & Suggestions */}
           <div className="lg:col-span-1 space-y-6">
             <ProfileStrengthCard profile={profile} isOwner={isOwner} />
+            
+            {/* Create Business Profile CTA */}
+            {isOwner && (
+              <div className="bg-gradient-to-br from-blue-50 to-green-50 rounded-xl border border-green-200 p-6">
+                <div className="text-center">
+                  <div className="text-4xl mb-3">🏢</div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Showcase Your Business
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Create a business profile to list products, services, and connect with buyers.
+                  </p>
+                  <Link
+                    href="/com/create"
+                    className="inline-block w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-center"
+                  >
+                    Create Business Profile →
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -20,10 +20,10 @@ export function PlatformHeader() {
 
   const platformNav = [
     { title: "Home", href: "/home", icon: "🏠" },
-    { title: "Network", href: "/members", icon: "👥" },
+    { title: "Discover", href: "/discover/members", icon: "🔍" },
     { title: "Stream", href: "/stream", icon: "📰" },
     { title: "Messages", href: "/messages", icon: "💬" },
-    { title: "Tools", href: "/tools", icon: "🛠️" },
+    { title: "Resources", href: "/tools", icon: "📚" },
   ];
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href);

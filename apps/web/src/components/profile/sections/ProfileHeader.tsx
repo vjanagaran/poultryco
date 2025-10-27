@@ -97,6 +97,16 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
                 ✏️ Edit Profile
               </button>
             )}
+            
+            {/* Connect Button (Desktop) */}
+            {!isOwner && (
+              <button
+                onClick={() => {/* TODO: Implement connection logic */}}
+                className="hidden sm:block ml-auto mb-2 px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
+              >
+                🤝 Connect
+              </button>
+            )}
           </div>
 
           {/* Name & Headline */}
@@ -130,6 +140,16 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
               className="sm:hidden w-full mt-4 px-6 py-3 border-2 border-green-600 text-green-600 font-semibold rounded-lg hover:bg-green-50 transition-colors"
             >
               ✏️ Edit Profile
+            </button>
+          )}
+          
+          {/* Connect Button (Mobile) */}
+          {!isOwner && (
+            <button
+              onClick={() => {/* TODO: Implement connection logic */}}
+              className="sm:hidden w-full mt-4 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
+            >
+              🤝 Connect
             </button>
           )}
 
