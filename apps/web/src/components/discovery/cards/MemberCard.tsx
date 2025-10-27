@@ -1,19 +1,61 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MemberResult } from '@/lib/api/discovery';
 import { RatingDisplay } from '../RatingDisplay';
 import { TrustBadge } from '../TrustBadge';
+import { createClient } from '@/lib/supabase/client';
 
 interface MemberCardProps {
   member: MemberResult;
 }
 
 export function MemberCard({ member }: MemberCardProps) {
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionSent, setConnectionSent] = useState(false);
+  
   const location = [member.location_city, member.location_state]
     .filter(Boolean)
     .join(', ');
+  
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        alert('Please login to connect');
+        return;
+      }
+      
+      // Sort IDs to ensure consistency (smaller ID first)
+      const [profileId1, profileId2] = [user.id, member.id].sort();
+      
+      const { error } = await supabase
+        .from('connections')
+        .insert({
+          profile_id_1: profileId1,
+          profile_id_2: profileId2,
+          status: 'pending',
+          requested_by: user.id,
+        });
+      
+      if (error) {
+        console.error('Connection error:', error);
+        alert('Failed to send connection request');
+      } else {
+        setConnectionSent(true);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Failed to send connection request');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
   
   return (
     <article className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-shadow p-6">
@@ -86,12 +128,23 @@ export function MemberCard({ member }: MemberCardProps) {
       
       {/* Actions */}
       <div className="flex gap-2 mt-4">
-        <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
-          Connect
+        <button 
+          onClick={handleConnect}
+          disabled={isConnecting || connectionSent}
+          className={`flex-1 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+            connectionSent
+              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+        >
+          {isConnecting ? 'Sending...' : connectionSent ? 'Request Sent' : 'Connect'}
         </button>
-        <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium">
+        <Link
+          href={`/messages?user=${member.id}`}
+          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+        >
           Message
-        </button>
+        </Link>
       </div>
     </article>
   );

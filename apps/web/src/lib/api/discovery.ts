@@ -138,10 +138,17 @@ export interface JobResult {
 export async function searchMembers(params: SearchParams): Promise<{ data: MemberResult[]; count: number }> {
   const { query, filters = {}, page = 0, limit = 24, sortBy = 'relevant' } = params;
   
+  // Get current user to exclude from results
+  const { data: { user } } = await supabase.auth.getUser();
+  
   let queryBuilder = supabase
     .from('profiles')
     .select('*', { count: 'exact' });
-    // Note: is_active filter removed until column is added to schema
+  
+  // Exclude current user's own profile
+  if (user?.id) {
+    queryBuilder = queryBuilder.neq('id', user.id);
+  }
   
   // Search query
   if (query) {
