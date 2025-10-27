@@ -10,7 +10,7 @@ interface BottomSheetFiltersProps {
 }
 
 export function BottomSheetFilters({ isOpen, onClose, filterType }: BottomSheetFiltersProps) {
-  const { filters, setFilters, sortBy, setSortBy } = useDiscoveryStore();
+  const { filters, setFilter, clearFilters, sortBy, setSortBy } = useDiscoveryStore();
   const [localFilters, setLocalFilters] = useState(filters);
   const [localSortBy, setLocalSortBy] = useState(sortBy);
   
@@ -22,7 +22,10 @@ export function BottomSheetFilters({ isOpen, onClose, filterType }: BottomSheetF
   }, [isOpen, filters, sortBy]);
   
   const handleApply = () => {
-    setFilters(localFilters);
+    // Apply all local filters
+    Object.entries(localFilters).forEach(([key, value]) => {
+      setFilter(key as any, value);
+    });
     setSortBy(localSortBy);
     onClose();
   };
@@ -30,6 +33,7 @@ export function BottomSheetFilters({ isOpen, onClose, filterType }: BottomSheetF
   const handleReset = () => {
     setLocalFilters({});
     setLocalSortBy('relevant');
+    clearFilters();
   };
   
   if (!isOpen) return null;
