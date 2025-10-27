@@ -21,7 +21,7 @@ export interface MemberResult {
   location_city: string | null;
   location_state: string | null;
   current_role: string | null;
-  is_verified: boolean;
+  verification_level: 'basic' | 'verified' | 'trusted';
   connections_count?: number;
   followers_count?: number;
   rating?: number;
@@ -159,7 +159,7 @@ export async function searchMembers(params: SearchParams): Promise<{ data: Membe
     queryBuilder = queryBuilder.eq('current_role', filters.role);
   }
   if (filters.verified) {
-    queryBuilder = queryBuilder.eq('is_verified', true);
+    queryBuilder = queryBuilder.in('verification_level', ['verified', 'trusted']);
   }
   if (filters.hasPhoto) {
     queryBuilder = queryBuilder.not('profile_photo_url', 'is', null);
@@ -172,7 +172,7 @@ export async function searchMembers(params: SearchParams): Promise<{ data: Membe
       break;
     case 'relevant':
     default:
-      queryBuilder = queryBuilder.order('is_verified', { ascending: false });
+      queryBuilder = queryBuilder.order('verification_level', { ascending: false });
       break;
   }
   

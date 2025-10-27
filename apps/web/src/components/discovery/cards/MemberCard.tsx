@@ -38,7 +38,9 @@ export function MemberCard({ member }: MemberCardProps) {
             <h3 className="font-semibold text-lg text-gray-900 truncate">
               {member.full_name}
             </h3>
-            {member.is_verified && <TrustBadge type="verified" size="sm" />}
+            {(member.verification_level === 'verified' || member.verification_level === 'trusted') && (
+              <TrustBadge type="verified" size="sm" />
+            )}
           </Link>
           
           {member.headline && (
