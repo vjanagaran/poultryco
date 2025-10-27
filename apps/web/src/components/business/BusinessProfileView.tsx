@@ -143,51 +143,83 @@ export function BusinessProfileView({ businessSlug }: BusinessProfileViewProps) 
       const supabase = createClient();
       
       try {
-        const { data, error } = await supabase
+        // Step 1: Fetch basic business profile first
+        const { data: businessData, error: businessError } = await supabase
           .from('business_profiles')
-          .select(`
-            *,
-            contact:business_profiles_contact(*),
-            locations:business_locations(*),
-            team:business_team_members(
-              *,
-              profile:profiles(id, full_name, profile_photo_url, headline)
-            ),
-            contact_persons:business_contact_persons(
-              *,
-              profile:profiles(id, full_name, profile_photo_url, profile_slug)
-            ),
-            products:business_products(
-              id,
-              product_name,
-              description,
-              category,
-              price_range,
-              images:product_images(image_url, is_primary)
-            ),
-            certifications:business_certifications(*),
-            farm_details:business_farm_details(*),
-            supplier_details:business_supplier_details(*),
-            owner:profiles!owner_id(id, full_name, profile_photo_url)
-          `)
+          .select('*')
           .eq('business_slug', businessSlug)
           .single();
 
-        if (error) throw error;
+        if (businessError) {
+          console.error('Business profile error:', businessError);
+          throw businessError;
+        }
 
-        setBusiness(data as BusinessProfile);
+        if (!businessData) {
+          console.log('No business found with slug:', businessSlug);
+          setBusiness(null);
+          setLoading(false);
+          return;
+        }
+
+        console.log('Business data loaded:', businessData);
+
+        // Step 2: Fetch related data
+        const [
+          { data: contactData },
+          { data: locationsData },
+          { data: teamData },
+          { data: contactPersonsData },
+          { data: productsData },
+          { data: certificationsData },
+          { data: farmDetailsData },
+          { data: supplierDetailsData },
+          { data: ownerData }
+        ] = await Promise.all([
+          supabase.from('business_profiles_contact').select('*').eq('business_profile_id', businessData.id).single(),
+          supabase.from('business_locations').select('*').eq('business_profile_id', businessData.id),
+          supabase.from('business_team_members').select('*, profile:profiles(id, full_name, profile_photo_url, headline)').eq('business_profile_id', businessData.id),
+          supabase.from('business_contact_persons').select('*, profile:profiles(id, full_name, profile_photo_url, profile_slug)').eq('business_profile_id', businessData.id),
+          supabase.from('business_products').select('id, product_name, description, category, price_range, images:product_images(image_url, is_primary)').eq('business_profile_id', businessData.id),
+          supabase.from('business_certifications').select('*').eq('business_profile_id', businessData.id),
+          supabase.from('business_farm_details').select('*').eq('business_profile_id', businessData.id).single(),
+          supabase.from('business_supplier_details').select('*').eq('business_profile_id', businessData.id).single(),
+          supabase.from('profiles').select('id, full_name, profile_photo_url').eq('id', businessData.owner_id).single()
+        ]);
+
+        // Combine all data
+        const completeBusinessData = {
+          ...businessData,
+          contact: contactData,
+          locations: locationsData || [],
+          team: teamData || [],
+          contact_persons: contactPersonsData || [],
+          products: productsData || [],
+          certifications: certificationsData || [],
+          farm_details: farmDetailsData,
+          supplier_details: supplierDetailsData,
+          owner: ownerData
+        };
+
+        console.log('Complete business data:', completeBusinessData);
+        setBusiness(completeBusinessData as BusinessProfile);
         
         // Check if current user is the owner or admin
-        if (user && data.owner_id === user.id) {
+        if (user && businessData.owner_id === user.id) {
           setIsOwner(true);
-        } else if (user && data.team) {
-          const isAdmin = data.team.some(
+        } else if (user && teamData && teamData.length > 0) {
+          const isAdmin = teamData.some(
             (member: any) => member.profile.id === user.id && member.is_admin
           );
           setIsOwner(isAdmin);
         }
       } catch (error) {
         console.error('Error fetching business:', error);
+        // Show detailed error in development
+        if (process.env.NODE_ENV === 'development') {
+          alert(`Error loading business: ${JSON.stringify(error)}`);
+        }
+        setBusiness(null); // Explicitly set to null to show "not found" message
       } finally {
         setLoading(false);
       }
