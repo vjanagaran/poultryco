@@ -15,7 +15,13 @@ export default function FeedbackPage() {
   const [feedback, setFeedback] = useState<FeedbackSubmission[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<{
+    total: number;
+    byStatus: Record<string, number>;
+    byPriority: Record<string, number>;
+    bySentiment: Record<string, number>;
+    recentTrend: number;
+  } | null>(null);
   const [categories, setCategories] = useState<FeedbackCategory[]>([]);
   
   // Filters
@@ -32,13 +38,39 @@ export default function FeedbackPage() {
   const limit = 20;
 
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        const [feedbackData, statsData, categoriesData] = await Promise.all([
+          getFeedbackSubmissions({
+            ...filters,
+            limit,
+            offset: (page - 1) * limit,
+          }),
+          getFeedbackStats(),
+          getFeedbackCategories(),
+        ]);
+        
+        setFeedback(feedbackData.data);
+        setTotalCount(feedbackData.count);
+        setStats(statsData);
+        setCategories(categoriesData);
+      } catch (_err) {
+        console.error('Failed to load feedback');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadData();
   }, [filters, page]);
 
-  const loadData = async () => {
+
+  const handleStatusChange = async (id: string, newStatus: FeedbackSubmission['status']) => {
     try {
-      setLoading(true);
-      
+      await updateFeedbackStatus(id, newStatus);
+      // Reload data
       const [feedbackData, statsData, categoriesData] = await Promise.all([
         getFeedbackSubmissions({
           ...filters,
@@ -53,23 +85,12 @@ export default function FeedbackPage() {
       setTotalCount(feedbackData.count);
       setStats(statsData);
       setCategories(categoriesData);
-    } catch (err) {
-      console.error('Failed to load feedback:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStatusChange = async (id: string, newStatus: FeedbackSubmission['status']) => {
-    try {
-      await updateFeedbackStatus(id, newStatus);
-      await loadData();
-    } catch (err) {
+    } catch (_err) {
       alert('Failed to update status');
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const _getStatusBadge = (status: string) => {
     const styles = {
       new: 'bg-blue-100 text-blue-700',
       in_review: 'bg-yellow-100 text-yellow-700',

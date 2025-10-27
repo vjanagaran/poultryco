@@ -45,6 +45,7 @@ export default function NewBlogPostPageEnhanced() {
   useEffect(() => {
     fetchCategories()
     fetchTags()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Auto-generate slug from title
@@ -56,6 +57,7 @@ export default function NewBlogPostPageEnhanced() {
         .replace(/(^-|-$)/g, '')
       setFormData(prev => ({ ...prev, slug }))
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.title])
 
   async function fetchCategories() {

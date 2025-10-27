@@ -11,8 +11,6 @@ import {
 export default function EmailCampaignsPage() {
   const [campaigns, setCampaigns] = useState<EmailCampaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selectedCampaigns, setSelectedCampaigns] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadCampaigns();
@@ -23,9 +21,8 @@ export default function EmailCampaignsPage() {
       setLoading(true);
       const data = await getEmailCampaigns();
       setCampaigns(data);
-    } catch (err) {
-      setError('Failed to load campaigns');
-      console.error(err);
+    } catch (_err) {
+      console.error('Failed to load campaigns');
     } finally {
       setLoading(false);
     }
@@ -37,7 +34,7 @@ export default function EmailCampaignsPage() {
     try {
       await deleteEmailCampaign(id);
       await loadCampaigns();
-    } catch (err) {
+    } catch (_err) {
       alert('Failed to delete campaign');
     }
   };

@@ -20,11 +20,11 @@ export interface FeedbackSubmission {
   resolution_notes?: string;
   resolved_by?: string;
   resolved_at?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   category?: FeedbackCategory;
-  tags?: FeedbackTag[];
+  tags?: FeedbackTagRelation[];
   comments?: FeedbackComment[];
 }
 
@@ -43,6 +43,10 @@ export interface FeedbackTag {
   type: 'feature' | 'issue' | 'theme' | 'component' | 'emotion';
   usage_count: number;
   is_auto_generated: boolean;
+}
+
+export interface FeedbackTagRelation {
+  tag: FeedbackTag;
 }
 
 export interface FeedbackComment {
@@ -66,10 +70,10 @@ export interface FeedbackInsight {
   positive_count: number;
   neutral_count: number;
   negative_count: number;
-  category_stats: any;
-  top_themes: any[];
-  trending_up: any[];
-  trending_down: any[];
+  category_stats: Record<string, { count: number; percentage: number }>;
+  top_themes: Array<{ name: string; count: number }>;
+  trending_up: Array<{ name: string; growth: number }>;
+  trending_down: Array<{ name: string; decline: number }>;
   executive_summary?: string;
   action_recommendations?: string[];
   generated_at: string;
@@ -162,7 +166,7 @@ export async function updateFeedbackStatus(
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   
-  const updates: any = {
+  const updates: Record<string, unknown> = {
     status,
     updated_at: new Date().toISOString(),
   };
@@ -261,6 +265,10 @@ export async function addFeedbackTag(feedbackId: string, tagName: string): Promi
     
     if (tagError) throw tagError;
     tag = newTag;
+  }
+  
+  if (!tag) {
+    throw new Error('Failed to create or find tag');
   }
   
   // Create the relation

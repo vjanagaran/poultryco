@@ -23,6 +23,7 @@ export default function NewsletterSubscribersPage() {
 
   useEffect(() => {
     fetchSubscribers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter])
 
   async function fetchSubscribers() {

@@ -12,7 +12,6 @@ import {
 export default function EmailTemplatesPage() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [testEmailModal, setTestEmailModal] = useState<{
     open: boolean;
     templateId?: string;
@@ -30,9 +29,8 @@ export default function EmailTemplatesPage() {
       setLoading(true);
       const data = await getEmailTemplates();
       setTemplates(data);
-    } catch (err) {
-      setError('Failed to load templates');
-      console.error(err);
+    } catch (_err) {
+      console.error('Failed to load templates');
     } finally {
       setLoading(false);
     }
@@ -44,7 +42,7 @@ export default function EmailTemplatesPage() {
     try {
       await deleteEmailTemplate(id);
       await loadTemplates();
-    } catch (err) {
+    } catch (_err) {
       alert('Failed to delete template');
     }
   };
@@ -62,7 +60,7 @@ export default function EmailTemplatesPage() {
       } else {
         alert(result.error || 'Failed to send test email');
       }
-    } catch (err) {
+    } catch (_err) {
       alert('Failed to send test email');
     } finally {
       setSendingTest(false);

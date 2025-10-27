@@ -26,7 +26,7 @@ export interface EmailCampaign {
   description: string;
   type: 'drip' | 'behavioral' | 'milestone' | 're-engagement' | 'educational' | 'promotional';
   status: 'draft' | 'scheduled' | 'active' | 'paused' | 'completed';
-  targeting_rules: any;
+  targeting_rules: Record<string, unknown>;
   start_date?: string;
   end_date?: string;
   total_recipients: number;
@@ -46,7 +46,7 @@ export interface CampaignStep {
   delay_days: number;
   delay_hours: number;
   send_time?: string;
-  conditions: any;
+  conditions: Record<string, unknown>;
   is_active: boolean;
   template?: EmailTemplate;
 }

@@ -14,7 +14,7 @@ import {
 
 export default function FeedbackDetailPage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const [feedback, setFeedback] = useState<FeedbackSubmission | null>(null);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
@@ -24,12 +24,6 @@ export default function FeedbackDetailPage() {
 
   const feedbackId = params.id as string;
 
-  useEffect(() => {
-    if (feedbackId) {
-      loadFeedback();
-    }
-  }, [feedbackId]);
-
   const loadFeedback = async () => {
     try {
       setLoading(true);
@@ -37,12 +31,20 @@ export default function FeedbackDetailPage() {
       if (data) {
         setFeedback(data);
       }
-    } catch (err) {
-      console.error('Failed to load feedback:', err);
+    } catch (_err) {
+      console.error('Failed to load feedback');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (feedbackId) {
+      loadFeedback();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedbackId]);
+
 
   const handleStatusChange = async (newStatus: FeedbackSubmission['status']) => {
     if (!feedback) return;
@@ -54,7 +56,7 @@ export default function FeedbackDetailPage() {
     try {
       await updateFeedbackStatus(feedback.id, newStatus, resolutionNotes || undefined);
       await loadFeedback();
-    } catch (err) {
+    } catch (_err) {
       alert('Failed to update status');
     }
   };
@@ -67,7 +69,7 @@ export default function FeedbackDetailPage() {
       await addFeedbackComment(feedback.id, newComment, true);
       setNewComment('');
       await loadFeedback();
-    } catch (err) {
+    } catch (_err) {
       alert('Failed to add comment');
     } finally {
       setAddingComment(false);
@@ -81,7 +83,7 @@ export default function FeedbackDetailPage() {
       await addFeedbackTag(feedback.id, newTag);
       setNewTag('');
       await loadFeedback();
-    } catch (err) {
+    } catch (_err) {
       alert('Failed to add tag');
     }
   };
@@ -98,7 +100,7 @@ export default function FeedbackDetailPage() {
       await updateFeedbackStatus(feedback.id, feedback.status);
       alert(`Sentiment: ${result.label} (${(result.score * 100).toFixed(0)}% confidence)`);
       await loadFeedback();
-    } catch (err) {
+    } catch (_err) {
       alert('Failed to analyze sentiment');
     } finally {
       setAnalyzingSentiment(false);
@@ -332,7 +334,7 @@ export default function FeedbackDetailPage() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Tags</h2>
             <div className="flex flex-wrap gap-2 mb-4">
               {feedback.tags && feedback.tags.length > 0 ? (
-                feedback.tags.map((tagRel: any) => (
+                feedback.tags.map((tagRel) => (
                   <span
                     key={tagRel.tag.id}
                     className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700"

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { DashboardNav } from "@/components/DashboardNav";
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -35,94 +36,7 @@ export default async function DashboardLayout({
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            <a
-              href="/dashboard"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>📊</span>
-              <span className="font-medium">Dashboard</span>
-            </a>
-            
-            {/* Blog */}
-            <a
-              href="/blog"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>📝</span>
-              <span className="font-medium">Blog Posts</span>
-            </a>
-            
-            {/* Forms Section */}
-            <div className="pt-4 pb-2 px-4">
-              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Forms
-              </div>
-            </div>
-            <a
-              href="/forms/early-access"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>🎯</span>
-              <span className="font-medium">Early Access</span>
-            </a>
-            <a
-              href="/forms/newsletter"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>📰</span>
-              <span className="font-medium">Newsletter</span>
-            </a>
-            <a
-              href="/forms/contact"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>✉️</span>
-              <span className="font-medium">Contact</span>
-            </a>
-            
-            {/* Other Sections */}
-            <div className="pt-4 pb-2 px-4">
-              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                Platform
-              </div>
-            </div>
-            <a
-              href="/users"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>👥</span>
-              <span className="font-medium">Users</span>
-            </a>
-            <a
-              href="/analytics"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>📈</span>
-              <span className="font-medium">Analytics</span>
-            </a>
-            <a
-              href="/email-campaigns"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>📧</span>
-              <span className="font-medium">Email Campaigns</span>
-            </a>
-            <a
-              href="/feedback"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>💬</span>
-              <span className="font-medium">Feedback</span>
-            </a>
-            <a
-              href="/settings"
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <span>⚙️</span>
-              <span className="font-medium">Settings</span>
-            </a>
-          </nav>
+          <DashboardNav />
 
           {/* User Menu */}
           <div className="p-4 border-t border-gray-200">

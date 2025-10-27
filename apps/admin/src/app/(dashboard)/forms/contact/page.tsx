@@ -26,6 +26,7 @@ export default function ContactSubmissionsPage() {
 
   useEffect(() => {
     fetchSubmissions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter])
 
   async function fetchSubmissions() {

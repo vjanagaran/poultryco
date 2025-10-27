@@ -66,6 +66,7 @@ export default function EditBlogPostPage() {
     fetchPost()
     fetchCategories()
     fetchTags()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [postId])
 
   async function fetchPost() {
