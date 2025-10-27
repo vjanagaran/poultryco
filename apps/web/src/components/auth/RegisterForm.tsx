@@ -24,6 +24,7 @@ export default function RegisterForm() {
     phone: '',
     password: '',
     confirmPassword: '',
+    locationState: '',
   });
 
   const handleSocialAuth = async (provider: 'google' | 'linkedin') => {
@@ -110,10 +111,12 @@ export default function RegisterForm() {
               id: authData.user.id,
               full_name: formData.fullName,
               email: formData.email,
-              phone_number: formData.phone,
+              phone: formData.phone,
+              phone_verified: false,
+              email_verified: false,
               whatsapp_number: formData.phone,
               profile_slug: slug,
-              profile_type: 'personal',
+              location_state: formData.locationState || 'Not specified',
               country: 'India', // Default
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
@@ -135,7 +138,7 @@ export default function RegisterForm() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -253,6 +256,51 @@ export default function RegisterForm() {
             placeholder="+91 98765 43210"
           />
           <p className="mt-1 text-xs text-gray-500">For important updates and notifications</p>
+        </div>
+
+        <div>
+          <label htmlFor="locationState" className="block text-sm font-medium text-gray-700 mb-1">
+            State *
+          </label>
+          <select
+            id="locationState"
+            name="locationState"
+            required
+            value={formData.locationState}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+          >
+            <option value="">Select your state</option>
+            <option value="Andhra Pradesh">Andhra Pradesh</option>
+            <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+            <option value="Assam">Assam</option>
+            <option value="Bihar">Bihar</option>
+            <option value="Chhattisgarh">Chhattisgarh</option>
+            <option value="Goa">Goa</option>
+            <option value="Gujarat">Gujarat</option>
+            <option value="Haryana">Haryana</option>
+            <option value="Himachal Pradesh">Himachal Pradesh</option>
+            <option value="Jharkhand">Jharkhand</option>
+            <option value="Karnataka">Karnataka</option>
+            <option value="Kerala">Kerala</option>
+            <option value="Madhya Pradesh">Madhya Pradesh</option>
+            <option value="Maharashtra">Maharashtra</option>
+            <option value="Manipur">Manipur</option>
+            <option value="Meghalaya">Meghalaya</option>
+            <option value="Mizoram">Mizoram</option>
+            <option value="Nagaland">Nagaland</option>
+            <option value="Odisha">Odisha</option>
+            <option value="Punjab">Punjab</option>
+            <option value="Rajasthan">Rajasthan</option>
+            <option value="Sikkim">Sikkim</option>
+            <option value="Tamil Nadu">Tamil Nadu</option>
+            <option value="Telangana">Telangana</option>
+            <option value="Tripura">Tripura</option>
+            <option value="Uttar Pradesh">Uttar Pradesh</option>
+            <option value="Uttarakhand">Uttarakhand</option>
+            <option value="West Bengal">West Bengal</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-500">Your primary location</p>
         </div>
 
         <div>
