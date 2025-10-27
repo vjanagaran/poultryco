@@ -112,8 +112,8 @@ export default function RegisterForm() {
               phone_verified: false,
               email_verified: false,
               profile_slug: slug,
-              location_state: 'Global', // Default for international users
-              country: 'Global', // Global by default
+              location_state: '', // Empty until user sets it
+              country: '', // Empty until user sets it
             },
           ]);
 

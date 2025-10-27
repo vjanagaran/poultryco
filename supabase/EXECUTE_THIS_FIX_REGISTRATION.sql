@@ -18,22 +18,21 @@ ALTER TABLE profiles
 ALTER TABLE profiles 
   ALTER COLUMN location_state DROP NOT NULL;
 
--- Change default country to Global
 ALTER TABLE profiles 
-  ALTER COLUMN country SET DEFAULT 'Global';
+  ALTER COLUMN country DROP NOT NULL;
 
--- Update any existing records with NULL values
+-- Update any existing records with NULL values to empty strings
 UPDATE profiles 
 SET phone = '' 
 WHERE phone IS NULL;
 
 UPDATE profiles 
-SET location_state = 'Global' 
-WHERE location_state IS NULL OR location_state = '';
+SET location_state = '' 
+WHERE location_state IS NULL;
 
 UPDATE profiles 
-SET country = 'Global' 
-WHERE country IS NULL OR country = '';
+SET country = '' 
+WHERE country IS NULL;
 
 -- ============================================
 -- STEP 2: Fix RLS policies for profile creation
@@ -73,8 +72,8 @@ CREATE POLICY "Users can view own profile"
 -- ============================================
 
 COMMENT ON COLUMN profiles.phone IS 'Phone number - optional during registration, collected in onboarding';
-COMMENT ON COLUMN profiles.location_state IS 'User location state/region - defaults to Global for international users';
-COMMENT ON COLUMN profiles.country IS 'User country - defaults to Global for flexible location';
+COMMENT ON COLUMN profiles.location_state IS 'User location state/region - empty until user sets it';
+COMMENT ON COLUMN profiles.country IS 'User country - empty until user sets it';
 
 COMMENT ON POLICY "Users can insert own profile" ON profiles IS 
   'Allows authenticated users to create their own profile during registration';
@@ -105,7 +104,8 @@ ORDER BY policyname;
 DO $$
 BEGIN
   RAISE NOTICE '✅ Database migration completed successfully!';
-  RAISE NOTICE '✅ Phone and location fields are now optional';
+  RAISE NOTICE '✅ Phone, location_state, and country are now nullable';
+  RAISE NOTICE '✅ Fields will be empty strings until user sets them';
   RAISE NOTICE '✅ RLS policies updated for profile creation';
   RAISE NOTICE '✅ Registration should now work!';
 END $$;
