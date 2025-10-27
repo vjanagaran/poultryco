@@ -20,11 +20,11 @@ CREATE POLICY "System can create notifications"
     -- 3. The notification type is valid
     EXISTS (SELECT 1 FROM profiles WHERE id = sender_id) AND
     EXISTS (SELECT 1 FROM profiles WHERE id = recipient_id) AND
-    type IN (
-      'post_like', 'post_comment', 'comment_reply', 'comment_like',
+    notification_type IN (
+      'post_like', 'post_comment', 'comment_like',
       'connection_request', 'connection_accepted', 'follow_new',
-      'mention_post', 'mention_comment', 'message_new',
-      'profile_view', 'post_share', 'system'
+      'message_new', 'profile_view', 'post_share',
+      'system_announcement', 'system_update'
     )
   );
 
@@ -35,7 +35,7 @@ GRANT EXECUTE ON FUNCTION create_notification TO authenticated;
 CREATE OR REPLACE FUNCTION create_connection_notification(
   p_recipient_id UUID,
   p_sender_id UUID,
-  p_type TEXT,
+  p_notification_type TEXT,
   p_title TEXT,
   p_content TEXT,
   p_action_url TEXT,
@@ -53,7 +53,7 @@ BEGIN
   INSERT INTO notifications (
     recipient_id,
     sender_id,
-    type,
+    notification_type,
     title,
     content,
     action_url,
@@ -63,7 +63,7 @@ BEGIN
   ) VALUES (
     p_recipient_id,
     p_sender_id,
-    p_type,
+    p_notification_type,
     p_title,
     p_content,
     p_action_url,
