@@ -16,18 +16,23 @@ export default function ToolsPage() {
             { icon: "🌡️", name: "Heat Stress Index", desc: "Calculate heat stress levels" },
             { icon: "💊", name: "Medicine Calculator", desc: "Calculate dosage amounts" },
           ].map((tool, i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="text-4xl mb-3">{tool.icon}</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{tool.name}</h3>
+            <div key={i} className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 hover:shadow-md transition-all duration-200 cursor-pointer group">
+              <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">{tool.icon}</div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{tool.name}</h3>
               <p className="text-sm text-gray-600">{tool.desc}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-8 bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg p-6 text-center">
-          <p className="text-sm text-gray-600">
-            Tools will be implemented as interactive modals/pages with form inputs and real-time calculations
-          </p>
+        <div className="mt-8 bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+          <div className="max-w-2xl mx-auto">
+            <span className="text-2xl mb-2 block">🚀</span>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">More Tools Coming Soon!</h3>
+            <p className="text-sm text-gray-600">
+              We're working on advanced calculators for vaccination schedules, feed optimization, and financial planning. 
+              Have a tool suggestion? <a href="/contact" className="text-green-600 hover:text-green-700 font-medium underline">Let us know</a>
+            </p>
+          </div>
         </div>
       </div>
     </div>

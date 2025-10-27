@@ -97,8 +97,8 @@ export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
       <Container className="py-8">
         <div className="max-w-5xl mx-auto">
           <div className="animate-pulse space-y-6">
-            <div className="bg-white rounded-lg shadow-lg h-64"></div>
-            <div className="bg-white rounded-lg shadow-lg h-96"></div>
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-64"></div>
+            <div className="bg-white rounded-lg border border-gray-200 shadow-sm h-96"></div>
           </div>
         </div>
       </Container>

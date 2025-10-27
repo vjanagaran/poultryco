@@ -243,7 +243,7 @@ export function BusinessCreationWizard() {
         </div>
 
         {/* Step Content */}
-        <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 sm:p-8 mb-6">
           <CurrentStepComponent
             data={businessData}
             onChange={setBusinessData}

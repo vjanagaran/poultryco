@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MemberResult } from '@/lib/api/discovery';
 import { RatingDisplay } from '../RatingDisplay';
 import { TrustBadge } from '../TrustBadge';
-import { createClient } from '@/lib/supabase/client';
+import { sendConnectionRequest, checkConnectionStatus } from '@/lib/api/connections';
 
 interface MemberCardProps {
   member: MemberResult;
@@ -14,40 +14,38 @@ interface MemberCardProps {
 
 export function MemberCard({ member }: MemberCardProps) {
   const [isConnecting, setIsConnecting] = useState(false);
-  const [connectionSent, setConnectionSent] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{
+    exists: boolean;
+    status?: string;
+    isRequester?: boolean;
+  }>({ exists: false });
   
   const location = [member.location_city, member.location_state]
     .filter(Boolean)
     .join(', ');
   
+  // Check connection status on mount
+  useEffect(() => {
+    checkConnectionStatus(member.id).then(result => {
+      setConnectionStatus(result);
+    });
+  }, [member.id]);
+  
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const result = await sendConnectionRequest(member.id);
       
-      if (!user) {
-        alert('Please login to connect');
-        return;
-      }
-      
-      // Sort IDs to ensure consistency (smaller ID first)
-      const [profileId1, profileId2] = [user.id, member.id].sort();
-      
-      const { error } = await supabase
-        .from('connections')
-        .insert({
-          profile_id_1: profileId1,
-          profile_id_2: profileId2,
-          status: 'pending',
-          requested_by: user.id,
-        });
-      
-      if (error) {
-        console.error('Connection error:', error);
-        alert('Failed to send connection request');
+      if (result.success) {
+        setConnectionStatus({ exists: true, status: 'pending', isRequester: true });
       } else {
-        setConnectionSent(true);
+        if (result.error === 'Not authenticated') {
+          alert('Please login to connect');
+        } else if (result.error === 'Connection already exists') {
+          setConnectionStatus({ exists: true, status: 'pending' });
+        } else {
+          alert(result.error || 'Failed to send connection request');
+        }
       }
     } catch (err) {
       console.error('Error:', err);
@@ -130,14 +128,20 @@ export function MemberCard({ member }: MemberCardProps) {
       <div className="flex gap-2 mt-4">
         <button 
           onClick={handleConnect}
-          disabled={isConnecting || connectionSent}
+          disabled={isConnecting || connectionStatus.exists}
           className={`flex-1 px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-            connectionSent
-              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700'
+            connectionStatus.exists
+              ? connectionStatus.status === 'connected'
+                ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+              : 'bg-primary text-white hover:bg-primary/90'
           }`}
         >
-          {isConnecting ? 'Sending...' : connectionSent ? 'Request Sent' : 'Connect'}
+          {isConnecting ? 'Sending...' : 
+           connectionStatus.status === 'connected' ? 'Connected' :
+           connectionStatus.status === 'pending' && connectionStatus.isRequester ? 'Request Sent' :
+           connectionStatus.status === 'pending' ? 'Pending' :
+           'Connect'}
         </button>
         <Link
           href={`/messages?user=${member.id}`}

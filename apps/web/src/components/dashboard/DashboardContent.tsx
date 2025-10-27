@@ -120,17 +120,17 @@ export default function DashboardContent() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Progress Banner */}
-        <div className="bg-gradient-to-r from-blue-600 to-green-600 rounded-xl shadow-lg p-6 text-white mb-8">
-          <div className="flex items-start justify-between mb-4">
+        <div className="bg-gradient-to-r from-blue-600 to-primary rounded-xl shadow-lg p-4 sm:p-6 text-white mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
             <div>
-              <h2 className="text-2xl font-bold mb-2">🚧 We're Building PoultryCo With You</h2>
-              <p className="text-blue-100">
+              <h2 className="text-xl sm:text-2xl font-bold mb-2">🚧 We're Building PoultryCo With You</h2>
+              <p className="text-sm sm:text-base text-blue-100">
                 Features will activate as we ship them. Your feedback shapes what we build next.
               </p>
             </div>
             <Link 
               href="/roadmap"
-              className="px-4 py-2 bg-white text-green-600 font-medium rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap"
+              className="inline-block px-4 py-2 bg-white text-primary font-medium rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap text-sm sm:text-base"
             >
               View Roadmap →
             </Link>
@@ -147,7 +147,7 @@ export default function DashboardContent() {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Main Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Profile Completion */}
@@ -171,12 +171,12 @@ export default function DashboardContent() {
                   ></div>
                 </div>
 
-                <Link
-                  href="/me"
-                  className="block w-full text-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
-                >
-                  Complete Profile Now →
-                </Link>
+              <Link
+                href="/me"
+                className="block w-full text-center px-4 py-2 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg transition-colors"
+              >
+                Complete Profile Now →
+              </Link>
               </div>
             )}
 
@@ -184,7 +184,7 @@ export default function DashboardContent() {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-6">What You Can Do Right Now</h3>
               
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 gap-4">
                 <ActionCard
                   icon="👤"
                   title="Complete Your Profile"
@@ -243,10 +243,10 @@ export default function DashboardContent() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Community Stats */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
               <h3 className="text-lg font-bold text-gray-900 mb-4">Community Growth</h3>
               
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
                 <StatItem label="Total Members" value={memberCount.toLocaleString()} trend="+127 today" />
                 <StatItem label="States Represented" value="23" />
                 <StatItem label="Verified Experts" value="847" />
@@ -269,17 +269,17 @@ export default function DashboardContent() {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-gradient-to-br from-green-600 to-blue-600 rounded-xl shadow-sm p-6 text-white">
+            <div className="bg-gradient-to-br from-primary to-blue-600 rounded-xl shadow-sm p-4 sm:p-6 text-white">
               <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
               
-              <div className="space-y-3">
-                <Link href="/feedback" className="block w-full px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center font-medium transition-colors">
+              <div className="grid grid-cols-3 lg:grid-cols-1 gap-2 lg:gap-3">
+                <Link href="/feedback" className="block w-full px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center font-medium transition-colors text-sm lg:text-base">
                   Give Feedback
                 </Link>
-                <Link href="/invite" className="block w-full px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center font-medium transition-colors">
+                <Link href="/invite" className="block w-full px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center font-medium transition-colors text-sm lg:text-base">
                   Invite Members
                 </Link>
-                <Link href="/support" className="block w-full px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center font-medium transition-colors">
+                <Link href="/support" className="block w-full px-3 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg text-center font-medium transition-colors text-sm lg:text-base">
                   Get Support
                 </Link>
               </div>

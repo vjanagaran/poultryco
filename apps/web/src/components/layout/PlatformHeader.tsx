@@ -56,7 +56,7 @@ export function PlatformHeader() {
         <div className="flex h-16 items-center justify-between px-4">
           {/* Logo */}
           <Link href="/home" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">P</span>
             </div>
             <span className="font-bold text-xl text-gray-900 hidden sm:block">
@@ -70,7 +70,7 @@ export function PlatformHeader() {
               <input
                 type="text"
                 placeholder="Search members, businesses, tools..."
-                className="w-full px-4 py-2 pl-10 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2 pl-10 bg-gray-100 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-ring"
                 onFocus={() => router.push('/search')}
               />
               <svg
@@ -98,7 +98,7 @@ export function PlatformHeader() {
                 className={cn(
                   "flex flex-col items-center px-4 py-2 rounded-lg text-xs font-medium transition-colors",
                   isActive(item.href)
-                    ? "text-green-600 bg-green-50"
+                    ? "text-primary bg-primary/10"
                     : "text-gray-600 hover:bg-gray-100"
                 )}
               >
@@ -123,7 +123,7 @@ export function PlatformHeader() {
                   className="w-8 h-8 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary to-blue-500 rounded-full flex items-center justify-center">
                   <span className="text-white font-medium text-sm">
                     {profile?.full_name?.[0] || user?.user_metadata?.full_name?.[0] || 'U'}
                   </span>
@@ -134,9 +134,11 @@ export function PlatformHeader() {
               </span>
             </Link>
 
-            <button
+            <Button
               onClick={handleSignOut}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+              variant="ghost"
+              size="sm"
+              className="p-2"
               title="Sign out"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,12 +149,14 @@ export function PlatformHeader() {
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                 />
               </svg>
-            </button>
+            </Button>
           </div>
 
           {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 text-gray-600"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden p-2"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label="Toggle menu"
           >
@@ -164,7 +168,7 @@ export function PlatformHeader() {
                 d={isMenuOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}
               />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Mobile Menu */}
@@ -195,7 +199,7 @@ export function PlatformHeader() {
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-colors",
                   isActive(item.href)
-                    ? "text-green-600 bg-green-50"
+                    ? "text-primary bg-primary/10"
                     : "text-gray-700 hover:bg-gray-100"
                 )}
                 onClick={() => setIsMenuOpen(false)}
@@ -206,12 +210,14 @@ export function PlatformHeader() {
             ))}
 
             <div className="pt-2 border-t border-gray-200">
-              <button
+              <Button
                 onClick={() => {
                   setIsMenuOpen(false);
                   handleSignOut();
                 }}
-                className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 w-full"
+                variant="ghost"
+                size="md"
+                className="flex items-center gap-3 w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -222,7 +228,7 @@ export function PlatformHeader() {
                   />
                 </svg>
                 <span>Sign Out</span>
-              </button>
+              </Button>
             </div>
           </div>
         )}

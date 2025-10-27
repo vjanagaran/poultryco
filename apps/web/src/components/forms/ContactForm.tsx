@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Button, Input, Textarea } from "@/components/ui";
+import { Button, Input, Textarea, Alert } from "@/components/ui";
+import { Form, FormRow, FormActions, FormError, Select } from "@/components/ui/Form";
 import { supabase } from "@/lib/supabase";
 
 interface FormData {
@@ -68,41 +69,29 @@ export function ContactForm() {
 
   if (isSuccess) {
     return (
-      <div className="bg-green-50 border-2 border-green-500 rounded-2xl p-8 text-center">
-        <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg
-            className="w-8 h-8 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      <Alert variant="success" className="max-w-2xl mx-auto">
+        <div className="text-center space-y-4">
+          <h3 className="text-xl font-semibold">
+            Message Sent Successfully!
+          </h3>
+          <p className="text-sm">
+            Thank you for reaching out. We'll get back to you within 24 hours.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsSuccess(false)}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
-          </svg>
+            Send Another Message
+          </Button>
         </div>
-        <h3 className="text-2xl font-bold text-green-900 mb-2">
-          Message Sent! 📧
-        </h3>
-        <p className="text-green-800 mb-6">
-          Thank you for reaching out. We&apos;ll get back to you within 24 hours.
-        </p>
-        <Button
-          variant="primary"
-          onClick={() => setIsSuccess(false)}
-        >
-          Send Another Message
-        </Button>
-      </div>
+      </Alert>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
+    <Form onSubmit={handleSubmit}>
+      <FormRow>
         <Input
           label="Your Name"
           name="name"
@@ -121,28 +110,23 @@ export function ContactForm() {
           onChange={handleChange}
           required
         />
-      </div>
+      </FormRow>
 
-      <div className="w-full">
-        <label className="block text-sm font-medium text-foreground mb-2">
-          Subject <span className="text-destructive ml-1">*</span>
-        </label>
-        <select
-          name="subject"
-          value={formData.subject}
-          onChange={handleChange}
-          required
-          className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-2 text-base ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        >
-          <option value="">Select a subject</option>
-          <option value="general">General Inquiry</option>
-          <option value="partnership">Partnership Opportunity</option>
-          <option value="press">Press & Media</option>
-          <option value="support">Technical Support</option>
-          <option value="feedback">Feedback & Suggestions</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
+      <Select
+        label="Subject"
+        name="subject"
+        value={formData.subject}
+        onChange={handleChange}
+        required
+      >
+        <option value="">Select a subject</option>
+        <option value="general">General Inquiry</option>
+        <option value="partnership">Partnership Opportunity</option>
+        <option value="press">Press & Media</option>
+        <option value="support">Technical Support</option>
+        <option value="feedback">Feedback & Suggestions</option>
+        <option value="other">Other</option>
+      </Select>
 
       <Textarea
         label="Message"
@@ -154,22 +138,19 @@ export function ContactForm() {
         rows={6}
       />
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4">
-          {error}
-        </div>
-      )}
+      <FormError error={error} />
 
-      <Button
-        type="submit"
-        variant="primary"
-        size="lg"
-        disabled={isSubmitting}
-        className="w-full"
-      >
-        {isSubmitting ? "Sending..." : "Send Message"}
-      </Button>
-    </form>
+      <FormActions>
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          disabled={isSubmitting}
+          className="w-full md:w-auto"
+        >
+          {isSubmitting ? "Sending..." : "Send Message"}
+        </Button>
+      </FormActions>
+    </Form>
   );
 }
-

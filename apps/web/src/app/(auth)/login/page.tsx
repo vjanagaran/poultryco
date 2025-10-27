@@ -30,12 +30,12 @@ export default function LoginPage() {
         <div className="mt-6 text-center space-y-3">
           <p className="text-sm text-gray-600">
             Don&apos;t have an account?{' '}
-            <a href="/register" className="font-medium text-green-600 hover:text-green-500">
+            <a href="/register" className="font-medium text-primary hover:text-primary/80">
               Join PoultryCo
             </a>
           </p>
           <p className="text-sm text-gray-600">
-            <a href="/forgot-password" className="font-medium text-green-600 hover:text-green-500">
+            <a href="/forgot-password" className="font-medium text-primary hover:text-primary/80">
               Forgot your password?
             </a>
           </p>

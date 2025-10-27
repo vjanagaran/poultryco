@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import PhotoUploadModal from '../PhotoUploadModal';
+import { getPublicUrl } from '@/lib/supabase/storage';
+import { sendConnectionRequest, checkConnectionStatus } from '@/lib/api/connections';
 
 interface ProfileHeaderProps {
   profile: any;
@@ -15,8 +17,23 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [showCoverUpload, setShowCoverUpload] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{
+    exists: boolean;
+    status?: string;
+    isRequester?: boolean;
+  }>({ exists: false });
   const { user } = useAuth();
   const { updateProfile } = useProfile();
+  
+  // Check connection status on mount
+  useEffect(() => {
+    if (!isOwner && user && profile?.id) {
+      checkConnectionStatus(profile.id).then(result => {
+        setConnectionStatus(result);
+      });
+    }
+  }, [isOwner, user, profile?.id]);
 
   const handleAvatarSuccess = async (url: string) => {
     await updateProfile({ profile_photo_url: url });
@@ -26,17 +43,51 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
     await updateProfile({ cover_photo_url: url });
   };
 
+  // Get proper URLs for images
+  const coverPhotoUrl = getPublicUrl(profile.cover_photo_url);
+  const profilePhotoUrl = getPublicUrl(profile.profile_photo_url);
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      const result = await sendConnectionRequest(profile.id);
+      
+      if (result.success) {
+        setConnectionStatus({ exists: true, status: 'pending', isRequester: true });
+      } else {
+        if (result.error === 'Not authenticated') {
+          alert('Please login to connect');
+        } else if (result.error === 'Connection already exists') {
+          setConnectionStatus({ exists: true, status: 'pending' });
+        } else {
+          alert(result.error || 'Failed to send connection request');
+        }
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      alert('Failed to send connection request');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   return (
     <>
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         {/* Cover Photo */}
         <div className="relative h-48 bg-gradient-to-r from-green-400 to-blue-500">
-          {profile.cover_photo_url && (
+          {coverPhotoUrl && (
             <Image
-              src={profile.cover_photo_url}
+              src={coverPhotoUrl}
               alt="Cover"
               fill
               className="object-cover"
+              priority
+              unoptimized
+              onError={(e) => {
+                console.error('Cover image failed to load:', coverPhotoUrl);
+                e.currentTarget.style.display = 'none';
+              }}
             />
           )}
           {isOwner && (
@@ -60,13 +111,19 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
           {/* Profile Photo */}
           <div className="flex flex-col sm:flex-row items-start sm:items-end -mt-16 sm:-mt-20 mb-4">
             <div className="relative">
-              {profile.profile_photo_url ? (
+              {profilePhotoUrl ? (
                 <Image
-                  src={profile.profile_photo_url}
-                  alt={profile.full_name}
+                  src={profilePhotoUrl}
+                  alt={profile.full_name || 'Profile'}
                   width={160}
                   height={160}
                   className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-white bg-white object-cover"
+                  priority
+                  unoptimized
+                  onError={(e) => {
+                    console.error('Profile image failed to load:', profilePhotoUrl);
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               ) : (
                 <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full border-4 border-white bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
@@ -101,10 +158,21 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
             {/* Connect Button (Desktop) */}
             {!isOwner && (
               <button
-                onClick={() => {/* TODO: Implement connection logic */}}
-                className="hidden sm:block ml-auto mb-2 px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
+                onClick={handleConnect}
+                disabled={isConnecting || connectionStatus.exists}
+                className={`hidden sm:block ml-auto mb-2 px-6 py-2 font-semibold rounded-lg transition-colors ${
+                  connectionStatus.exists
+                    ? connectionStatus.status === 'connected'
+                      ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                      : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                    : 'bg-primary text-white hover:bg-primary/90'
+                }`}
               >
-                🤝 Connect
+                {isConnecting ? 'Sending...' : 
+                 connectionStatus.status === 'connected' ? '✓ Connected' :
+                 connectionStatus.status === 'pending' && connectionStatus.isRequester ? '✓ Request Sent' :
+                 connectionStatus.status === 'pending' ? 'Pending Approval' :
+                 '🤝 Connect'}
               </button>
             )}
           </div>
@@ -146,10 +214,21 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
           {/* Connect Button (Mobile) */}
           {!isOwner && (
             <button
-              onClick={() => {/* TODO: Implement connection logic */}}
-              className="sm:hidden w-full mt-4 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
+              onClick={handleConnect}
+              disabled={isConnecting || connectionStatus.exists}
+              className={`sm:hidden w-full mt-4 px-6 py-3 font-semibold rounded-lg transition-colors ${
+                connectionStatus.exists
+                  ? connectionStatus.status === 'connected'
+                    ? 'bg-green-100 text-green-700 cursor-not-allowed'
+                    : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                  : 'bg-primary text-white hover:bg-primary/90'
+              }`}
             >
-              🤝 Connect
+              {isConnecting ? 'Sending...' : 
+               connectionStatus.status === 'connected' ? '✓ Connected' :
+               connectionStatus.status === 'pending' && connectionStatus.isRequester ? '✓ Request Sent' :
+               connectionStatus.status === 'pending' ? 'Pending Approval' :
+               '🤝 Connect'}
             </button>
           )}
 

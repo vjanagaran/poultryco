@@ -303,7 +303,7 @@ export function PostCreationModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black bg-opacity-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl my-8">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-2xl my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-xl font-semibold">
@@ -387,7 +387,7 @@ export function PostCreationModal({
 
             {/* Mention Autocomplete Dropdown */}
             {showMentions && mentionSuggestions.length > 0 && (
-              <div className="absolute bottom-full mb-2 w-full bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
+              <div className="absolute bottom-full mb-2 w-full bg-white border border-gray-200 rounded-lg shadow max-h-48 overflow-y-auto z-10">
                 {mentionSuggestions.map((suggestion, index) => (
                   <button
                     key={suggestion.id}

@@ -20,10 +20,14 @@ export default function LoginForm() {
 
     try {
       const supabase = createClient();
+      const redirectTo = typeof window !== 'undefined' 
+        ? `${window.location.origin}/auth/callback?next=${searchParams.get('next') || '/dashboard'}`
+        : `/auth/callback?next=${searchParams.get('next') || '/dashboard'}`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${searchParams.get('next') || '/dashboard'}`,
+          redirectTo,
         },
       });
 
@@ -141,7 +145,7 @@ export default function LoginForm() {
             required
             value={formData.email}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors text-base"
             placeholder="you@example.com"
           />
         </div>
@@ -157,7 +161,7 @@ export default function LoginForm() {
             required
             value={formData.password}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors text-base"
             placeholder="••••••••"
           />
         </div>
@@ -165,7 +169,7 @@ export default function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 px-4 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Signing in...' : 'Sign In →'}
         </button>

@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { ProfileView } from '@/components/profile/ProfileView';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const metadata: Metadata = {
   title: 'My Profile | PoultryCo',
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function MyProfilePage() {
-  return <ProfileView isOwnProfile={true} />;
+  return (
+    <ErrorBoundary>
+      <ProfileView isOwnProfile={true} />
+    </ErrorBoundary>
+  );
 }
