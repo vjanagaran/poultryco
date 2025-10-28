@@ -69,9 +69,7 @@ BEGIN
         p_organization_id, p_organization_id
     ) RETURNING id INTO v_conversation_id;
     
-    -- Add organization as admin
-    INSERT INTO conversation_participants (conversation_id, user_id, is_admin)
-    VALUES (v_conversation_id, p_organization_id, true);
+    -- Add organization as admin participant
     
     -- Add members
     FOREACH v_member_id IN ARRAY v_member_ids
