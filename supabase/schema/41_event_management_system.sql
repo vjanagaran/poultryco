@@ -7,7 +7,7 @@ DROP TABLE IF EXISTS organization_events CASCADE;
 -- Main events table
 CREATE TABLE events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organizer_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE, -- Organization profile
+    organizer_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, -- Organization
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
     description TEXT,

@@ -4,7 +4,7 @@
 -- Organization membership tiers
 CREATE TABLE organization_membership_tiers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
     benefits TEXT[], -- Array of benefits
@@ -27,7 +27,7 @@ CREATE INDEX idx_org_membership_tiers_active ON organization_membership_tiers(is
 -- Organization roles
 CREATE TABLE organization_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
     permissions JSONB DEFAULT '{}', -- Flexible permissions structure
@@ -42,29 +42,28 @@ CREATE TABLE organization_roles (
 CREATE OR REPLACE FUNCTION create_default_org_roles()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.profile_type = 'organization' THEN
-        INSERT INTO organization_roles (organization_id, name, description, is_system, permissions, sort_order)
-        VALUES 
-            (NEW.id, 'Owner', 'Organization owner with full permissions', true, 
-             '{"manage_organization": true, "manage_members": true, "manage_roles": true, "manage_tiers": true, "manage_events": true, "send_announcements": true}'::jsonb, 1),
-            (NEW.id, 'Admin', 'Administrator with most permissions', true,
-             '{"manage_members": true, "manage_events": true, "send_announcements": true}'::jsonb, 2),
-            (NEW.id, 'Member', 'Regular member', true,
-             '{"view_members": true, "view_events": true, "participate_events": true}'::jsonb, 100);
-    END IF;
+    -- Create default roles for new organizations
+    INSERT INTO organization_roles (organization_id, name, description, is_system, permissions, sort_order)
+    VALUES 
+        (NEW.id, 'Owner', 'Organization owner with full permissions', true, 
+         '{"manage_organization": true, "manage_members": true, "manage_roles": true, "manage_tiers": true, "manage_events": true, "send_announcements": true}'::jsonb, 1),
+        (NEW.id, 'Admin', 'Administrator with most permissions', true,
+         '{"manage_members": true, "manage_events": true, "send_announcements": true}'::jsonb, 2),
+        (NEW.id, 'Member', 'Regular member', true,
+         '{"view_members": true, "view_events": true, "participate_events": true}'::jsonb, 100);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER create_org_default_roles
-    AFTER INSERT ON profiles
+    AFTER INSERT ON organizations
     FOR EACH ROW
     EXECUTE FUNCTION create_default_org_roles();
 
 -- Organization members
 CREATE TABLE organization_members (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     tier_id UUID REFERENCES organization_membership_tiers(id) ON DELETE SET NULL,
     role_id UUID REFERENCES organization_roles(id) ON DELETE SET NULL,
@@ -276,20 +275,23 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE VIEW organization_members_detail AS
 SELECT 
     om.*,
-    p.display_name as member_name,
-    p.profile_type as member_type,
-    p.avatar_url as member_avatar,
+    p.full_name as member_name,
+    CASE 
+        WHEN bp.id IS NOT NULL THEN 'business'
+        ELSE 'personal'
+    END as member_type,
+    p.profile_photo_url as member_avatar,
     bp.business_name,
     ot.name as tier_name,
     ot.color as tier_color,
     ot.benefits as tier_benefits,
     r.name as role_name,
     r.permissions as role_permissions,
-    o.display_name as organization_name
+    o.name as organization_name
 FROM organization_members om
 JOIN profiles p ON p.id = om.profile_id
-LEFT JOIN business_profiles bp ON bp.profile_id = p.id
-JOIN profiles o ON o.id = om.organization_id
+LEFT JOIN business_profiles bp ON bp.owner_id = p.id
+JOIN organizations o ON o.id = om.organization_id
 LEFT JOIN organization_membership_tiers ot ON ot.id = om.tier_id
 LEFT JOIN organization_roles r ON r.id = om.role_id;
 

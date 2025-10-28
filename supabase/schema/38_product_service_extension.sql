@@ -170,11 +170,15 @@ BEGIN
         p.custom_fields,
         p.service_details,
         p.created_at,
-        pr.display_name as profile_name,
-        pr.profile_type,
+        pr.full_name as profile_name,
+        CASE 
+            WHEN bp.id IS NOT NULL THEN 'business'
+            ELSE 'personal'
+        END as profile_type,
         array_agg(DISTINCT c.name) as categories
     FROM products p
     JOIN profiles pr ON pr.id = p.profile_id
+    LEFT JOIN business_profiles bp ON bp.owner_id = pr.id
     LEFT JOIN products_categories pc ON pc.product_id = p.id
     LEFT JOIN categories c ON c.id = pc.category_id
     WHERE 
@@ -188,7 +192,7 @@ BEGIN
         AND (p_min_price IS NULL OR p.price >= p_min_price)
         AND (p_max_price IS NULL OR p.price <= p_max_price)
         AND (p_profile_id IS NULL OR p.profile_id = p_profile_id)
-    GROUP BY p.id, pr.display_name, pr.profile_type
+    GROUP BY p.id, pr.full_name, bp.id
     ORDER BY p.created_at DESC
     LIMIT p_limit
     OFFSET p_offset;

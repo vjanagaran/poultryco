@@ -3,7 +3,7 @@
 
 -- Add organization support to existing conversations table
 ALTER TABLE conversations
-ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES profiles(id),
+ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id),
 ADD COLUMN IF NOT EXISTS group_type TEXT CHECK (group_type IN ('general', 'announcement', 'tier', 'role', 'event'));
 
 -- The conversation_participants table already exists and has most features
@@ -161,10 +161,10 @@ CREATE OR REPLACE VIEW organization_conversation_view AS
 SELECT 
     c.*,
     COUNT(DISTINCT cp.user_id) as member_count,
-    o.display_name as organization_name,
-    o.avatar_url as organization_avatar
+    o.name as organization_name,
+    o.logo_url as organization_avatar
 FROM conversations c
-JOIN profiles o ON o.id = c.organization_id
+JOIN organizations o ON o.id = c.organization_id
 LEFT JOIN conversation_participants cp ON cp.conversation_id = c.id AND cp.is_active = true
 WHERE c.organization_id IS NOT NULL
-GROUP BY c.id, o.display_name, o.avatar_url;
+GROUP BY c.id, o.name, o.logo_url;

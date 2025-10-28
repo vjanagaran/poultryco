@@ -25,18 +25,14 @@ CREATE POLICY "Organizers can create events"
     WITH CHECK (
         -- Must be an organization
         organizer_id IN (
-            SELECT id FROM profiles 
-            WHERE profile_type = 'organization'
-            AND (
-                user_id = auth.uid() 
-                OR id IN (
-                    SELECT organization_id FROM organization_members om
-                    JOIN organization_roles r ON r.id = om.role_id
-                    WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-                    AND om.status = 'active'
-                    AND (r.permissions->>'manage_events')::boolean = true
-                )
-            )
+            SELECT id FROM organizations 
+            WHERE creator_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
+            UNION
+            SELECT organization_id FROM organization_members om
+            JOIN organization_roles r ON r.id = om.role_id
+            WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
+            AND om.status = 'active'
+            AND (r.permissions->>'manage_events')::boolean = true
         )
     );
 
