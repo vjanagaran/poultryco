@@ -258,7 +258,16 @@ export function PlatformHeader() {
               </Link>
             ))}
 
-            <div className="pt-2 border-t border-gray-200">
+            <div className="pt-2 border-t border-gray-200 space-y-1">
+              <Link
+                href="/settings/email-preferences"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-100"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <span className="text-xl">📧</span>
+                <span>Email Preferences</span>
+              </Link>
+              
               <Button
                 onClick={() => {
                   setIsMenuOpen(false);
