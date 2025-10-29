@@ -1,24 +1,29 @@
 -- Product and Service Extension Schema
--- Extends products table to support both products and services with custom fields
+-- Extends business_products table to support both products and services with custom fields
+-- 
+-- IMPORTANT ARCHITECTURE DECISION:
+-- Products/Services are ONLY for business profiles, not personal profiles
+-- Personal profiles (vets, consultants, etc.) should use their about/experience sections
+-- If they want to generate leads, they must create a business profile
 
--- Add type column to products table
-ALTER TABLE products 
+-- Add type column to business_products table
+ALTER TABLE business_products 
 ADD COLUMN IF NOT EXISTS item_type TEXT DEFAULT 'product' 
 CHECK (item_type IN ('product', 'service'));
 
 -- Add service-specific fields as JSONB for flexibility
-ALTER TABLE products
+ALTER TABLE business_products
 ADD COLUMN IF NOT EXISTS service_details JSONB DEFAULT '{}';
 
 -- Add custom fields support
-ALTER TABLE products
+ALTER TABLE business_products
 ADD COLUMN IF NOT EXISTS custom_fields JSONB DEFAULT '{}';
 
 -- Create index on item_type
-CREATE INDEX IF NOT EXISTS idx_products_item_type ON products(item_type);
+CREATE INDEX IF NOT EXISTS idx_business_products_item_type ON business_products(item_type);
 
 -- Update existing products to have item_type
-UPDATE products SET item_type = 'product' WHERE item_type IS NULL;
+UPDATE business_products SET item_type = 'product' WHERE item_type IS NULL;
 
 -- Service categories specific to services
 CREATE TABLE IF NOT EXISTS service_categories (
@@ -90,11 +95,10 @@ BEGIN
         FOR v_required_attributes IN
             SELECT sa.attribute_name
             FROM service_attributes sa
-            JOIN products_categories pc ON pc.product_id = NEW.id
-            JOIN service_categories sc ON sc.name = (
-                SELECT c.name FROM categories c WHERE c.id = pc.category_id
-            )
-            WHERE sa.category_id = sc.id AND sa.is_required = true
+            WHERE sa.category_id IN (
+                SELECT id FROM service_categories 
+                WHERE name = NEW.product_subcategory
+            ) AND sa.is_required = true
         LOOP
             IF NOT v_custom_fields ? v_required_attributes.attribute_name THEN
                 RAISE EXCEPTION 'Required service attribute % is missing', v_required_attributes.attribute_name;
@@ -108,92 +112,92 @@ $$ LANGUAGE plpgsql;
 
 -- Create trigger for validation
 CREATE TRIGGER validate_service_fields_trigger
-    BEFORE INSERT OR UPDATE ON products
+    BEFORE INSERT OR UPDATE ON business_products
     FOR EACH ROW
     EXECUTE FUNCTION validate_service_custom_fields();
 
 -- View to get products and services with their details
-CREATE OR REPLACE VIEW products_services_view AS
+CREATE OR REPLACE VIEW business_products_services_view AS
 SELECT 
-    p.*,
+    bp.*,
     CASE 
-        WHEN p.item_type = 'service' THEN 
+        WHEN bp.item_type = 'service' THEN 
             jsonb_build_object(
-                'duration', p.service_details->>'duration',
-                'delivery_method', p.service_details->>'delivery_method',
-                'coverage_area', p.service_details->>'coverage_area',
-                'availability', p.service_details->>'availability'
+                'duration', bp.service_details->>'duration',
+                'delivery_method', bp.service_details->>'delivery_method',
+                'coverage_area', bp.service_details->>'coverage_area',
+                'availability', bp.service_details->>'availability'
             )
         ELSE NULL
     END as service_info,
-    array_agg(DISTINCT c.name) as category_names
-FROM products p
-LEFT JOIN products_categories pc ON pc.product_id = p.id
-LEFT JOIN categories c ON c.id = pc.category_id
-GROUP BY p.id;
+    b.business_name,
+    b.business_slug
+FROM business_products bp
+JOIN business_profiles b ON b.id = bp.business_profile_id;
 
 -- Function to search products and services
-CREATE OR REPLACE FUNCTION search_products_services(
+CREATE OR REPLACE FUNCTION search_business_products_services(
     p_search_term TEXT DEFAULT NULL,
     p_item_type TEXT DEFAULT NULL,
-    p_category_ids UUID[] DEFAULT NULL,
+    p_category TEXT DEFAULT NULL,
     p_min_price DECIMAL DEFAULT NULL,
     p_max_price DECIMAL DEFAULT NULL,
-    p_profile_id UUID DEFAULT NULL,
+    p_business_id UUID DEFAULT NULL,
     p_limit INTEGER DEFAULT 20,
     p_offset INTEGER DEFAULT 0
 ) RETURNS TABLE (
     id UUID,
-    profile_id UUID,
-    name TEXT,
-    description TEXT,
+    business_profile_id UUID,
+    product_name TEXT,
+    short_description TEXT,
+    full_description TEXT,
     item_type TEXT,
     price DECIMAL,
-    images TEXT[],
+    price_unit TEXT,
+    featured_image_url TEXT,
     custom_fields JSONB,
     service_details JSONB,
     created_at TIMESTAMP WITH TIME ZONE,
-    profile_name TEXT,
-    profile_type TEXT,
-    categories TEXT[]
+    business_name TEXT,
+    business_slug TEXT,
+    product_category TEXT,
+    product_subcategory TEXT
 ) AS $$
 BEGIN
     RETURN QUERY
     SELECT 
-        p.id,
-        p.profile_id,
-        p.name,
-        p.description,
-        p.item_type,
-        p.price,
-        p.images,
-        p.custom_fields,
-        p.service_details,
-        p.created_at,
-        pr.full_name as profile_name,
-        CASE 
-            WHEN bp.id IS NOT NULL THEN 'business'
-            ELSE 'personal'
-        END as profile_type,
-        array_agg(DISTINCT c.name) as categories
-    FROM products p
-    JOIN profiles pr ON pr.id = p.profile_id
-    LEFT JOIN business_profiles bp ON bp.owner_id = pr.id
-    LEFT JOIN products_categories pc ON pc.product_id = p.id
-    LEFT JOIN categories c ON c.id = pc.category_id
+        bp.id,
+        bp.business_profile_id,
+        bp.product_name,
+        bp.short_description,
+        bp.full_description,
+        bp.item_type,
+        bp.price,
+        bp.price_unit,
+        bp.featured_image_url,
+        bp.custom_fields,
+        bp.service_details,
+        bp.created_at,
+        b.business_name,
+        b.business_slug,
+        bp.product_category,
+        bp.product_subcategory
+    FROM business_products bp
+    JOIN business_profiles b ON b.id = bp.business_profile_id
     WHERE 
-        p.is_active = true
+        bp.is_published = true
+        AND bp.is_available = true
         AND (p_search_term IS NULL OR (
-            p.name ILIKE '%' || p_search_term || '%' OR
-            p.description ILIKE '%' || p_search_term || '%'
+            bp.product_name ILIKE '%' || p_search_term || '%' OR
+            bp.short_description ILIKE '%' || p_search_term || '%' OR
+            bp.full_description ILIKE '%' || p_search_term || '%'
         ))
-        AND (p_item_type IS NULL OR p.item_type = p_item_type)
-        AND (p_category_ids IS NULL OR pc.category_id = ANY(p_category_ids))
-        AND (p_min_price IS NULL OR p.price >= p_min_price)
-        AND (p_max_price IS NULL OR p.price <= p_max_price)
-        AND (p_profile_id IS NULL OR p.profile_id = p_profile_id)
-    GROUP BY p.id, pr.full_name, bp.id
-    ORDER BY p.created_at DESC
+        AND (p_item_type IS NULL OR bp.item_type = p_item_type)
+        AND (p_category IS NULL OR bp.product_category = p_category)
+        AND (p_min_price IS NULL OR bp.price >= p_min_price)
+        AND (p_max_price IS NULL OR bp.price <= p_max_price)
+        AND (p_business_id IS NULL OR bp.business_profile_id = p_business_id)
+    ORDER BY bp.created_at DESC
     LIMIT p_limit
     OFFSET p_offset;
 END;

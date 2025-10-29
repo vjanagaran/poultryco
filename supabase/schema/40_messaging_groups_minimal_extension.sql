@@ -161,10 +161,10 @@ CREATE OR REPLACE VIEW organization_conversation_view AS
 SELECT 
     c.*,
     COUNT(DISTINCT cp.user_id) as member_count,
-    o.name as organization_name,
+    o.organization_name,
     o.logo_url as organization_avatar
 FROM conversations c
 JOIN organizations o ON o.id = c.organization_id
 LEFT JOIN conversation_participants cp ON cp.conversation_id = c.id AND cp.is_active = true
 WHERE c.organization_id IS NOT NULL
-GROUP BY c.id, o.name, o.logo_url;
+GROUP BY c.id, o.organization_name, o.logo_url;

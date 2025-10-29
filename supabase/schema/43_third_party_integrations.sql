@@ -169,22 +169,22 @@ CREATE POLICY "Only super admins can manage integration credentials"
     USING (
         EXISTS (
             SELECT 1 FROM profiles
-            WHERE user_id = auth.uid()
+            WHERE id = auth.uid()
             AND email IN ('janagaran@gmail.com') -- Add super admin emails
         )
     );
 
 CREATE POLICY "Users can view their own message queues"
     ON whatsapp_queue FOR SELECT
-    USING (recipient_profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid()));
+    USING (recipient_profile_id = (auth.uid()));
 
 CREATE POLICY "Users can view their own SMS queues"
     ON sms_queue FOR SELECT
-    USING (recipient_profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid()));
+    USING (recipient_profile_id = (auth.uid()));
 
 CREATE POLICY "Users can manage their own contact imports"
     ON contact_imports FOR ALL
-    USING (profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid()));
+    USING (profile_id = (auth.uid()));
 
 CREATE POLICY "Anyone can view active share templates"
     ON social_share_templates FOR SELECT

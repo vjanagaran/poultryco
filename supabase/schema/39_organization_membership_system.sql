@@ -1,31 +1,30 @@
--- Organization Membership System Schema
--- Comprehensive membership tiers, roles, and member management
+-- Organization Membership System Schema Extensions
+-- Extends existing membership system with roles, permissions, and enhanced features
+-- Note: organization_membership_tiers and organization_members already exist in 06_organizations.sql and 07_memberships_events.sql
 
--- Organization membership tiers
-CREATE TABLE organization_membership_tiers (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    description TEXT,
-    benefits TEXT[], -- Array of benefits
-    member_limit INTEGER, -- NULL for unlimited
-    annual_fee DECIMAL(10, 2) DEFAULT 0,
-    is_active BOOLEAN DEFAULT true,
-    sort_order INTEGER DEFAULT 0,
-    color TEXT, -- For UI display
-    icon_name TEXT,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(organization_id, name)
-);
+-- First, enhance the existing organization_membership_tiers table
+ALTER TABLE organization_membership_tiers
+ADD COLUMN IF NOT EXISTS benefits TEXT[],
+ADD COLUMN IF NOT EXISTS member_limit INTEGER,
+ADD COLUMN IF NOT EXISTS color TEXT,
+ADD COLUMN IF NOT EXISTS icon_name TEXT,
+ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
 
--- Create indexes
-CREATE INDEX idx_org_membership_tiers_org ON organization_membership_tiers(organization_id);
-CREATE INDEX idx_org_membership_tiers_active ON organization_membership_tiers(is_active);
+-- Drop and recreate constraint to use 'name' instead of 'tier_name'
+ALTER TABLE organization_membership_tiers 
+DROP CONSTRAINT IF EXISTS organization_membership_tiers_organization_id_tier_name_key;
 
--- Organization roles
-CREATE TABLE organization_roles (
+ALTER TABLE organization_membership_tiers
+RENAME COLUMN tier_name TO name;
+
+ALTER TABLE organization_membership_tiers
+RENAME COLUMN tier_description TO description;
+
+ALTER TABLE organization_membership_tiers
+ADD CONSTRAINT organization_membership_tiers_organization_id_name_key UNIQUE(organization_id, name);
+
+-- Organization roles (NEW TABLE)
+CREATE TABLE IF NOT EXISTS organization_roles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -60,33 +59,27 @@ CREATE TRIGGER create_org_default_roles
     FOR EACH ROW
     EXECUTE FUNCTION create_default_org_roles();
 
--- Organization members
-CREATE TABLE organization_members (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
-    profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-    tier_id UUID REFERENCES organization_membership_tiers(id) ON DELETE SET NULL,
-    role_id UUID REFERENCES organization_roles(id) ON DELETE SET NULL,
-    membership_number TEXT, -- Unique membership number
-    joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    valid_until TIMESTAMP WITH TIME ZONE, -- For time-limited memberships
-    status TEXT DEFAULT 'active' CHECK (status IN ('pending', 'active', 'suspended', 'expired', 'cancelled')),
-    notes TEXT,
-    metadata JSONB DEFAULT '{}', -- For custom fields
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(organization_id, profile_id)
-);
+-- Enhance existing organization_members table
+ALTER TABLE organization_members
+ADD COLUMN IF NOT EXISTS role_id UUID REFERENCES organization_roles(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS notes TEXT,
+ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}';
 
--- Create indexes
-CREATE INDEX idx_org_members_org ON organization_members(organization_id);
-CREATE INDEX idx_org_members_profile ON organization_members(profile_id);
-CREATE INDEX idx_org_members_status ON organization_members(status);
-CREATE INDEX idx_org_members_tier ON organization_members(tier_id);
-CREATE INDEX idx_org_members_role ON organization_members(role_id);
+-- Update the membership_tier_id column name if needed
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                   WHERE table_name='organization_members' 
+                   AND column_name='membership_tier_id') THEN
+        ALTER TABLE organization_members RENAME COLUMN tier_id TO membership_tier_id;
+    END IF;
+END $$;
 
--- Membership history for tracking changes
-CREATE TABLE organization_membership_history (
+-- Create index for new role column
+CREATE INDEX IF NOT EXISTS idx_org_members_role ON organization_members(role_id);
+
+-- Membership history for tracking changes (NEW TABLE)
+CREATE TABLE IF NOT EXISTS organization_membership_history (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     member_id UUID NOT NULL REFERENCES organization_members(id) ON DELETE CASCADE,
     action TEXT NOT NULL, -- 'joined', 'tier_changed', 'role_changed', 'renewed', 'suspended', 'reactivated', 'left'
@@ -118,8 +111,9 @@ CREATE POLICY "Org admins can manage tiers"
             SELECT 1 FROM organization_members om
             JOIN organization_roles r ON r.id = om.role_id
             WHERE om.organization_id = organization_membership_tiers.organization_id
-            AND om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            AND om.member_id = auth.uid()
+            AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_tiers')::boolean = true
         )
     );
@@ -131,8 +125,9 @@ CREATE POLICY "Members can view their org roles"
         EXISTS (
             SELECT 1 FROM organization_members om
             WHERE om.organization_id = organization_roles.organization_id
-            AND om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            AND om.member_id = auth.uid()
+            AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
         )
     );
 
@@ -143,8 +138,9 @@ CREATE POLICY "Org admins can manage roles"
             SELECT 1 FROM organization_members om
             JOIN organization_roles r ON r.id = om.role_id
             WHERE om.organization_id = organization_roles.organization_id
-            AND om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            AND om.member_id = auth.uid()
+            AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_roles')::boolean = true
         )
     );
@@ -157,12 +153,13 @@ CREATE POLICY "Members can view org members"
         EXISTS (
             SELECT 1 FROM organization_members om
             WHERE om.organization_id = organization_members.organization_id
-            AND om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            AND om.member_id = auth.uid()
+            AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
         )
         OR
         -- Or if it's your own membership
-        profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
+        (member_id = auth.uid() AND member_type = 'personal')
     );
 
 CREATE POLICY "Org admins can manage members"
@@ -172,25 +169,32 @@ CREATE POLICY "Org admins can manage members"
             SELECT 1 FROM organization_members om
             JOIN organization_roles r ON r.id = om.role_id
             WHERE om.organization_id = organization_members.organization_id
-            AND om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            AND om.member_id = auth.uid()
+            AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_members')::boolean = true
         )
     );
 
--- Function to add member to organization
+-- Function to add member to organization (updated for polymorphic members)
 CREATE OR REPLACE FUNCTION add_organization_member(
     p_organization_id UUID,
-    p_profile_id UUID,
+    p_member_id UUID,
+    p_member_type TEXT,
     p_tier_id UUID DEFAULT NULL,
     p_role_id UUID DEFAULT NULL,
-    p_valid_until TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    p_expiry_date DATE DEFAULT NULL
 ) RETURNS UUID AS $$
 DECLARE
-    v_member_id UUID;
+    v_member_record_id UUID;
     v_membership_number TEXT;
     v_default_role_id UUID;
 BEGIN
+    -- Validate member type
+    IF p_member_type NOT IN ('personal', 'business') THEN
+        RAISE EXCEPTION 'Invalid member type: %', p_member_type;
+    END IF;
+    
     -- Generate membership number
     v_membership_number := 'M' || TO_CHAR(NOW(), 'YYYY') || LPAD(
         (SELECT COUNT(*) + 1 FROM organization_members WHERE organization_id = p_organization_id)::TEXT, 
@@ -210,29 +214,29 @@ BEGIN
     
     -- Insert member
     INSERT INTO organization_members (
-        organization_id, profile_id, tier_id, role_id, 
-        membership_number, valid_until, status
+        organization_id, member_id, member_type, membership_tier_id, role_id, 
+        membership_number, expiry_date, membership_status
     ) VALUES (
-        p_organization_id, p_profile_id, p_tier_id, p_role_id,
-        v_membership_number, p_valid_until, 'active'
+        p_organization_id, p_member_id, p_member_type, p_tier_id, p_role_id,
+        v_membership_number, p_expiry_date, 'active'
     )
-    ON CONFLICT (organization_id, profile_id) 
+    ON CONFLICT (organization_id, member_type, member_id) 
     DO UPDATE SET 
-        tier_id = EXCLUDED.tier_id,
+        membership_tier_id = EXCLUDED.membership_tier_id,
         role_id = EXCLUDED.role_id,
-        status = 'active',
+        membership_status = 'active',
         updated_at = NOW()
-    RETURNING id INTO v_member_id;
+    RETURNING id INTO v_member_record_id;
     
     -- Log the action
     INSERT INTO organization_membership_history (
         member_id, action, new_value
     ) VALUES (
-        v_member_id, 'joined', 
+        v_member_record_id, 'joined', 
         jsonb_build_object('tier_id', p_tier_id, 'role_id', p_role_id)
     );
     
-    RETURN v_member_id;
+    RETURN v_member_record_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -247,13 +251,13 @@ DECLARE
     v_old_tier_id UUID;
 BEGIN
     -- Get current tier
-    SELECT tier_id INTO v_old_tier_id
+    SELECT membership_tier_id INTO v_old_tier_id
     FROM organization_members
     WHERE id = p_member_id;
     
     -- Update tier
     UPDATE organization_members
-    SET tier_id = p_new_tier_id,
+    SET membership_tier_id = p_new_tier_id,
         updated_at = NOW()
     WHERE id = p_member_id;
     
@@ -271,33 +275,37 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- View for member details
+-- View for member details (handles polymorphic members)
 CREATE OR REPLACE VIEW organization_members_detail AS
 SELECT 
     om.*,
-    p.full_name as member_name,
     CASE 
-        WHEN bp.id IS NOT NULL THEN 'business'
-        ELSE 'personal'
-    END as member_type,
-    p.profile_photo_url as member_avatar,
+        WHEN om.member_type = 'personal' THEN p.full_name
+        WHEN om.member_type = 'business' THEN bp.business_name
+    END as member_name,
+    CASE 
+        WHEN om.member_type = 'personal' THEN p.profile_photo_url
+        WHEN om.member_type = 'business' THEN bp.logo_url
+    END as member_avatar,
+    p.full_name as personal_name,
     bp.business_name,
     ot.name as tier_name,
     ot.color as tier_color,
     ot.benefits as tier_benefits,
     r.name as role_name,
     r.permissions as role_permissions,
-    o.name as organization_name
+    o.organization_name
 FROM organization_members om
-JOIN profiles p ON p.id = om.profile_id
-LEFT JOIN business_profiles bp ON bp.owner_id = p.id
+LEFT JOIN profiles p ON p.id = om.member_id AND om.member_type = 'personal'
+LEFT JOIN business_profiles bp ON bp.id = om.member_id AND om.member_type = 'business'
 JOIN organizations o ON o.id = om.organization_id
-LEFT JOIN organization_membership_tiers ot ON ot.id = om.tier_id
+LEFT JOIN organization_membership_tiers ot ON ot.id = om.membership_tier_id
 LEFT JOIN organization_roles r ON r.id = om.role_id;
 
--- Function to check member permissions
+-- Function to check member permissions (handles both personal and business members)
 CREATE OR REPLACE FUNCTION check_member_permission(
-    p_profile_id UUID,
+    p_member_id UUID,
+    p_member_type TEXT,
     p_organization_id UUID,
     p_permission TEXT
 ) RETURNS BOOLEAN AS $$
@@ -307,9 +315,10 @@ BEGIN
     SELECT r.permissions INTO v_permissions
     FROM organization_members om
     JOIN organization_roles r ON r.id = om.role_id
-    WHERE om.profile_id = p_profile_id
+    WHERE om.member_id = p_member_id
+    AND om.member_type = p_member_type
     AND om.organization_id = p_organization_id
-    AND om.status = 'active';
+    AND om.membership_status = 'active';
     
     RETURN COALESCE((v_permissions->>p_permission)::boolean, false);
 END;

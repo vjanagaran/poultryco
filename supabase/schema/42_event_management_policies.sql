@@ -10,13 +10,13 @@ CREATE POLICY "Organizers can view their own events"
     ON events FOR SELECT
     USING (
         organizer_id IN (
-            SELECT id FROM profiles WHERE user_id = auth.uid()
+            SELECT id FROM organizations WHERE creator_id = auth.uid()
         )
         OR
         organizer_id IN (
             SELECT organization_id FROM organization_members
-            WHERE profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND status = 'active'
+            WHERE member_id = auth.uid() AND member_type = 'personal'
+            AND membership_status = 'active'
         )
     );
 
@@ -26,12 +26,12 @@ CREATE POLICY "Organizers can create events"
         -- Must be an organization
         organizer_id IN (
             SELECT id FROM organizations 
-            WHERE creator_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
+            WHERE creator_id = (auth.uid())
             UNION
-            SELECT organization_id FROM organization_members om
+            SELECT om.organization_id FROM organization_members om
             JOIN organization_roles r ON r.id = om.role_id
-            WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            WHERE om.member_id = auth.uid() AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_events')::boolean = true
         )
     );
@@ -40,10 +40,10 @@ CREATE POLICY "Organizers can update their events"
     ON events FOR UPDATE
     USING (
         organizer_id IN (
-            SELECT organization_id FROM organization_members om
+            SELECT om.organization_id FROM organization_members om
             JOIN organization_roles r ON r.id = om.role_id
-            WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            WHERE om.member_id = auth.uid() AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_events')::boolean = true
         )
     );
@@ -64,8 +64,8 @@ CREATE POLICY "Event organizers can manage sessions"
             SELECT e.id FROM events e
             JOIN organization_members om ON om.organization_id = e.organizer_id
             JOIN organization_roles r ON r.id = om.role_id
-            WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            WHERE om.member_id = auth.uid() AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_events')::boolean = true
         )
     );
@@ -86,8 +86,8 @@ CREATE POLICY "Event organizers can manage speakers"
             SELECT e.id FROM events e
             JOIN organization_members om ON om.organization_id = e.organizer_id
             JOIN organization_roles r ON r.id = om.role_id
-            WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            WHERE om.member_id = auth.uid() AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_events')::boolean = true
         )
     );
@@ -109,8 +109,8 @@ CREATE POLICY "Event organizers can manage ticket types"
             SELECT e.id FROM events e
             JOIN organization_members om ON om.organization_id = e.organizer_id
             JOIN organization_roles r ON r.id = om.role_id
-            WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            WHERE om.member_id = auth.uid() AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_events')::boolean = true
         )
     );
@@ -119,7 +119,7 @@ CREATE POLICY "Event organizers can manage ticket types"
 CREATE POLICY "Users can view their own registrations"
     ON event_registrations FOR SELECT
     USING (
-        attendee_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
+        attendee_id = (auth.uid())
     );
 
 CREATE POLICY "Event organizers can view all registrations"
@@ -128,15 +128,15 @@ CREATE POLICY "Event organizers can view all registrations"
         event_id IN (
             SELECT e.id FROM events e
             JOIN organization_members om ON om.organization_id = e.organizer_id
-            WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            WHERE om.member_id = auth.uid() AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
         )
     );
 
 CREATE POLICY "Users can register for events"
     ON event_registrations FOR INSERT
     WITH CHECK (
-        attendee_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
+        attendee_id = (auth.uid())
         AND event_id IN (
             SELECT id FROM events WHERE status = 'published'
         )
@@ -149,8 +149,8 @@ CREATE POLICY "Event organizers can manage registrations"
             SELECT e.id FROM events e
             JOIN organization_members om ON om.organization_id = e.organizer_id
             JOIN organization_roles r ON r.id = om.role_id
-            WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            WHERE om.member_id = auth.uid() AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_events')::boolean = true
         )
     );
@@ -171,8 +171,8 @@ CREATE POLICY "Event organizers can manage sponsors"
             SELECT e.id FROM events e
             JOIN organization_members om ON om.organization_id = e.organizer_id
             JOIN organization_roles r ON r.id = om.role_id
-            WHERE om.profile_id = (SELECT id FROM profiles WHERE user_id = auth.uid())
-            AND om.status = 'active'
+            WHERE om.member_id = auth.uid() AND om.member_type = 'personal'
+            AND om.membership_status = 'active'
             AND (r.permissions->>'manage_events')::boolean = true
         )
     );
@@ -259,7 +259,7 @@ DECLARE
     v_checker_profile_id UUID;
 BEGIN
     -- Get checker profile
-    SELECT id INTO v_checker_profile_id FROM profiles WHERE user_id = auth.uid();
+    v_checker_profile_id := auth.uid();
     
     -- Get registration details
     SELECT 

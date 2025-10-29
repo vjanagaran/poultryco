@@ -5,7 +5,7 @@
 DROP TABLE IF EXISTS organization_events CASCADE;
 
 -- Main events table
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     organizer_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE, -- Organization
     name TEXT NOT NULL,
@@ -64,14 +64,14 @@ CREATE TABLE events (
 );
 
 -- Create indexes
-CREATE INDEX idx_events_organizer ON events(organizer_id);
-CREATE INDEX idx_events_slug ON events(slug);
-CREATE INDEX idx_events_type ON events(event_type);
-CREATE INDEX idx_events_status ON events(status);
-CREATE INDEX idx_events_dates ON events(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_events_organizer ON events(organizer_id);
+CREATE INDEX IF NOT EXISTS idx_events_slug ON events(slug);
+CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
+CREATE INDEX IF NOT EXISTS idx_events_dates ON events(start_date, end_date);
 
 -- Event sessions/agenda
-CREATE TABLE event_sessions (
+CREATE TABLE IF NOT EXISTS event_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -105,11 +105,11 @@ CREATE TABLE event_sessions (
 );
 
 -- Create indexes
-CREATE INDEX idx_event_sessions_event ON event_sessions(event_id);
-CREATE INDEX idx_event_sessions_time ON event_sessions(start_time, end_time);
+CREATE INDEX IF NOT EXISTS idx_event_sessions_event ON event_sessions(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_sessions_time ON event_sessions(start_time, end_time);
 
 -- Event speakers
-CREATE TABLE event_speakers (
+CREATE TABLE IF NOT EXISTS event_speakers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     profile_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -132,11 +132,11 @@ CREATE TABLE event_speakers (
 );
 
 -- Create indexes
-CREATE INDEX idx_event_speakers_event ON event_speakers(event_id);
-CREATE INDEX idx_event_speakers_profile ON event_speakers(profile_id);
+CREATE INDEX IF NOT EXISTS idx_event_speakers_event_new ON event_speakers(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_speakers_profile_new ON event_speakers(profile_id);
 
 -- Ticket types
-CREATE TABLE event_ticket_types (
+CREATE TABLE IF NOT EXISTS event_ticket_types (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -173,11 +173,11 @@ CREATE TABLE event_ticket_types (
 );
 
 -- Create indexes
-CREATE INDEX idx_event_ticket_types_event ON event_ticket_types(event_id);
-CREATE INDEX idx_event_ticket_types_active ON event_ticket_types(is_active);
+CREATE INDEX IF NOT EXISTS idx_event_ticket_types_event ON event_ticket_types(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_ticket_types_active ON event_ticket_types(is_active);
 
 -- Event registrations/tickets
-CREATE TABLE event_registrations (
+CREATE TABLE IF NOT EXISTS event_registrations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     attendee_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -211,13 +211,13 @@ CREATE TABLE event_registrations (
 );
 
 -- Create indexes
-CREATE INDEX idx_event_registrations_event ON event_registrations(event_id);
-CREATE INDEX idx_event_registrations_attendee ON event_registrations(attendee_id);
-CREATE INDEX idx_event_registrations_qr ON event_registrations(qr_code);
-CREATE INDEX idx_event_registrations_number ON event_registrations(registration_number);
+CREATE INDEX IF NOT EXISTS idx_event_registrations_event ON event_registrations(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_registrations_attendee ON event_registrations(attendee_id);
+CREATE INDEX IF NOT EXISTS idx_event_registrations_qr ON event_registrations(qr_code);
+CREATE INDEX IF NOT EXISTS idx_event_registrations_number ON event_registrations(registration_number);
 
 -- Sponsor tiers
-CREATE TABLE event_sponsor_tiers (
+CREATE TABLE IF NOT EXISTS event_sponsor_tiers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -243,7 +243,7 @@ CREATE TABLE event_sponsor_tiers (
 );
 
 -- Event sponsors
-CREATE TABLE event_sponsors (
+CREATE TABLE IF NOT EXISTS event_sponsors (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     sponsor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE, -- Business profile
@@ -272,11 +272,11 @@ CREATE TABLE event_sponsors (
 );
 
 -- Create indexes
-CREATE INDEX idx_event_sponsors_event ON event_sponsors(event_id);
-CREATE INDEX idx_event_sponsors_sponsor ON event_sponsors(sponsor_id);
+CREATE INDEX IF NOT EXISTS idx_event_sponsors_event ON event_sponsors(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_sponsors_sponsor ON event_sponsors(sponsor_id);
 
 -- Expo stalls (for events with exhibitions)
-CREATE TABLE event_expo_stalls (
+CREATE TABLE IF NOT EXISTS event_expo_stalls (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
     exhibitor_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -305,7 +305,7 @@ CREATE TABLE event_expo_stalls (
 );
 
 -- Event check-ins log
-CREATE TABLE event_checkins (
+CREATE TABLE IF NOT EXISTS event_checkins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     registration_id UUID NOT NULL REFERENCES event_registrations(id) ON DELETE CASCADE,
     session_id UUID REFERENCES event_sessions(id) ON DELETE CASCADE, -- NULL for main event check-in
@@ -321,11 +321,11 @@ CREATE TABLE event_checkins (
 );
 
 -- Create indexes
-CREATE INDEX idx_event_checkins_registration ON event_checkins(registration_id);
-CREATE INDEX idx_event_checkins_session ON event_checkins(session_id);
+CREATE INDEX IF NOT EXISTS idx_event_checkins_registration ON event_checkins(registration_id);
+CREATE INDEX IF NOT EXISTS idx_event_checkins_session ON event_checkins(session_id);
 
 -- Event analytics summary (materialized view for performance)
-CREATE MATERIALIZED VIEW event_analytics AS
+CREATE MATERIALIZED VIEW IF NOT EXISTS event_analytics AS
 SELECT 
     e.id as event_id,
     e.name as event_name,
@@ -347,7 +347,7 @@ LEFT JOIN event_speakers esp ON esp.event_id = e.id
 GROUP BY e.id, e.name;
 
 -- Create index on materialized view
-CREATE INDEX idx_event_analytics_event ON event_analytics(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_analytics_event ON event_analytics(event_id);
 
 -- Enable RLS on all tables
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
@@ -395,22 +395,26 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Add triggers for updated_at
+-- Add triggers for updated_at (drop if exists to replace)
+DROP TRIGGER IF EXISTS update_events_updated_at ON events;
 CREATE TRIGGER update_events_updated_at
     BEFORE UPDATE ON events
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_event_sessions_updated_at ON event_sessions;
 CREATE TRIGGER update_event_sessions_updated_at
     BEFORE UPDATE ON event_sessions
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_event_ticket_types_updated_at ON event_ticket_types;
 CREATE TRIGGER update_event_ticket_types_updated_at
     BEFORE UPDATE ON event_ticket_types
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_event_registrations_updated_at ON event_registrations;
 CREATE TRIGGER update_event_registrations_updated_at
     BEFORE UPDATE ON event_registrations
     FOR EACH ROW

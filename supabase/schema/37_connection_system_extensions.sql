@@ -1,11 +1,10 @@
 -- Connection System Extensions
 -- Extends existing connection system with additional features
 
--- Add missing columns to existing connections table if needed
-ALTER TABLE connections 
-ADD COLUMN IF NOT EXISTS connection_type TEXT DEFAULT 'connect' CHECK (connection_type IN ('connect')),
-ADD COLUMN IF NOT EXISTS message TEXT;
-
+-- The existing connections table already has all necessary columns:
+-- - profile_id_1, profile_id_2 (alphabetically ordered)
+-- - status (pending, connected, blocked)
+-- - requested_by, connection_message
 -- The existing system already handles mutual connections well
 -- Follows are already in a separate table
 
@@ -37,13 +36,13 @@ ALTER TABLE invitations ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view their own invitations"
     ON invitations FOR SELECT
     USING (
-        auth.uid() = (SELECT user_id FROM profiles WHERE id = inviter_profile_id)
+        inviter_profile_id = auth.uid()
     );
 
 CREATE POLICY "Users can create invitations"
     ON invitations FOR INSERT
     WITH CHECK (
-        auth.uid() = (SELECT user_id FROM profiles WHERE id = inviter_profile_id)
+        inviter_profile_id = auth.uid()
     );
 
 -- Table for social sharing tracking (NEW)
@@ -67,7 +66,7 @@ ALTER TABLE share_tracking ENABLE ROW LEVEL SECURITY;
 -- Policy for share tracking
 CREATE POLICY "Users can track their own shares"
     ON share_tracking FOR ALL
-    USING (auth.uid() = (SELECT user_id FROM profiles WHERE id = profile_id));
+    USING (profile_id = auth.uid());
 
 -- Enhanced function to get connection status (works with existing schema)
 CREATE OR REPLACE FUNCTION get_full_connection_status(
