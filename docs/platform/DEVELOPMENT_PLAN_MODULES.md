@@ -1,29 +1,54 @@
 # PoultryCo Development Plan - Module by Module
 
+## Key Architectural Clarifications
+
+### 1. Backend: Supabase (No Custom APIs)
+- All data operations use Supabase client SDK
+- Database functions (RPCs) handle complex logic  
+- RLS policies manage authorization
+- Edge Functions only for external integrations
+
+### 2. Platform Strategy: Web-First
+- Focus 100% on web platform
+- Mobile app development is a future phase
+- Ensure responsive design for mobile browsers
+
+### 3. URL Structure
+- Personal profiles: `/me/:username`
+- Business profiles: `/com/:slug`
+- Organization profiles: `/org/:slug`
+
 ## Overview
-This document outlines the development plan for implementing all the new functionalities added through recent schema changes. Each module includes detailed tasks, API endpoints, UI components, and integration points.
+This document outlines the development plan for implementing all the new functionalities added through recent schema changes. Each module includes detailed tasks, Supabase integration, UI components, and integration points.
 
 ## Module 1: Connection & Follow System
 **Objective**: Implement dual connection system with mutual connections and one-way follows
 
-### Backend Tasks
-1. **API Endpoints** (`/api/connections/`)
-   - `POST /api/connections/request` - Send connection/follow request
-   - `POST /api/connections/accept/:id` - Accept connection request
-   - `POST /api/connections/reject/:id` - Reject connection request
-   - `GET /api/connections/requests` - List pending requests
-   - `GET /api/connections` - List connections
-   - `GET /api/connections/followers` - List followers
-   - `GET /api/connections/following` - List following
-   - `DELETE /api/connections/:id` - Remove connection/unfollow
+### Supabase Integration
+1. **RPC Functions** (Already created in schema)
+   - `handle_connection_request()` - Send connection/follow request
+   - `accept_connection_request()` - Accept connection request  
+   - `reject_connection_request()` - Reject connection request
+   - `remove_connection()` - Remove connection/unfollow
 
-2. **Business Logic**
-   - Implement connection request workflow
-   - Handle mutual vs one-way relationships
-   - Send notifications for connection events
-   - Update connection statistics
+2. **Direct Table Access**
+   ```typescript
+   // Get connections
+   supabase.from('network_connections')
+     .select('*')
+     .eq('status', 'accepted')
+   
+   // Get followers/following
+   supabase.from('follows')
+     .select('*')
+     .eq('follower_id', userId)
+   ```
 
-### Frontend Tasks (Web)
+3. **Real-time Subscriptions**
+   - Subscribe to connection status changes
+   - Update UI when new requests arrive
+
+### Frontend Tasks (Web Only)
 1. **Components**
    - `ConnectionButton.tsx` - Smart button showing connection status
    - `ConnectionRequestList.tsx` - Manage pending requests
@@ -35,30 +60,34 @@ This document outlines the development plan for implementing all the new functio
    - `/network/requests` - Pending requests
    - `/network/connections` - Manage connections
 
-### Mobile Tasks
-1. Implement same features in React Native
-2. Add push notifications for connection requests
-3. Optimize for mobile UX
+### Responsive Design
+1. Ensure all components work on mobile browsers
+2. Touch-friendly UI elements
+3. Progressive Web App (PWA) features for notifications
 
 ---
 
 ## Module 2: Invitation System
 **Objective**: Enable invitations via WhatsApp, SMS, email, and social sharing
 
-### Backend Tasks
-1. **API Endpoints** (`/api/invitations/`)
-   - `POST /api/invitations/send` - Send invitation
-   - `POST /api/invitations/bulk` - Bulk invite from contacts
-   - `GET /api/invitations/sent` - List sent invitations
-   - `GET /api/invitations/stats` - Invitation analytics
+### Supabase Integration
+1. **RPC Functions** (Already created)
+   - `queue_whatsapp_message()` - Queue WhatsApp messages
+   - `queue_sms_message()` - Queue SMS messages
+   - `generate_share_url()` - Generate social share URLs
+   - `process_contact_import()` - Process bulk imports
 
-2. **Integration Services**
-   - Implement Wati API service for WhatsApp
-   - Implement Twilio service for SMS
-   - Create invitation tracking system
-   - Handle invitation acceptance flow
+2. **Edge Functions** (To be created)
+   - `/functions/send-whatsapp` - Wati API integration
+   - `/functions/send-sms` - Twilio API integration
+   - `/functions/process-whatsapp-queue` - Queue processor
+   - `/functions/process-sms-queue` - Queue processor
 
-### Frontend Tasks (Web)
+3. **Direct Table Access**
+   - `invitations` table for tracking
+   - `share_tracking` table for analytics
+
+### Frontend Tasks (Web Only)
 1. **Components**
    - `InviteModal.tsx` - Multi-channel invitation UI
    - `ContactImporter.tsx` - Import from Google/phone
@@ -76,20 +105,28 @@ This document outlines the development plan for implementing all the new functio
 ## Module 3: Business Products & Services
 **Objective**: Extend product system to support services with custom fields
 
-### Backend Tasks
-1. **API Endpoints** (`/api/business/products-services/`)
-   - `POST /api/business/products-services` - Create product/service
-   - `PUT /api/business/products-services/:id` - Update
-   - `GET /api/business/products-services` - List with filters
-   - `POST /api/business/products-services/inquire` - Send inquiry
+### Supabase Integration
+1. **Direct Table Operations**
+   ```typescript
+   // Create/Update product or service
+   supabase.from('business_products')
+     .insert({ item_type: 'service', ... })
+   
+   // List with filters
+   supabase.from('business_products_services_view')
+     .select('*')
+     .eq('item_type', 'service')
+   ```
 
-2. **Business Logic**
-   - Dynamic form generation based on type
-   - Custom field validation
-   - Search and filter implementation
-   - Inquiry routing to messaging system
+2. **RPC Functions**
+   - `search_business_products_services()` - Advanced search
 
-### Frontend Tasks (Web)
+3. **Business Logic**
+   - Use JSONB columns for custom fields
+   - Validation in frontend + database constraints
+   - Inquiries create entries in messaging system
+
+### Frontend Tasks (Web Only)
 1. **Components**
    - `ProductServiceForm.tsx` - Dynamic form based on type
    - `ProductServiceCard.tsx` - Display card
@@ -97,8 +134,8 @@ This document outlines the development plan for implementing all the new functio
    - `InquiryButton.tsx` - Quick inquiry action
 
 2. **Pages**
-   - `/business/:slug/products` - Business products page
-   - `/business/:slug/services` - Business services page
+   - `/com/:slug/products` - Business products page
+   - `/com/:slug/services` - Business services page
    - `/marketplace` - Browse all products/services
 
 ---
@@ -106,22 +143,25 @@ This document outlines the development plan for implementing all the new functio
 ## Module 4: Organization Membership System
 **Objective**: Comprehensive membership management with tiers and roles
 
-### Backend Tasks
-1. **API Endpoints** (`/api/organizations/`)
-   - `POST /api/organizations/:id/tiers` - Create membership tier
-   - `POST /api/organizations/:id/roles` - Create custom role
-   - `POST /api/organizations/:id/members/invite` - Invite member
-   - `POST /api/organizations/:id/members/approve` - Approve application
-   - `GET /api/organizations/:id/members` - List members with filters
-   - `PUT /api/organizations/:id/members/:memberId` - Update member
+### Supabase Integration
+1. **Direct Table Operations**
+   - `organization_membership_tiers` - Manage tiers
+   - `organization_roles` - Manage roles
+   - `organization_members` - Member CRUD
+   - `organization_membership_history` - Track changes
 
-2. **Business Logic**
-   - Membership application workflow
-   - Role-based permissions
-   - Tier benefits management
-   - Membership expiry handling
+2. **Views & RPC Functions**
+   - `organization_members_detail` view - Member details
+   - `add_organization_member()` - Add new member
+   - `update_member_tier()` - Change tier
+   - `check_member_permission()` - Permission checks
 
-### Frontend Tasks (Web)
+3. **Business Logic**
+   - RLS policies enforce permissions
+   - Database triggers track history
+   - Membership status managed by database
+
+### Frontend Tasks (Web Only)
 1. **Components**
    - `MembershipTierManager.tsx` - Create/edit tiers
    - `RoleManager.tsx` - Manage custom roles
@@ -139,20 +179,22 @@ This document outlines the development plan for implementing all the new functio
 ## Module 5: Organization Communication
 **Objective**: Messaging system for announcements and member communication
 
-### Backend Tasks
-1. **API Endpoints** (`/api/organizations/communications/`)
-   - `POST /api/organizations/:id/announcements` - Send announcement
-   - `POST /api/organizations/:id/messages/broadcast` - Broadcast message
-   - `GET /api/organizations/:id/groups` - List message groups
-   - `POST /api/organizations/:id/groups` - Create group
+### Supabase Integration  
+1. **Enhanced Messaging Tables**
+   - `conversations` table with `organization_id`
+   - `conversation_participants` for members
+   - `messages` table for content
 
-2. **Business Logic**
-   - Create organization groups automatically
-   - Handle tier/role-based messaging
-   - Track message delivery and read status
-   - Integrate with email/WhatsApp for paid features
+2. **RPC Functions**
+   - `create_org_announcement_group()` - Auto-create groups
+   - `send_org_announcement()` - Send to members
 
-### Frontend Tasks (Web)
+3. **Integration with External Channels**
+   - Queue messages in `email_queue` table
+   - Queue WhatsApp in `whatsapp_queue` table
+   - Edge functions process queues
+
+### Frontend Tasks (Web Only)
 1. **Components**
    - `AnnouncementComposer.tsx` - Create announcements
    - `BroadcastModal.tsx` - Send broadcasts
@@ -164,22 +206,25 @@ This document outlines the development plan for implementing all the new functio
 ## Module 6: Event Management System
 **Objective**: Comprehensive event management for conferences, workshops, expos
 
-### Backend Tasks
-1. **API Endpoints** (`/api/events/`)
-   - Full CRUD for events, sessions, speakers, tickets
-   - `POST /api/events/:id/register` - Register for event
-   - `POST /api/events/:id/checkin` - Check-in attendee
-   - `GET /api/events/:id/analytics` - Event dashboard
-   - `POST /api/events/:id/sponsors` - Add sponsor
+### Supabase Integration
+1. **Direct Table Operations**
+   - `events`, `event_sessions`, `event_speakers`
+   - `event_ticket_types`, `event_registrations`
+   - `event_sponsors`, `event_sponsor_tiers`
+   - `event_expo_stalls`, `event_checkins`
 
-2. **Business Logic**
-   - Ticket availability management
-   - QR code generation for tickets
-   - Session scheduling conflicts
-   - Sponsor tier management
-   - Event analytics aggregation
+2. **RPC Functions & Views**
+   - `register_for_event()` - Handle registration
+   - `checkin_attendee()` - QR code check-in
+   - `get_event_dashboard_stats()` - Analytics
+   - `event_analytics` - Materialized view
 
-### Frontend Tasks (Web)
+3. **Business Logic**
+   - Database constraints handle capacity
+   - Triggers generate QR codes
+   - RLS policies enforce permissions
+
+### Frontend Tasks (Web Only)
 1. **Event Creation & Management**
    - `EventWizard.tsx` - Multi-step event creation
    - `SessionScheduler.tsx` - Drag-drop session planner
@@ -200,40 +245,40 @@ This document outlines the development plan for implementing all the new functio
    - `BadgePrinter.tsx` - Print attendee badges
    - `ExpoFloorPlan.tsx` - Manage stall allocation
 
-### Mobile Tasks
-1. **Attendee App Features**
-   - QR ticket display
-   - Session reminders
-   - Networking features
-   - Event schedule
+### Web-Based Mobile Features
+1. **PWA Features for Attendees**
+   - QR ticket display (save to home screen)
+   - Browser notifications for sessions
+   - Offline schedule access
+   - Mobile-optimized UI
 
-2. **Organizer App Features**
-   - QR code scanner for check-in
-   - Real-time attendance tracking
-   - Push announcements
+2. **Web Check-in System**
+   - Browser-based QR scanner
+   - Real-time sync with Supabase
+   - Touch-optimized interface
 
 ---
 
 ## Module 7: Third-Party Integrations
 **Objective**: WhatsApp, SMS, and social sharing integrations
 
-### Backend Tasks
-1. **Integration Services**
-   - Wati API client implementation
-   - Twilio SMS service
-   - Social share URL generation
-   - Contact import processors
+### Supabase Integration
+1. **Tables for Queue Management**
+   - `whatsapp_queue` - WhatsApp messages
+   - `sms_queue` - SMS messages
+   - `contact_imports` - Import tracking
+   - `integration_credentials` - API keys (encrypted)
 
-2. **Queue Processors**
-   - WhatsApp message queue processor
-   - SMS queue processor
-   - Retry logic implementation
-   - Cost tracking
+2. **Edge Functions Required**
+   - `/functions/process-whatsapp-queue`
+   - `/functions/process-sms-queue`
+   - `/functions/sync-contacts`
 
-3. **API Endpoints**
-   - `POST /api/integrations/import-contacts` - Import contacts
-   - `GET /api/integrations/share-url` - Generate share URLs
-   - `GET /api/integrations/message-status` - Check delivery
+3. **RPC Functions**
+   - `queue_whatsapp_message()`
+   - `queue_sms_message()`
+   - `generate_share_url()`
+   - `process_contact_import()`
 
 ### Frontend Tasks
 1. **Components**
@@ -247,17 +292,20 @@ This document outlines the development plan for implementing all the new functio
 ## Module 8: Enhanced Email System
 **Objective**: Complete email campaign and automation system
 
-### Backend Tasks
-1. **Email Services**
-   - Complete AWS SES integration
-   - Email template rendering
-   - Campaign step execution
-   - Unsubscribe handling
+### Supabase Integration
+1. **Email System Tables**
+   - `email_queue` - Message queue
+   - `email_templates` - Template storage
+   - `email_campaigns` - Campaign management
+   - `email_preferences` - User preferences
 
-2. **Cron Jobs**
-   - Email queue processor
-   - Campaign automation
-   - Bounce/complaint handling
+2. **Edge Functions**
+   - `/functions/process-email-queue` (already created)
+   - Set up cron trigger in Supabase dashboard
+
+3. **Configuration**
+   - Store AWS SES credentials in Supabase Vault
+   - Configure sender domains
 
 ### Frontend Tasks
 1. **Admin Components**
@@ -361,11 +409,12 @@ This document outlines the development plan for implementing all the new functio
 ## Resources Needed
 
 ### Team
-- 2 Full-stack developers
-- 1 Mobile developer
+- 2 Full-stack developers (React + Supabase)
 - 1 UI/UX designer
-- 1 QA engineer
+- 1 QA engineer  
 - 1 DevOps engineer (part-time)
+
+Note: No backend or mobile developers needed in current phase
 
 ### External Services
 - Wati API account
