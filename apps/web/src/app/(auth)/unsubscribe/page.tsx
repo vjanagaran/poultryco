@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { unsubscribeAll } from '@/lib/api/email-preferences';
 import { Container, Card, CardContent, Button, Alert } from '@/components/ui';
 
-export default function UnsubscribePage() {
+function UnsubscribeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -110,10 +110,10 @@ export default function UnsubscribePage() {
           
           <div className="space-y-3">
             <Button
-              variant="destructive"
+              variant="secondary"
               onClick={handleUnsubscribe}
               disabled={loading || !token}
-              className="w-full"
+              className="w-full bg-red-600 hover:bg-red-700 text-white"
             >
               {loading ? 'Processing...' : 'Confirm Unsubscribe'}
             </Button>
@@ -133,5 +133,21 @@ export default function UnsubscribePage() {
         </CardContent>
       </Card>
     </Container>
+  );
+}
+
+export default function UnsubscribePage() {
+  return (
+    <Suspense fallback={
+      <Container className="py-12">
+        <Card className="max-w-lg mx-auto">
+          <CardContent className="p-8">
+            <div className="text-center">Loading...</div>
+          </CardContent>
+        </Card>
+      </Container>
+    }>
+      <UnsubscribeContent />
+    </Suspense>
   );
 }

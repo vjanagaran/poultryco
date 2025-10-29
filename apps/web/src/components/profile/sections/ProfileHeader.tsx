@@ -6,7 +6,9 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import PhotoUploadModal from '../PhotoUploadModal';
 import { getPublicUrl } from '@/lib/supabase/storage';
-import { sendConnectionRequest, checkConnectionStatus } from '@/lib/api/connections';
+import { ConnectionButton } from '@/components/connections/ConnectionButton';
+import { ConnectionCount } from '@/components/connections/ConnectionCount';
+import { MutualConnections } from '@/components/connections/MutualConnections';
 
 interface ProfileHeaderProps {
   profile: any;
@@ -17,23 +19,8 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
   const [showCoverUpload, setShowCoverUpload] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<{
-    exists: boolean;
-    status?: string;
-    isRequester?: boolean;
-  }>({ exists: false });
   const { user } = useAuth();
   const { updateProfile } = useProfile();
-  
-  // Check connection status on mount
-  useEffect(() => {
-    if (!isOwner && user && profile?.id) {
-      checkConnectionStatus(profile.id).then(result => {
-        setConnectionStatus(result);
-      });
-    }
-  }, [isOwner, user, profile?.id]);
 
   const handleAvatarSuccess = async (url: string) => {
     await updateProfile({ profile_photo_url: url });
@@ -47,29 +34,6 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
   const coverPhotoUrl = getPublicUrl(profile.cover_photo_url);
   const profilePhotoUrl = getPublicUrl(profile.profile_photo_url);
 
-  const handleConnect = async () => {
-    setIsConnecting(true);
-    try {
-      const result = await sendConnectionRequest(profile.id);
-      
-      if (result.success) {
-        setConnectionStatus({ exists: true, status: 'pending', isRequester: true });
-      } else {
-        if (result.error === 'Not authenticated') {
-          alert('Please login to connect');
-        } else if (result.error === 'Connection already exists') {
-          setConnectionStatus({ exists: true, status: 'pending' });
-        } else {
-          alert(result.error || 'Failed to send connection request');
-        }
-      }
-    } catch (err) {
-      console.error('Error:', err);
-      alert('Failed to send connection request');
-    } finally {
-      setIsConnecting(false);
-    }
-  };
 
   return (
     <>
@@ -145,36 +109,23 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
               )}
             </div>
 
-            {/* Edit Button (Desktop) */}
-            {isOwner && (
-              <button
-                onClick={() => setShowEditModal(true)}
-                className="hidden sm:block ml-auto mb-2 px-6 py-2 border-2 border-green-600 text-green-600 font-semibold rounded-lg hover:bg-green-50 transition-colors"
-              >
-                ✏️ Edit Profile
-              </button>
-            )}
-            
-            {/* Connect Button (Desktop) */}
-            {!isOwner && (
-              <button
-                onClick={handleConnect}
-                disabled={isConnecting || connectionStatus.exists}
-                className={`hidden sm:block ml-auto mb-2 px-6 py-2 font-semibold rounded-lg transition-colors ${
-                  connectionStatus.exists
-                    ? connectionStatus.status === 'connected'
-                      ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                      : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                    : 'bg-primary text-white hover:bg-primary/90'
-                }`}
-              >
-                {isConnecting ? 'Sending...' : 
-                 connectionStatus.status === 'connected' ? '✓ Connected' :
-                 connectionStatus.status === 'pending' && connectionStatus.isRequester ? '✓ Request Sent' :
-                 connectionStatus.status === 'pending' ? 'Pending Approval' :
-                 '🤝 Connect'}
-              </button>
-            )}
+            {/* Action Buttons (Desktop) */}
+            <div className="hidden sm:flex items-center gap-3 ml-auto mb-2">
+              {isOwner ? (
+                <button
+                  onClick={() => setShowEditModal(true)}
+                  className="px-6 py-2 border-2 border-green-600 text-green-600 font-semibold rounded-lg hover:bg-green-50 transition-colors"
+                >
+                  ✏️ Edit Profile
+                </button>
+              ) : (
+                <ConnectionButton
+                  targetProfileId={profile.id}
+                  targetProfileName={profile.full_name}
+                  currentUserId={user?.id}
+                />
+              )}
+            </div>
           </div>
 
           {/* Name & Headline */}
@@ -194,43 +145,50 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
                 </button>
               )
             )}
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-2">
               📍 {profile.location_city && `${profile.location_city}, `}
               {profile.location_district && `${profile.location_district}, `}
               {profile.location_state}
             </p>
+            
+            {/* Connection Count - LinkedIn style */}
+            <div className="mb-2">
+              <ConnectionCount 
+                profileId={profile.id} 
+                variant="full" 
+                showFollowers={true}
+              />
+            </div>
+            
+            {/* Mutual Connections - show only when viewing others' profiles */}
+            {!isOwner && user && (
+              <MutualConnections
+                currentUserId={user.id}
+                targetUserId={profile.id}
+                variant="full"
+                className="mt-1"
+              />
+            )}
           </div>
 
-          {/* Edit Button (Mobile) */}
-          {isOwner && (
-            <button
-              onClick={() => setShowEditModal(true)}
-              className="sm:hidden w-full mt-4 px-6 py-3 border-2 border-green-600 text-green-600 font-semibold rounded-lg hover:bg-green-50 transition-colors"
-            >
-              ✏️ Edit Profile
-            </button>
-          )}
-          
-          {/* Connect Button (Mobile) */}
-          {!isOwner && (
-            <button
-              onClick={handleConnect}
-              disabled={isConnecting || connectionStatus.exists}
-              className={`sm:hidden w-full mt-4 px-6 py-3 font-semibold rounded-lg transition-colors ${
-                connectionStatus.exists
-                  ? connectionStatus.status === 'connected'
-                    ? 'bg-green-100 text-green-700 cursor-not-allowed'
-                    : 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                  : 'bg-primary text-white hover:bg-primary/90'
-              }`}
-            >
-              {isConnecting ? 'Sending...' : 
-               connectionStatus.status === 'connected' ? '✓ Connected' :
-               connectionStatus.status === 'pending' && connectionStatus.isRequester ? '✓ Request Sent' :
-               connectionStatus.status === 'pending' ? 'Pending Approval' :
-               '🤝 Connect'}
-            </button>
-          )}
+          {/* Action Buttons (Mobile) */}
+          <div className="sm:hidden mt-4">
+            {isOwner ? (
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="w-full px-6 py-3 border-2 border-green-600 text-green-600 font-semibold rounded-lg hover:bg-green-50 transition-colors"
+              >
+                ✏️ Edit Profile
+              </button>
+            ) : (
+              <ConnectionButton
+                targetProfileId={profile.id}
+                targetProfileName={profile.full_name}
+                currentUserId={user?.id}
+                className="w-full"
+              />
+            )}
+          </div>
 
           {/* Contact Info */}
           <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600">

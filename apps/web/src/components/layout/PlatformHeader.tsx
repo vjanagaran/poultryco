@@ -22,6 +22,7 @@ export function PlatformHeader() {
 
   const platformNav = [
     { title: "Home", href: "/home", icon: "🏠" },
+    { title: "Network", href: "/network", icon: "🤝" },
     { title: "Discover", href: "/discover/members", icon: "🔍" },
     { title: "Stream", href: "/stream", icon: "📰" },
     { title: "Messages", href: "/messages", icon: "💬" },
