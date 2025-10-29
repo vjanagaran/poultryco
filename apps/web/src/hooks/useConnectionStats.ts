@@ -19,10 +19,10 @@ export function useConnectionStats(profileId?: string) {
       
       // Get connections count (accepted mutual connections)
       const { count: connectionsCount } = await supabase
-        .from('network_connections')
+        .from('connections')
         .select('*', { count: 'exact', head: true })
-        .or(`requester_id.eq.${profileId},target_id.eq.${profileId}`)
-        .eq('status', 'accepted');
+        .or(`profile_id_1.eq.${profileId},profile_id_2.eq.${profileId}`)
+        .eq('status', 'connected');
       
       // Get followers count
       const { count: followersCount } = await supabase
@@ -42,10 +42,11 @@ export function useConnectionStats(profileId?: string) {
       
       if (user && user.id === profileId) {
         const { count } = await supabase
-          .from('network_connections')
+          .from('connections')
           .select('*', { count: 'exact', head: true })
-          .eq('target_id', profileId)
-          .eq('status', 'pending');
+          .or(`profile_id_1.eq.${profileId},profile_id_2.eq.${profileId}`)
+          .eq('status', 'pending')
+          .neq('requested_by', profileId); // Only count requests received, not sent
         pendingRequestsCount = count || 0;
       }
       
@@ -74,27 +75,27 @@ export function useMutualConnections(profileId1?: string, profileId2?: string) {
       
       // Get all connections for profile1
       const { data: connections1 } = await supabase
-        .from('network_connections')
-        .select('requester_id, target_id')
-        .or(`requester_id.eq.${profileId1},target_id.eq.${profileId1}`)
-        .eq('status', 'accepted');
+        .from('connections')
+        .select('profile_id_1, profile_id_2')
+        .or(`profile_id_1.eq.${profileId1},profile_id_2.eq.${profileId1}`)
+        .eq('status', 'connected');
       
       // Get all connections for profile2
       const { data: connections2 } = await supabase
-        .from('network_connections')
-        .select('requester_id, target_id')
-        .or(`requester_id.eq.${profileId2},target_id.eq.${profileId2}`)
-        .eq('status', 'accepted');
+        .from('connections')
+        .select('profile_id_1, profile_id_2')
+        .or(`profile_id_1.eq.${profileId2},profile_id_2.eq.${profileId2}`)
+        .eq('status', 'connected');
       
       // Extract connection IDs
       const profile1Connections = new Set<string>();
       connections1?.forEach(conn => {
-        profile1Connections.add(conn.requester_id === profileId1 ? conn.target_id : conn.requester_id);
+        profile1Connections.add(conn.profile_id_1 === profileId1 ? conn.profile_id_2 : conn.profile_id_1);
       });
       
       const profile2Connections = new Set<string>();
       connections2?.forEach(conn => {
-        profile2Connections.add(conn.requester_id === profileId2 ? conn.target_id : conn.requester_id);
+        profile2Connections.add(conn.profile_id_1 === profileId2 ? conn.profile_id_2 : conn.profile_id_1);
       });
       
       // Find mutual connections

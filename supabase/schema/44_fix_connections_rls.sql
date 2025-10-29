@@ -2,8 +2,64 @@
 -- Fix connections table RLS policies
 -- =====================================================
 
--- Enable RLS on connections table
+-- Drop existing function to allow parameter name changes
+DROP FUNCTION IF EXISTS get_connection_status(UUID, UUID);
+
+-- Create improved get_connection_status function
+CREATE OR REPLACE FUNCTION get_connection_status(
+  p_user_id UUID,
+  p_other_user_id UUID
+)
+RETURNS TEXT
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_connection RECORD;
+  v_min_id UUID;
+  v_max_id UUID;
+BEGIN
+  -- Order IDs
+  IF p_user_id < p_other_user_id THEN
+    v_min_id := p_user_id;
+    v_max_id := p_other_user_id;
+  ELSE
+    v_min_id := p_other_user_id;
+    v_max_id := p_user_id;
+  END IF;
+  
+  -- Get connection
+  SELECT * INTO v_connection
+  FROM connections
+  WHERE profile_id_1 = v_min_id AND profile_id_2 = v_max_id;
+  
+  -- Return status
+  IF NOT FOUND THEN
+    RETURN 'none';
+  END IF;
+  
+  IF v_connection.status = 'connected' THEN
+    RETURN 'connected';
+  END IF;
+  
+  IF v_connection.status = 'pending' THEN
+    IF v_connection.requested_by = p_user_id THEN
+      RETURN 'pending_sent';
+    ELSE
+      RETURN 'pending_received';
+    END IF;
+  END IF;
+  
+  RETURN 'none';
+END;
+$$ LANGUAGE plpgsql;
+
+-- Enable RLS on connections table (if not already enabled)
 ALTER TABLE connections ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their connections" ON connections;
+DROP POLICY IF EXISTS "Users can delete their connections" ON connections;
 
 -- Policy: Users can view connections they are part of
 CREATE POLICY "Users can view their connections"
@@ -37,6 +93,7 @@ DECLARE
   v_connection_id UUID;
   v_min_id UUID;
   v_max_id UUID;
+  v_existing_status TEXT;
 BEGIN
   -- Security check: requester must be the current user
   IF p_requester_id != auth.uid() THEN
@@ -57,16 +114,23 @@ BEGIN
     v_max_id := p_requester_id;
   END IF;
   
-  -- Insert or update
+  -- Check if connection already exists
+  SELECT id, status INTO v_connection_id, v_existing_status
+  FROM connections
+  WHERE profile_id_1 = v_min_id AND profile_id_2 = v_max_id;
+  
+  -- If exists and already connected, don't allow re-request
+  IF FOUND THEN
+    IF v_existing_status = 'connected' THEN
+      RAISE EXCEPTION 'Already connected';
+    ELSIF v_existing_status = 'pending' THEN
+      RAISE EXCEPTION 'Connection request already pending';
+    END IF;
+  END IF;
+  
+  -- Insert new connection request
   INSERT INTO connections (profile_id_1, profile_id_2, requested_by, connection_message, status)
   VALUES (v_min_id, v_max_id, p_requester_id, p_message, 'pending')
-  ON CONFLICT (profile_id_1, profile_id_2) DO UPDATE
-  SET 
-    requested_by = p_requester_id,
-    connection_message = p_message,
-    status = 'pending',
-    requested_at = NOW(),
-    responded_at = NULL
   RETURNING id INTO v_connection_id;
   
   RETURN v_connection_id;
@@ -203,8 +267,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Enable RLS on follows table
+-- Enable RLS on follows table (if not already enabled)
 ALTER TABLE follows ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view follows" ON follows;
+DROP POLICY IF EXISTS "Users can create follows" ON follows;
+DROP POLICY IF EXISTS "Users can delete their follows" ON follows;
 
 -- Policy: Users can view follows they are part of
 CREATE POLICY "Users can view follows"

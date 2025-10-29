@@ -39,30 +39,44 @@ export function ConnectionRequestsList() {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return [];
       
+      // Get connections where current user is profile_id_1 or profile_id_2 and status is pending
+      // and requested_by is NOT the current user (these are received requests)
       const { data, error } = await supabase
-        .from('network_connections')
+        .from('connections')
         .select(`
           id,
           created_at,
-          message,
-          requester:profiles!network_connections_requester_id_fkey (
-            id,
-            full_name,
-            username,
-            headline,
-            profile_photo_url,
-            location_city,
-            location_state
-          )
+          connection_message,
+          requested_by,
+          profile_id_1,
+          profile_id_2
         `)
-        .eq('target_id', user.user.id)
+        .or(`profile_id_1.eq.${user.user.id},profile_id_2.eq.${user.user.id}`)
         .eq('status', 'pending')
+        .neq('requested_by', user.user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
+      
+      // Fetch requester profiles
+      const requesterIds = data?.map(d => d.requested_by) || [];
+      if (requesterIds.length === 0) return [];
+      
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, headline, profile_photo_url, location_city, location_state')
+        .in('id', requesterIds);
+      
+      // Map profiles to requests
       return (data || []).map(item => ({
-        ...item,
-        requester: item.requester as any
+        id: item.id,
+        created_at: item.created_at,
+        message: item.connection_message,
+        requester: profiles?.find(p => p.id === item.requested_by) || {
+          id: item.requested_by,
+          full_name: 'Unknown User',
+          username: 'unknown',
+        }
       })) as ConnectionRequest[];
     }
   });
@@ -74,31 +88,49 @@ export function ConnectionRequestsList() {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return [];
       
+      // Get connections where current user is the requester
       const { data, error } = await supabase
-        .from('network_connections')
+        .from('connections')
         .select(`
           id,
           created_at,
-          message,
-          target:profiles!network_connections_target_id_fkey (
-            id,
-            full_name,
-            username,
-            headline,
-            profile_photo_url,
-            location_city,
-            location_state
-          )
+          connection_message,
+          requested_by,
+          profile_id_1,
+          profile_id_2
         `)
-        .eq('requester_id', user.user.id)
+        .eq('requested_by', user.user.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []).map(req => ({
-        ...req,
-        requester: (req as any).target // Normalize the data structure
-      })) as ConnectionRequest[];
+      
+      // Get the target profile IDs (the other person in the connection)
+      const targetIds = (data || []).map(item => 
+        item.profile_id_1 === user.user.id ? item.profile_id_2 : item.profile_id_1
+      );
+      
+      if (targetIds.length === 0) return [];
+      
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, headline, profile_photo_url, location_city, location_state')
+        .in('id', targetIds);
+      
+      // Map profiles to requests
+      return (data || []).map(item => {
+        const targetId = item.profile_id_1 === user.user.id ? item.profile_id_2 : item.profile_id_1;
+        return {
+          id: item.id,
+          created_at: item.created_at,
+          message: item.connection_message,
+          requester: profiles?.find(p => p.id === targetId) || {
+            id: targetId,
+            full_name: 'Unknown User',
+            username: 'unknown',
+          }
+        };
+      }) as ConnectionRequest[];
     }
   });
   
@@ -157,9 +189,19 @@ export function ConnectionRequestsList() {
   // Withdraw sent request
   const withdrawMutation = useMutation({
     mutationFn: async (targetId: string) => {
-      const { error } = await supabase.rpc('remove_connection', {
-        other_profile_id: targetId
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      const minId = user.id < targetId ? user.id : targetId;
+      const maxId = user.id < targetId ? targetId : user.id;
+      
+      const { error } = await supabase
+        .from('connections')
+        .delete()
+        .eq('profile_id_1', minId)
+        .eq('profile_id_2', maxId)
+        .eq('requested_by', user.id)
+        .eq('status', 'pending');
       
       if (error) throw error;
     },
@@ -170,6 +212,12 @@ export function ConnectionRequestsList() {
       });
       queryClient.invalidateQueries({ queryKey: ['connectionRequests'] });
       queryClient.invalidateQueries({ queryKey: ['connectionStatus'] });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to withdraw request',
+      });
     }
   });
   

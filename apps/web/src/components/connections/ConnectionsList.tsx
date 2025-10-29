@@ -38,64 +38,65 @@ export function ConnectionsList() {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) return [];
       
-      // Get connections where user is either requester or target
-      const { data: connectionsAsRequester, error: error1 } = await supabase
-        .from('network_connections')
+      // Get all connected connections
+      const { data, error } = await supabase
+        .from('connections')
         .select(`
           id,
           created_at,
-          target:profiles!network_connections_target_id_fkey (
-            id,
-            full_name,
-            username,
-            headline,
-            profile_photo_url,
-            location_city,
-            location_state
-          )
+          profile_id_1,
+          profile_id_2
         `)
-        .eq('requester_id', user.user.id)
-        .eq('status', 'accepted');
+        .or(`profile_id_1.eq.${user.user.id},profile_id_2.eq.${user.user.id}`)
+        .eq('status', 'connected');
       
-      const { data: connectionsAsTarget, error: error2 } = await supabase
-        .from('network_connections')
-        .select(`
-          id,
-          created_at,
-          requester:profiles!network_connections_requester_id_fkey (
-            id,
-            full_name,
-            username,
-            headline,
-            profile_photo_url,
-            location_city,
-            location_state
-          )
-        `)
-        .eq('target_id', user.user.id)
-        .eq('status', 'accepted');
+      if (error) throw error;
       
-      if (error1 || error2) throw error1 || error2;
+      // Get the other profile IDs
+      const otherProfileIds = (data || []).map(conn => 
+        conn.profile_id_1 === user.user.id ? conn.profile_id_2 : conn.profile_id_1
+      );
       
-      // Normalize the data
-      const allConnections = [
-        ...(connectionsAsRequester || []).map(c => ({ ...c, profile: (c as any).target })),
-        ...(connectionsAsTarget || []).map(c => ({ ...c, profile: (c as any).requester }))
-      ];
+      if (otherProfileIds.length === 0) return [];
       
-      return allConnections.map(conn => ({
-        ...conn,
-        profile: conn.profile as any
-      })) as Connection[];
+      // Fetch profile details
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, headline, profile_photo_url, location_city, location_state')
+        .in('id', otherProfileIds);
+      
+      // Map to Connection type
+      return (data || []).map(conn => {
+        const otherProfileId = conn.profile_id_1 === user.user.id ? conn.profile_id_2 : conn.profile_id_1;
+        const profile = profiles?.find(p => p.id === otherProfileId);
+        
+        return {
+          id: conn.id,
+          created_at: conn.created_at,
+          profile: profile || {
+            id: otherProfileId,
+            full_name: 'Unknown User',
+            username: 'unknown',
+          }
+        };
+      }) as Connection[];
     }
   });
   
   // Remove connection
   const removeConnectionMutation = useMutation({
     mutationFn: async (profileId: string) => {
-      const { error } = await supabase.rpc('remove_connection', {
-        other_profile_id: profileId
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      const minId = user.id < profileId ? user.id : profileId;
+      const maxId = user.id < profileId ? profileId : user.id;
+      
+      const { error } = await supabase
+        .from('connections')
+        .delete()
+        .eq('profile_id_1', minId)
+        .eq('profile_id_2', maxId);
       
       if (error) throw error;
     },
@@ -112,7 +113,6 @@ export function ConnectionsList() {
       toast({
         title: 'Error',
         description: error.message || 'Failed to remove connection',
-        variant: 'destructive',
       });
     }
   });
