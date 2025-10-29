@@ -49,24 +49,21 @@ export function ConnectionButton({
     queryFn: async () => {
       if (!currentUserId || currentUserId === targetProfileId) return 'none';
       
-      // Check for existing connection
-      const { data: connection } = await supabase
-        .from('network_connections')
-        .select('status, requester_id')
-        .or(
-          `and(requester_id.eq.${currentUserId},target_id.eq.${targetProfileId}),` +
-          `and(requester_id.eq.${targetProfileId},target_id.eq.${currentUserId})`
-        )
-        .single();
+      // Use the get_connection_status RPC function
+      const { data: status, error } = await supabase.rpc('get_connection_status', {
+        p_user_id: currentUserId,
+        p_other_user_id: targetProfileId
+      });
       
-      if (connection) {
-        if (connection.status === 'accepted') return 'connected' as ConnectionStatus;
-        if (connection.status === 'pending') {
-          return connection.requester_id === currentUserId ? 
-            'pending_sent' as ConnectionStatus : 
-            'pending_received' as ConnectionStatus;
-        }
+      if (error) {
+        console.error('Error getting connection status:', error);
+        return 'none' as ConnectionStatus;
       }
+      
+      // Map the database status to our component status
+      if (status === 'connected') return 'connected' as ConnectionStatus;
+      if (status === 'pending_sent') return 'pending_sent' as ConnectionStatus;
+      if (status === 'pending_received') return 'pending_received' as ConnectionStatus;
       
       // Check if following
       const { data: following } = await supabase
@@ -85,22 +82,23 @@ export function ConnectionButton({
   
   // Send connection request
   const sendConnectionMutation = useMutation({
-    mutationFn: async ({ requestType, message }: { requestType: 'connect' | 'follow', message?: string }) => {
-      const { data, error } = await supabase.rpc('handle_connection_request', {
-        target_profile_id: targetProfileId,
-        request_type: requestType,
-        message: message || null
+    mutationFn: async (message?: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      const { data, error } = await supabase.rpc('send_connection_request', {
+        p_requester_id: user.id,
+        p_target_id: targetProfileId,
+        p_message: message || null
       });
       
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, { requestType }) => {
+    onSuccess: () => {
       toast({
-        title: requestType === 'connect' ? 'Connection request sent' : 'Following',
-        description: requestType === 'connect' ? 
-          `Your connection request has been sent to ${targetProfileName}` :
-          `You are now following ${targetProfileName}`,
+        title: 'Connection request sent',
+        description: `Your connection request has been sent to ${targetProfileName}`,
       });
       queryClient.invalidateQueries({ queryKey: ['connectionStatus'] });
       queryClient.invalidateQueries({ queryKey: ['connectionStats'] });
@@ -111,7 +109,6 @@ export function ConnectionButton({
       toast({
         title: 'Error',
         description: error.message || 'Failed to send connection request',
-        variant: 'destructive',
       });
     }
   });
@@ -145,22 +142,42 @@ export function ConnectionButton({
     }
   });
   
-  // Remove connection or unfollow
+  // Remove connection or withdraw request
   const removeConnectionMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc('remove_connection', {
-        other_profile_id: targetProfileId
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      
+      // Get the connection ID to delete
+      const minId = user.id < targetProfileId ? user.id : targetProfileId;
+      const maxId = user.id < targetProfileId ? targetProfileId : user.id;
+      
+      const { error } = await supabase
+        .from('connections')
+        .delete()
+        .eq('profile_id_1', minId)
+        .eq('profile_id_2', maxId);
       
       if (error) throw error;
     },
     onSuccess: () => {
+      const title = connectionStatus === 'pending_sent' ? 'Request withdrawn' : 'Connection removed';
+      const description = connectionStatus === 'pending_sent' 
+        ? 'Your connection request has been withdrawn'
+        : `You are no longer connected with ${targetProfileName}`;
+      
       toast({
-        title: 'Connection removed',
-        description: `You are no longer connected with ${targetProfileName}`,
+        title,
+        description,
       });
       queryClient.invalidateQueries({ queryKey: ['connectionStatus'] });
       queryClient.invalidateQueries({ queryKey: ['connectionStats'] });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to remove connection',
+      });
     }
   });
   
@@ -172,15 +189,8 @@ export function ConnectionButton({
     setShowMessageDialog(true);
   };
   
-  const handleFollow = () => {
-    sendConnectionMutation.mutate({ requestType: 'follow' });
-  };
-  
   const handleSendConnection = () => {
-    sendConnectionMutation.mutate({ 
-      requestType: 'connect', 
-      message: message.trim() 
-    });
+    sendConnectionMutation.mutate(message.trim());
   };
   
   // Render different buttons based on status
@@ -204,10 +214,11 @@ export function ConnectionButton({
           size={size}
           variant="outline"
           className={className}
-          disabled
+          onClick={() => removeConnectionMutation.mutate()}
+          disabled={removeConnectionMutation.isPending}
         >
           <Clock className="h-4 w-4 mr-2" />
-          Pending
+          {removeConnectionMutation.isPending ? 'Withdrawing...' : 'Pending'}
         </Button>
       );
       
