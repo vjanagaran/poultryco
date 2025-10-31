@@ -79,25 +79,9 @@ BEGIN
   ON CONFLICT (id) DO NOTHING; -- Skip if profile already exists
 
   -- Create profile stats entry (skip if already exists)
-  INSERT INTO profile_stats (
-    profile_id,
-    total_posts,
-    total_comments,
-    followers_count,
-    following_count,
-    profile_views,
-    created_at,
-    updated_at
-  ) VALUES (
-    p_user_id,
-    0,
-    0,
-    0,
-    0,
-    0,
-    NOW(),
-    NOW()
-  )
+  -- Note: There's an auto-trigger that creates this, but we ensure it exists
+  INSERT INTO profile_stats (profile_id)
+  VALUES (p_user_id)
   ON CONFLICT (profile_id) DO NOTHING; -- Skip if stats already exist
 
   -- Return success
@@ -210,22 +194,10 @@ BEGIN
       NOW()
     );
 
-    -- Create profile stats
-    INSERT INTO profile_stats (
-      profile_id,
-      total_posts,
-      total_comments,
-      followers_count,
-      following_count,
-      profile_views
-    ) VALUES (
-      v_user_id,
-      0,
-      0,
-      0,
-      0,
-      0
-    );
+    -- Create profile stats (trigger handles this automatically, but ensure it exists)
+    INSERT INTO profile_stats (profile_id)
+    VALUES (v_user_id)
+    ON CONFLICT (profile_id) DO NOTHING;
 
     v_result := json_build_object(
       'success', true,

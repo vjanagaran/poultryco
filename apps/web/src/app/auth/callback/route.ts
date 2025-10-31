@@ -30,26 +30,36 @@ export async function GET(request: Request) {
       // Check if profile exists
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, profile_photo_url')
         .eq('id', session.user.id)
         .single();
+
+      // Extract OAuth metadata
+      const metadata = session.user.user_metadata;
+      
+      // Get profile photo (Google: picture, LinkedIn: picture or avatar_url)
+      const profilePhoto = metadata?.picture || 
+                          metadata?.avatar_url || 
+                          null;
+
+      // Log what we got from OAuth for debugging
+      console.log('OAuth metadata:', {
+        provider: metadata?.provider,
+        has_picture: !!metadata?.picture,
+        has_avatar_url: !!metadata?.avatar_url,
+        picture_url: profilePhoto,
+        name: metadata?.name || metadata?.full_name,
+        email: session.user.email
+      });
 
       // If no profile exists, create one (fallback for OAuth users)
       if (!existingProfile) {
         try {
-          // Extract user data from OAuth metadata
-          const metadata = session.user.user_metadata;
-          
           // Get full name (Google: name, LinkedIn: full_name)
           const fullName = metadata?.full_name ||
                           metadata?.name ||
                           session.user.email?.split('@')[0] ||
                           'User';
-          
-          // Get profile photo (Google: picture, LinkedIn: picture or avatar_url)
-          const profilePhoto = metadata?.picture || 
-                              metadata?.avatar_url || 
-                              null;
           
           // Get phone if available
           const phone = session.user.phone || 
@@ -77,6 +87,14 @@ export async function GET(request: Request) {
             counter++;
           }
 
+          console.log('Creating profile with data:', {
+            user_id: session.user.id,
+            full_name: fullName,
+            slug: slug,
+            profile_photo: profilePhoto,
+            phone: phone
+          });
+
           // Create profile using RPC function with all available data
           const { data: result, error: rpcError } = await supabase
             .rpc('create_profile_for_user', {
@@ -95,13 +113,38 @@ export async function GET(request: Request) {
 
           if (!result || result.success === false) {
             console.error('Profile creation failed:', result);
-            // Continue anyway - user might still be able to use the platform
           } else {
             console.log('Profile created successfully for OAuth user:', result);
           }
         } catch (error) {
           console.error('Error creating profile for OAuth user:', error);
-          // Continue anyway - user might still be able to use the platform
+        }
+      } else {
+        // Profile exists, but update photo if missing and OAuth has one
+        if (profilePhoto && !existingProfile.profile_photo_url) {
+          try {
+            console.log('Updating existing profile with OAuth photo:', profilePhoto);
+            
+            // Calculate new profile strength (base 25 + name 15 + photo 20 = 60)
+            const newStrength = 60; // Will be recalculated properly later
+
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ 
+                profile_photo_url: profilePhoto,
+                profile_strength: newStrength,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', session.user.id);
+
+            if (updateError) {
+              console.error('Error updating profile photo:', updateError);
+            } else {
+              console.log('Profile photo updated successfully');
+            }
+          } catch (error) {
+            console.error('Error updating existing profile:', error);
+          }
         }
       }
     }
