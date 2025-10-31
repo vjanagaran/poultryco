@@ -25,7 +25,7 @@ export default function RegisterForm() {
     confirmPassword: '',
   });
 
-  const handleSocialAuth = async (provider: 'google' | 'linkedin') => {
+  const handleSocialAuth = async (provider: 'google' | 'linkedin_oidc') => {
     setLoading(true);
     setError(null);
 
@@ -170,7 +170,7 @@ export default function RegisterForm() {
 
         <button
           type="button"
-          onClick={() => handleSocialAuth('linkedin')}
+          onClick={() => handleSocialAuth('linkedin_oidc')}
           disabled={loading}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
