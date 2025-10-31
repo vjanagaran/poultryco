@@ -1,0 +1,271 @@
+-- =====================================================
+-- PoultryCo Database Schema
+-- File: 45_oauth_profile_creation.sql
+-- Description: Auto-create profiles for OAuth signups
+-- Date: 2025-10-31
+-- =====================================================
+
+-- =====================================================
+-- RPC FUNCTION: Create profile for user
+-- Used by email registration and OAuth fallback
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION create_profile_for_user(
+  p_user_id UUID,
+  p_full_name TEXT,
+  p_email TEXT,
+  p_slug TEXT
+)
+RETURNS JSON AS $$
+DECLARE
+  v_result JSON;
+BEGIN
+  -- Insert profile
+  INSERT INTO profiles (
+    id,
+    full_name,
+    profile_slug,
+    email,
+    email_verified,
+    phone,
+    phone_verified,
+    location_state,
+    location_district,
+    location_city,
+    country,
+    profile_strength,
+    is_public,
+    created_at,
+    updated_at
+  ) VALUES (
+    p_user_id,
+    p_full_name,
+    p_slug,
+    p_email,
+    true, -- Email verified via OAuth
+    '', -- No phone initially
+    false,
+    'Unknown', -- Will be updated during onboarding
+    NULL,
+    NULL,
+    'India',
+    25, -- Base profile strength
+    true,
+    NOW(),
+    NOW()
+  );
+
+  -- Create profile stats entry
+  INSERT INTO profile_stats (
+    profile_id,
+    total_posts,
+    total_comments,
+    followers_count,
+    following_count,
+    profile_views,
+    created_at,
+    updated_at
+  ) VALUES (
+    p_user_id,
+    0,
+    0,
+    0,
+    0,
+    0,
+    NOW(),
+    NOW()
+  );
+
+  -- Return success
+  v_result := json_build_object(
+    'success', true,
+    'profile_id', p_user_id,
+    'message', 'Profile created successfully'
+  );
+  
+  RETURN v_result;
+  
+EXCEPTION WHEN OTHERS THEN
+  -- Return error details
+  v_result := json_build_object(
+    'success', false,
+    'error', SQLERRM,
+    'detail', SQLSTATE
+  );
+  
+  RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================================
+-- WEBHOOK FUNCTION: Handle new user signup
+-- This approach works without needing owner permissions
+-- Called by Supabase Auth webhook
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION public.handle_new_user_signup(user_data JSONB)
+RETURNS JSON AS $$
+DECLARE
+  v_user_id UUID;
+  v_full_name TEXT;
+  v_email TEXT;
+  v_base_slug TEXT;
+  v_slug TEXT;
+  v_counter INTEGER := 1;
+  v_existing_slug TEXT;
+  v_result JSON;
+BEGIN
+  -- Extract user data
+  v_user_id := (user_data->>'id')::UUID;
+  v_email := user_data->>'email';
+  
+  -- Get full name from metadata
+  v_full_name := COALESCE(
+    user_data->'user_metadata'->>'full_name',
+    user_data->'user_metadata'->>'name',
+    split_part(v_email, '@', 1)
+  );
+
+  -- Generate base slug from name
+  v_base_slug := lower(
+    regexp_replace(
+      regexp_replace(v_full_name, '[^a-zA-Z0-9\s-]', '', 'g'),
+      '\s+', '-', 'g'
+    )
+  );
+  v_base_slug := trim(both '-' from v_base_slug);
+  
+  -- Ensure slug is not empty
+  IF v_base_slug = '' OR v_base_slug IS NULL THEN
+    v_base_slug := 'user-' || substring(v_user_id::text, 1, 8);
+  END IF;
+
+  -- Make slug unique
+  v_slug := v_base_slug;
+  LOOP
+    SELECT profile_slug INTO v_existing_slug
+    FROM profiles
+    WHERE profile_slug = v_slug;
+    
+    EXIT WHEN v_existing_slug IS NULL;
+    
+    v_slug := v_base_slug || '-' || v_counter;
+    v_counter := v_counter + 1;
+  END LOOP;
+
+  -- Create profile only if it doesn't exist
+  IF NOT EXISTS (SELECT 1 FROM profiles WHERE id = v_user_id) THEN
+    INSERT INTO profiles (
+      id,
+      full_name,
+      profile_slug,
+      email,
+      email_verified,
+      phone,
+      phone_verified,
+      location_state,
+      country,
+      profile_strength,
+      is_public,
+      created_at,
+      updated_at
+    ) VALUES (
+      v_user_id,
+      v_full_name,
+      v_slug,
+      v_email,
+      COALESCE((user_data->>'email_confirmed_at') IS NOT NULL, false),
+      COALESCE(user_data->>'phone', ''),
+      COALESCE((user_data->>'phone_confirmed_at') IS NOT NULL, false),
+      'Unknown',
+      'India',
+      25,
+      true,
+      NOW(),
+      NOW()
+    );
+
+    -- Create profile stats
+    INSERT INTO profile_stats (
+      profile_id,
+      total_posts,
+      total_comments,
+      followers_count,
+      following_count,
+      profile_views
+    ) VALUES (
+      v_user_id,
+      0,
+      0,
+      0,
+      0,
+      0
+    );
+
+    v_result := json_build_object(
+      'success', true,
+      'profile_id', v_user_id,
+      'message', 'Profile created successfully'
+    );
+  ELSE
+    v_result := json_build_object(
+      'success', true,
+      'profile_id', v_user_id,
+      'message', 'Profile already exists'
+    );
+  END IF;
+
+  RETURN v_result;
+  
+EXCEPTION WHEN OTHERS THEN
+  v_result := json_build_object(
+    'success', false,
+    'error', SQLERRM,
+    'detail', SQLSTATE
+  );
+  
+  RETURN v_result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- =====================================================
+-- GRANT PERMISSIONS
+-- =====================================================
+
+-- Allow authenticated users to call the RPC function
+GRANT EXECUTE ON FUNCTION create_profile_for_user(UUID, TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.handle_new_user_signup(JSONB) TO anon, authenticated;
+
+-- =====================================================
+-- COMMENTS
+-- =====================================================
+
+COMMENT ON FUNCTION create_profile_for_user IS 
+  'Creates a profile for a user during registration (email or OAuth). Called from application code.';
+
+COMMENT ON FUNCTION public.handle_new_user_signup IS 
+  'Handles new user signup from auth callback. Creates profile automatically for OAuth users.';
+
+-- =====================================================
+-- INSTRUCTIONS FOR SETUP
+-- =====================================================
+
+/*
+NOTE: Database triggers on auth.users require supabase_auth_admin role.
+Instead, we use two approaches:
+
+APPROACH 1 (Recommended): Application-level callback
+- The auth callback route checks for profile existence
+- Calls create_profile_for_user() if profile is missing
+- This is already implemented in apps/web/src/app/auth/callback/route.ts
+
+APPROACH 2 (Optional): Supabase Auth Webhook
+If you want fully automatic profile creation without relying on the callback:
+1. Go to Supabase Dashboard → Authentication → Hooks
+2. Enable "Send user signup event" hook
+3. Set webhook URL to call handle_new_user_signup()
+4. Configure webhook secret
+
+For now, APPROACH 1 (callback-based) is sufficient and already implemented.
+*/
+
