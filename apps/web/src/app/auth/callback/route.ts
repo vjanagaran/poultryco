@@ -37,11 +37,28 @@ export async function GET(request: Request) {
       // If no profile exists, create one (fallback for OAuth users)
       if (!existingProfile) {
         try {
-          const fullName = session.user.user_metadata?.full_name ||
-                          session.user.user_metadata?.name ||
+          // Extract user data from OAuth metadata
+          const metadata = session.user.user_metadata;
+          
+          // Get full name (Google: name, LinkedIn: full_name)
+          const fullName = metadata?.full_name ||
+                          metadata?.name ||
                           session.user.email?.split('@')[0] ||
                           'User';
           
+          // Get profile photo (Google: picture, LinkedIn: picture or avatar_url)
+          const profilePhoto = metadata?.picture || 
+                              metadata?.avatar_url || 
+                              null;
+          
+          // Get phone if available
+          const phone = session.user.phone || 
+                       metadata?.phone || 
+                       '';
+          
+          const phoneVerified = session.user.phone_confirmed_at ? true : false;
+          
+          // Generate unique slug
           const baseSlug = generateSlug(fullName);
           let slug = baseSlug;
           let counter = 1;
@@ -60,18 +77,27 @@ export async function GET(request: Request) {
             counter++;
           }
 
-          // Create profile using RPC function
-          const { data: result } = await supabase
+          // Create profile using RPC function with all available data
+          const { data: result, error: rpcError } = await supabase
             .rpc('create_profile_for_user', {
               p_user_id: session.user.id,
               p_full_name: fullName,
-              p_email: session.user.email,
+              p_email: session.user.email || '',
               p_slug: slug,
+              p_profile_photo_url: profilePhoto,
+              p_phone: phone,
+              p_phone_verified: phoneVerified,
             });
+
+          if (rpcError) {
+            console.error('RPC Error creating profile:', rpcError);
+          }
 
           if (!result || result.success === false) {
             console.error('Profile creation failed:', result);
-            // Continue anyway - profile might have been created by trigger
+            // Continue anyway - user might still be able to use the platform
+          } else {
+            console.log('Profile created successfully for OAuth user:', result);
           }
         } catch (error) {
           console.error('Error creating profile for OAuth user:', error);

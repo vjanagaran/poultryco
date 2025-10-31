@@ -10,17 +10,37 @@
 -- Used by email registration and OAuth fallback
 -- =====================================================
 
+-- Drop old function signatures first to avoid conflicts
+DROP FUNCTION IF EXISTS create_profile_for_user(UUID, TEXT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS create_profile_for_user(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, BOOLEAN);
+
 CREATE OR REPLACE FUNCTION create_profile_for_user(
   p_user_id UUID,
   p_full_name TEXT,
   p_email TEXT,
-  p_slug TEXT
+  p_slug TEXT,
+  p_profile_photo_url TEXT DEFAULT NULL,
+  p_phone TEXT DEFAULT '',
+  p_phone_verified BOOLEAN DEFAULT false
 )
 RETURNS JSON AS $$
 DECLARE
   v_result JSON;
+  v_profile_strength INTEGER;
 BEGIN
-  -- Insert profile
+  -- Calculate initial profile strength
+  v_profile_strength := 25; -- Base
+  IF p_full_name IS NOT NULL AND length(p_full_name) > 0 THEN
+    v_profile_strength := v_profile_strength + 15;
+  END IF;
+  IF p_profile_photo_url IS NOT NULL THEN
+    v_profile_strength := v_profile_strength + 20;
+  END IF;
+  IF p_phone IS NOT NULL AND length(p_phone) > 0 THEN
+    v_profile_strength := v_profile_strength + 10;
+  END IF;
+
+  -- Insert profile (skip if already exists)
   INSERT INTO profiles (
     id,
     full_name,
@@ -29,6 +49,7 @@ BEGIN
     email_verified,
     phone,
     phone_verified,
+    profile_photo_url,
     location_state,
     location_district,
     location_city,
@@ -43,19 +64,21 @@ BEGIN
     p_slug,
     p_email,
     true, -- Email verified via OAuth
-    '', -- No phone initially
-    false,
+    COALESCE(p_phone, ''),
+    COALESCE(p_phone_verified, false),
+    p_profile_photo_url,
     'Unknown', -- Will be updated during onboarding
     NULL,
     NULL,
     'India',
-    25, -- Base profile strength
+    v_profile_strength,
     true,
     NOW(),
     NOW()
-  );
+  )
+  ON CONFLICT (id) DO NOTHING; -- Skip if profile already exists
 
-  -- Create profile stats entry
+  -- Create profile stats entry (skip if already exists)
   INSERT INTO profile_stats (
     profile_id,
     total_posts,
@@ -74,12 +97,14 @@ BEGIN
     0,
     NOW(),
     NOW()
-  );
+  )
+  ON CONFLICT (profile_id) DO NOTHING; -- Skip if stats already exist
 
   -- Return success
   v_result := json_build_object(
     'success', true,
     'profile_id', p_user_id,
+    'profile_strength', v_profile_strength,
     'message', 'Profile created successfully'
   );
   
@@ -233,7 +258,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- =====================================================
 
 -- Allow authenticated users to call the RPC function
-GRANT EXECUTE ON FUNCTION create_profile_for_user(UUID, TEXT, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION create_profile_for_user(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, BOOLEAN) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.handle_new_user_signup(JSONB) TO anon, authenticated;
 
 -- =====================================================
