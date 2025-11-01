@@ -1,7 +1,8 @@
 # Google OAuth Consent Screen Setup Checklist
 
 **Date:** October 31, 2025  
-**Status:** ⚠️ Action Required
+**Status:** ⚠️ Action Required  
+**Note:** This doc is kept for Google-specific setup. Full docs at `/docs/platform/OAUTH_AND_LEGAL_PAGES_COMPLETE.md`
 
 ---
 

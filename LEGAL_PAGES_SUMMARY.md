@@ -1,7 +1,8 @@
 # Legal Pages Implementation Summary
 
 **Date:** October 31, 2025  
-**Status:** ✅ Complete
+**Status:** ✅ Complete  
+**Note:** This doc is kept for legal pages details. Full docs at `/docs/platform/OAUTH_AND_LEGAL_PAGES_COMPLETE.md`
 
 ---
 

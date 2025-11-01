@@ -1,7 +1,8 @@
 # LinkedIn OAuth Fix - Provider Name Issue
 
 **Date:** October 31, 2025  
-**Status:** ✅ Fixed
+**Status:** ✅ Fixed  
+**Note:** This doc is kept for historical reference. See consolidated docs at `/docs/platform/OAUTH_SETUP_README.md`
 
 ---
 
