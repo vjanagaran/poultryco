@@ -10,8 +10,9 @@ export const siteConfig = {
   ogImage: "https://www.poultryco.net/og-image.png",
   
   // Brand
-  tagline: "Connect. Collaborate. Grow.",
-  longDescription: "Join thousands of poultry professionals, businesses, and organizations in building the future of the global poultry industry.",
+  tagline: "Connect · Collaborate · Co-create",
+  longDescription: "The professional platform bringing India's entire poultry industry under one roof. Free forever. For everyone. Growing together.",
+  mission: "Every farmer deserves fair prices. Every vet deserves recognition. Every business deserves trust. We're building the platform that makes this possible.",
   
   // Contact
   email: "hello@poultryco.net",
@@ -21,29 +22,45 @@ export const siteConfig = {
   // Social Media
   social: {
     twitter: "@PoultryCo",
-    linkedin: "company/poultryco",
-    facebook: "PoultryCo",
+    linkedin: "https://www.linkedin.com/company/poultryco",
+    facebook: "https://www.facebook.com/poultryco.net/",
     instagram: "@poultryco",
-    youtube: "@PoultryCo",
+    youtube: "https://www.youtube.com/@poultryco",
   },
+  
+  // PTIC Website
+  pticWebsite: "https://www.poultrytech.org",
   
   // Navigation
   mainNav: [
     {
-      title: "Features",
-      href: "/features",
+      title: "Platform",
+      href: "#", // Dropdown trigger
+      dropdown: [
+        { title: "For Farmers", href: "/stakeholders/farmers", description: "Market prices, tools, and expert advice" },
+        { title: "For Veterinarians", href: "/stakeholders/veterinarians", description: "Build practice, reach farmers" },
+        { title: "For FPOs", href: "/stakeholders/fpos", description: "Digital member management tools" },
+        { title: "For Associations", href: "/stakeholders/associations", description: "Transform member engagement" },
+        { title: "For Nutritionists", href: "/stakeholders/nutritionists", description: "Showcase expertise, find clients" },
+        { title: "For Students", href: "/stakeholders/students", description: "Real projects, internships" },
+        { title: "For Feed Mills", href: "/stakeholders/feed-mills", description: "Reach farmers directly" },
+        { title: "For Hatcheries", href: "/stakeholders/hatcheries", description: "Connect with farms" },
+        { title: "For Consultants", href: "/stakeholders/consultants", description: "Grow your practice" },
+        { title: "For Researchers", href: "/stakeholders/researchers", description: "Access research data" },
+        { title: "For Equipment Suppliers", href: "/stakeholders/equipment-suppliers", description: "Showcase products" },
+      ],
+    },
+    {
+      title: "Resources",
+      href: "#", // Dropdown trigger
+      dropdown: [
+        { title: "Blog", href: "/blog", description: "Industry insights and guides" },
+        { title: "Contact", href: "/contact", description: "Get in touch with us" },
+      ],
     },
     {
       title: "About",
       href: "/about",
-    },
-    {
-      title: "Blog",
-      href: "/blog",
-    },
-    {
-      title: "Contact",
-      href: "/contact",
     },
   ],
   
@@ -83,28 +100,24 @@ export const siteConfig = {
   
   // Footer Links
   footerLinks: {
-    product: [
-      { title: "Features", href: "/features" },
-      { title: "Early Access", href: "/early-access" },
-      { title: "PTSE 2026", href: "/ptse" },
-      { title: "Tools Preview", href: "/tools" },
+    stakeholders: [
+      { title: "For Farmers", href: "/stakeholders/farmers" },
+      { title: "For Veterinarians", href: "/stakeholders/veterinarians" },
+      { title: "For FPOs", href: "/stakeholders/fpos" },
+      { title: "For Associations", href: "/stakeholders/associations" },
+      { title: "For Nutritionists", href: "/stakeholders/nutritionists" },
+      { title: "For Students", href: "/stakeholders/students" },
+      { title: "View All", href: "/stakeholders" },
     ],
     company: [
-      { title: "About Us", href: "/about" },
-      { title: "Our Story", href: "/about#story" },
-      { title: "Associations", href: "/associations" },
-      { title: "Press", href: "/press" },
-    ],
-    resources: [
+      { title: "About", href: "/about" },
+      { title: "Our Mission", href: "/about#mission" },
       { title: "Blog", href: "/blog" },
       { title: "Contact", href: "/contact" },
-      { title: "Support", href: "/support" },
-      { title: "FAQ", href: "/faq" },
     ],
     legal: [
       { title: "Privacy Policy", href: "/privacy" },
       { title: "Terms of Service", href: "/terms" },
-      { title: "Cookie Policy", href: "/cookies" },
     ],
   },
   

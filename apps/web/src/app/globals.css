@@ -230,3 +230,43 @@
   animation: slideInRight 0.6s ease-out forwards;
 }
 
+/* Subtle Floating Animations for Hero */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+  }
+}
+
+@keyframes float-slower {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(45deg);
+  }
+  50% {
+    transform: translateY(-15px) translateX(-10px) rotate(45deg);
+  }
+}
+
+@keyframes float-medium {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  50% {
+    transform: translateY(-25px) translateX(-15px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 40s ease-in-out infinite;
+}
+
+.animate-float-slower {
+  animation: float-slower 50s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float-medium 35s ease-in-out infinite;
+}
+
