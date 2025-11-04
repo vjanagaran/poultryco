@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
 import { Button } from "@/components/ui";
+import { createClient } from "@/lib/supabase/client";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -17,11 +18,31 @@ export function Footer() {
     setMessage(null);
 
     try {
-      // TODO: Implement newsletter signup API
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      setMessage({type: "success", text: "Thank you for subscribing!"});
+      const supabase = createClient();
+      
+      // Insert newsletter subscriber
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert({
+          email: email.toLowerCase().trim(),
+          source: 'footer_form',
+          status: 'active',
+        });
+
+      if (error) {
+        // Check if already subscribed (unique constraint)
+        if (error.code === '23505') {
+          setMessage({type: "success", text: "You're already subscribed!"});
+        } else {
+          throw error;
+        }
+      } else {
+        setMessage({type: "success", text: "Thank you for subscribing!"});
+      }
+      
       setEmail("");
     } catch (error) {
+      console.error('Newsletter subscription error:', error);
       setMessage({type: "error", text: "Something went wrong. Please try again."});
     } finally {
       setIsSubmitting(false);
