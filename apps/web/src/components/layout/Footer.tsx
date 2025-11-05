@@ -53,9 +53,9 @@ export function Footer() {
     <footer className="bg-[#1A1A1A] border-t border-border/20">
       <div className="container mx-auto">
         {/* Main Footer Content */}
-        <div className="py-12 md:py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Brand Column */}
-          <div>
+        <div className="py-12 md:py-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-8">
+          {/* Brand Column - Spans 2 columns */}
+          <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-4">
               <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-xl">P</span>
@@ -141,11 +141,62 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Stakeholders Links */}
+          {/* Whom Links */}
           <div>
-            <h3 className="font-semibold text-white mb-4">Platform</h3>
+            <h3 className="font-semibold text-white mb-4">Whom</h3>
             <ul className="space-y-2">
-              {siteConfig.footerLinks.stakeholders.map((link) => (
+              {siteConfig.footerLinks.whom.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/70 hover:text-primary transition-colors"
+                  >
+                    {link.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Why Links */}
+          <div>
+            <h3 className="font-semibold text-white mb-4">Why</h3>
+            <ul className="space-y-2">
+              {siteConfig.footerLinks.why.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/70 hover:text-primary transition-colors"
+                  >
+                    {link.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* How Links */}
+          <div>
+            <h3 className="font-semibold text-white mb-4">How</h3>
+            <ul className="space-y-2">
+              {siteConfig.footerLinks.how.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-white/70 hover:text-primary transition-colors"
+                  >
+                    {link.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Impact Links */}
+          <div>
+            <h3 className="font-semibold text-white mb-4">Impact</h3>
+            <ul className="space-y-2">
+              {siteConfig.footerLinks.impact.map((link) => (
                 <li key={link.href}>
                   <Link
                     href={link.href}
@@ -175,8 +226,8 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Newsletter Signup */}
-          <div>
+          {/* Newsletter Signup - Spans 2 columns on desktop */}
+          <div className="lg:col-span-2">
             <h3 className="font-semibold text-white mb-4">Stay Updated</h3>
             <p className="text-sm text-white/70 mb-4">
               Get the latest updates on platform features and industry insights.

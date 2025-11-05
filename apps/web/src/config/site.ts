@@ -34,7 +34,7 @@ export const siteConfig = {
   // Navigation
   mainNav: [
     {
-      title: "Platform",
+      title: "Whom",
       href: "#", // Dropdown trigger
       dropdown: [
         { title: "For Farmers", href: "/stakeholders/farmers", description: "Market prices, tools, and expert advice" },
@@ -48,6 +48,42 @@ export const siteConfig = {
         { title: "For Consultants", href: "/stakeholders/consultants", description: "Grow your practice" },
         { title: "For Researchers", href: "/stakeholders/researchers", description: "Access research data" },
         { title: "For Equipment Suppliers", href: "/stakeholders/equipment-suppliers", description: "Showcase products" },
+      ],
+    },
+    {
+      title: "Why",
+      href: "#", // Dropdown trigger
+      dropdown: [
+        { title: "Trust-First Architecture", href: "/why/trust-first-architecture", description: "Consume freely, contribute credibly" },
+        { title: "Your Profile Matters", href: "/why/your-profile-matters", description: "Profile is your professional currency" },
+        { title: "Verification is Trust", href: "/why/verification-is-trust", description: "How verified badges protect everyone" },
+        { title: "Network Effects", href: "/why/network-effects", description: "Why every member makes you more valuable" },
+        { title: "Free Forever", href: "/why/free-forever", description: "Quality without compromise" },
+        { title: "Not Just WhatsApp", href: "/why/not-whatsapp", description: "Professional knowledge vs chat chaos" },
+      ],
+    },
+    {
+      title: "How",
+      href: "#", // Dropdown trigger
+      dropdown: [
+        { title: "Trust Ladder Works", href: "/how/trust-ladder-works", description: "Guest to verified expert journey" },
+        { title: "Profiles Work", href: "/how/profiles-work", description: "Strength calculation and unlocks" },
+        { title: "Networking Works", href: "/how/networking-works", description: "Connections vs following explained" },
+        { title: "Verification Works", href: "/how/verification-works", description: "Get your verified badge" },
+        { title: "Stream Works", href: "/how/stream-works", description: "Share knowledge, build reputation" },
+        { title: "Discovery Works", href: "/how/discovery-works", description: "Find the right people fast" },
+        { title: "Tools Work", href: "/how/tools-work", description: "FCR calculator, market data, offline-first" },
+      ],
+    },
+    {
+      title: "Impact",
+      href: "#", // Dropdown trigger
+      dropdown: [
+        { title: "Farmers Save ₹60K/Year", href: "/impact/farmers-save-60k", description: "Market intelligence + reduced mortality" },
+        { title: "Vets Grow Practice 2-3x", href: "/impact/vets-grow-practice", description: "Discovery + reputation building" },
+        { title: "FPOs Prove ₹26-50L Value", href: "/impact/fpos-prove-value", description: "Admin time + member savings" },
+        { title: "Network Effects Multiplier", href: "/impact/network-effects-multiplier", description: "Why 1+1=3 in a network" },
+        { title: "Trust Stops Exploitation", href: "/impact/trust-stops-exploitation", description: "Verification reduces ₹5,000 Cr loss" },
       ],
     },
     {
@@ -100,18 +136,32 @@ export const siteConfig = {
   
   // Footer Links
   footerLinks: {
-    stakeholders: [
+    whom: [
       { title: "For Farmers", href: "/stakeholders/farmers" },
       { title: "For Veterinarians", href: "/stakeholders/veterinarians" },
       { title: "For FPOs", href: "/stakeholders/fpos" },
       { title: "For Associations", href: "/stakeholders/associations" },
-      { title: "For Nutritionists", href: "/stakeholders/nutritionists" },
-      { title: "For Students", href: "/stakeholders/students" },
-      { title: "View All", href: "/stakeholders" },
+      { title: "View All Stakeholders", href: "/stakeholders" },
+    ],
+    why: [
+      { title: "Trust-First Architecture", href: "/why/trust-first-architecture" },
+      { title: "Your Profile Matters", href: "/why/your-profile-matters" },
+      { title: "Verification is Trust", href: "/why/verification-is-trust" },
+      { title: "Network Effects", href: "/why/network-effects" },
+    ],
+    how: [
+      { title: "Trust Ladder Works", href: "/how/trust-ladder-works" },
+      { title: "Profiles Work", href: "/how/profiles-work" },
+      { title: "Networking Works", href: "/how/networking-works" },
+      { title: "Verification Works", href: "/how/verification-works" },
+    ],
+    impact: [
+      { title: "Farmers Save ₹60K", href: "/impact/farmers-save-60k" },
+      { title: "Vets Grow 2-3x", href: "/impact/vets-grow-practice" },
+      { title: "FPOs Prove Value", href: "/impact/fpos-prove-value" },
     ],
     company: [
       { title: "About", href: "/about" },
-      { title: "Our Mission", href: "/about#mission" },
       { title: "Blog", href: "/blog" },
       { title: "Contact", href: "/contact" },
     ],

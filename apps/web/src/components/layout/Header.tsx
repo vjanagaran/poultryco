@@ -79,14 +79,14 @@ export function Header() {
                         />
                       </svg>
                     </button>
-                    {/* Mega Menu Dropdown - Platform */}
-                    {openDropdown === item.title && item.title === "Platform" && (
+                    {/* Mega Menu Dropdowns - Whom, Why, How, Impact */}
+                    {openDropdown === item.title && (item.title === "Whom" || item.title === "Why" || item.title === "How" || item.title === "Impact") && (
                       <div 
                         className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[800px] bg-white border border-border rounded-lg shadow-2xl p-6 animate-in fade-in slide-in-from-top-2 z-[110]"
                         onMouseEnter={() => setOpenDropdown(item.title)}
                         onMouseLeave={() => setOpenDropdown(null)}
                       >
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className={`grid ${item.dropdown && item.dropdown.length > 6 ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
                           {item.dropdown?.map((subItem) => (
                             <Link
                               key={subItem.href}
@@ -104,8 +104,8 @@ export function Header() {
                         </div>
                       </div>
                     )}
-                    {/* Regular Dropdown - Resources */}
-                    {openDropdown === item.title && item.title !== "Platform" && (
+                    {/* Regular Dropdown - Resources & Others */}
+                    {openDropdown === item.title && item.title !== "Whom" && item.title !== "Why" && item.title !== "How" && item.title !== "Impact" && item.dropdown && (
                       <div 
                         className="absolute left-0 top-full mt-2 w-64 bg-white border border-border rounded-lg shadow-xl py-2 animate-in fade-in slide-in-from-top-2 z-[110]"
                         onMouseEnter={() => setOpenDropdown(item.title)}
