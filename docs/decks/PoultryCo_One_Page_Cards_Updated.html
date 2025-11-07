@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoultryCo Partnership One-Pagers (5 Stakeholders)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .page {
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            margin: 0 auto 30px;
+            padding: 0;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            page-break-after: always;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .page {
+                margin: 0;
+                box-shadow: none;
+                page-break-after: always;
+            }
+        }
+        
+        /* Header Styles */
+        .header {
+            background: linear-gradient(135deg, #2B7A4B 0%, #1E3A5F 100%);
+            color: white;
+            padding: 30px 40px;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .header .subtitle {
+            font-size: 18px;
+            opacity: 0.95;
+            font-weight: 400;
+        }
+        
+        .header .audience {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* Content Area */
+        .content {
+            padding: 40px 40px 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2B7A4B;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title .icon {
+            font-size: 28px;
+            margin-right: 12px;
+        }
+        
+        .highlight-box {
+            background: #f8f9fa;
+            border-left: 4px solid #2B7A4B;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .highlight-box.orange {
+            border-left-color: #E67E22;
+        }
+        
+        .highlight-box.blue {
+            border-left-color: #1E3A5F;
+        }
+        
+        .metric {
+            display: inline-block;
+            margin-right: 30px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #2B7A4B;
+            display: block;
+        }
+        
+        .metric-label {
+            font-size: 13px;
+            color: #666;
+            display: block;
+        }
+        
+        .bullet-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .bullet-list li {
+            padding-left: 30px;
+            position: relative;
+            margin-bottom: 8px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        
+        .bullet-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 8px;
+            color: #2B7A4B;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .cta-box {
+            background: linear-gradient(135deg, #2B7A4B 0%, #1E3A5F 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        
+        .cta-box h3 {
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .cta-box p {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1E3A5F;
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .footer .contact {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .footer .contact strong {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .footer .logo-area {
+            text-align: right;
+        }
+        
+        .footer .logo-area .website {
+            font-size: 16px;
+            font-weight: 700;
+            display: block;
+        }
+        
+        .footer .logo-area .tagline {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-top: 3px;
+        }
+        
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .col-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        
+        .col-box h4 {
+            font-size: 16px;
+            color: #2B7A4B;
+            margin-bottom: 10px;
+        }
+        
+        .col-box p {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+<!-- PAGE 1: ASSOCIATIONS -->
+<div class="page">
+    <div class="header">
+        <div class="audience">FOR ASSOCIATIONS</div>
+        <h1>PoultryCo</h1>
+        <div class="subtitle">Digital Backbone for India's Poultry Community</div>
+    </div>
+    
+    <div class="content">
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">💰</span>
+                Value for Your Members (Independent Farmers)
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="metric">
+                    <span class="metric-value">₹30-80K</span>
+                    <span class="metric-label">Savings per farmer/year</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">100+</span>
+                    <span class="metric-label">Hours saved/year</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">₹3-8 Cr</span>
+                    <span class="metric-label">Total savings (1K members)</span>
+                </div>
+            </div>
+            <div class="highlight-box" style="margin-top: 15px; padding: 12px; font-size: 13px;">
+                <strong>Note:</strong> PoultryCo serves independent farmers (60% of market). Contract farmers under large integrators use company ERPs. We focus on farmers who need decision-making freedom, market intelligence, and community knowledge.
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🛠️</span>
+                What Members Get (FREE)
+            </div>
+            <div class="two-col">
+                <div class="col-box">
+                    <h4>Market Intelligence</h4>
+                    <p>Live prices, historical trends, location comparisons, SMS alerts, export reports</p>
+                </div>
+                <div class="col-box">
+                    <h4>Professional Tools</h4>
+                    <p>FCR Calculator, Feed Projector, Mortality Tracker, Profit Calculator, Templates</p>
+                </div>
+                <div class="col-box">
+                    <h4>Voice to PTIC</h4>
+                    <p>Report issues, track status, collective escalation, association dashboard</p>
+                </div>
+                <div class="col-box">
+                    <h4>Community Network</h4>
+                    <p>Verified vets, trusted suppliers, peer farmers, industry experts</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📊</span>
+                Leadership Benefits
+            </div>
+            <ul class="bullet-list">
+                <li><strong>Enhanced Credibility:</strong> Modern, tech-forward association image attracts younger farmers</li>
+                <li><strong>Better Engagement:</strong> Digital channel for announcements, events, real-time feedback (2-3x increase)</li>
+                <li><strong>Data-Driven Advocacy:</strong> See member issues, identify patterns, stronger voice to government</li>
+                <li><strong>Measurable Impact:</strong> Quantify association value, demonstrate ROI to members</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">✅</span>
+                Validation & Trust
+            </div>
+            <div class="highlight-box">
+                <strong>500 Farmer Surveys:</strong> 87% want market data daily | 92% need FCR calculator | 78% want issue reporting
+                <br><br>
+                <strong>Already Committed:</strong> 3 major associations | 2,000+ combined members | FPO partnerships in progress
+                <br><br>
+                <strong>Launch Platform:</strong> PTSE 3rd Edition (Feb 2026) | 500-1,000 attendees | Live demo + training
+            </div>
+        </div>
+        
+        <div class="cta-box">
+            <h3>🤝 Partnership Request (No Financial Investment)</h3>
+            <p><strong>We Ask:</strong> (1) Official endorsement & logo exchange (2) Promote to members via WhatsApp/newsletters (3) Designate one liaison for feedback (4) Optional: Training session at meeting</p>
+            <p><strong>You Get:</strong> ₹3-8 Cr member savings | Admin dashboard | Founding Partner status | Media recognition</p>
+            <p style="margin-top: 15px; font-weight: 600;">📅 Timeline: Nov 2025 development → Feb 2026 PTSE launch → Mar 2026 full rollout</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div class="contact">
+            <strong>PoultryTech Innovation Council (PTIC)</strong>
+            President: Janagaran V | +91 98842 48927<br>
+            partnerships@poultrytech.org
+        </div>
+        <div class="logo-area">
+            <span class="website">PoultryTech.org</span>
+            <span class="tagline">Connect · Collaborate · Co-create</span>
+        </div>
+    </div>
+</div>
+
+<!-- PAGE 2: FPOs -->
+<div class="page">
+    <div class="header">
+        <div class="audience">FOR FPOs & COOPERATIVES</div>
+        <h1>PoultryCo</h1>
+        <div class="subtitle">Free Digital Management Tools for Farmer Producer Organizations</div>
+    </div>
+    
+    <div class="content">
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🎯</span>
+                FPO Challenges We Solve
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="metric">
+                    <span class="metric-value">8-10 hrs</span>
+                    <span class="metric-label">Admin time saved/week</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">₹50K-1L</span>
+                    <span class="metric-label">Admin cost savings/year</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">₹26-50L</span>
+                    <span class="metric-label">Member benefits (200 members)</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🛠️</span>
+                Digital Tools for Your FPO
+            </div>
+            <div class="two-col">
+                <div class="col-box">
+                    <h4>Member Management</h4>
+                    <p>Digital database, status tracking, renewal reminders, committee structure, performance dashboard</p>
+                </div>
+                <div class="col-box">
+                    <h4>Communication</h4>
+                    <p>Broadcast messaging (SMS/WhatsApp/App), targeted messages, event announcements, two-way feedback</p>
+                </div>
+                <div class="col-box">
+                    <h4>Collective Activities</h4>
+                    <p>Bulk purchases, collective selling, group training, loan tracking, equipment sharing coordination</p>
+                </div>
+                <div class="col-box">
+                    <h4>Admin Dashboard</h4>
+                    <p>Real-time view, financial summary, activity reports, engagement metrics, export for govt audits</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">💰</span>
+                ROI for FPO Members
+            </div>
+            <ul class="bullet-list">
+                <li><strong>Bulk Purchase Savings:</strong> ₹5-10K per member/year (feed, chicks, medicine at FPO rates)</li>
+                <li><strong>Collective Selling Premium:</strong> ₹3-5K per member/year (better negotiated prices)</li>
+                <li><strong>Training Impact:</strong> ₹5-10K per member/year (improved FCR, reduced mortality)</li>
+                <li><strong>Total Member Benefit:</strong> ₹13-25K per member annually = ₹26-50L for 200-member FPO</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🆓</span>
+                Completely Free Year 1
+            </div>
+            <div class="highlight-box">
+                <strong>Feb 2026 - Feb 2027:</strong> All features free for pilot FPOs (member management, admin dashboard, communication, coordination)
+                <br><br>
+                <strong>Year 2 Pricing (if you see value):</strong> ₹2,000/month (₹24K/year) for Standard Plan (up to 300 members)
+                <br><br>
+                <strong>ROI:</strong> Pay ₹24K, get ₹50L+ member benefit = 200x+ return | Plus ₹50K-1L admin savings
+            </div>
+        </div>
+        
+        <div class="cta-box">
+            <h3>🤝 Join as Pilot FPO (10 Slots, 3 Taken)</h3>
+            <p><strong>We Ask:</strong> (1) Test platform for 5 months (free) (2) 60% member enrollment target (3) Use 2+ collective activities (4) Provide monthly feedback</p>
+            <p><strong>You Get:</strong> Free digital management | 8-10 hrs/week saved | Professional image | "Founding FPO Partner" status</p>
+            <p style="margin-top: 15px; font-weight: 600;">✅ No payment Year 1. No strings. Stop anytime. But we think you'll love it.</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div class="contact">
+            <strong>PoultryTech Innovation Council (PTIC)</strong>
+            President: Janagaran V | +91 98842 48927<br>
+            fpo@poultrytech.org | partnerships@poultrytech.org
+        </div>
+        <div class="logo-area">
+            <span class="website">PoultryTech.org</span>
+            <span class="tagline">Empowering Farmer Collectives</span>
+        </div>
+    </div>
+</div>
+
+<!-- PAGE 3: VETERINARIANS -->
+<div class="page">
+    <div class="header">
+        <div class="audience">FOR VETERINARIANS</div>
+        <h1>PoultryCo</h1>
+        <div class="subtitle">Expand Your Practice · Build Your Reputation · Serve More Farmers</div>
+    </div>
+    
+    <div class="content">
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📈</span>
+                Practice Growth Potential
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="metric">
+                    <span class="metric-value">10x</span>
+                    <span class="metric-label">Discovery increase</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">3-5</span>
+                    <span class="metric-label">New inquiries/week</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">2-3x</span>
+                    <span class="metric-label">Practice area expansion</span>
+                </div>
+            </div>
+            <div class="highlight-box" style="margin-top: 15px; padding: 12px; font-size: 13px;">
+                <strong>Focus:</strong> Independent farmers seeking veterinary services. Platform helps discovery, not replacement of in-person consultations.
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🎯</span>
+                How PoultryCo Helps
+            </div>
+            <div class="two-col">
+                <div class="col-box">
+                    <h4>Get Discovered</h4>
+                    <p>Farmers search by location + specialization. Verified badge = instant trust. Reviews = social proof. 50+ km reach.</p>
+                </div>
+                <div class="col-box">
+                    <h4>Save Time</h4>
+                    <p>Answer questions once publicly. Create reusable content. 30% reduction in repetitive consultations. 5-7 hrs saved/week.</p>
+                </div>
+                <div class="col-box">
+                    <h4>Build Authority</h4>
+                    <p>Thought leadership through content. "Go-to expert" status. Speaking invitations. Regional recognition.</p>
+                </div>
+                <div class="col-box">
+                    <h4>Increase Revenue</h4>
+                    <p>2-3 new clients/month = ₹12-36K extra/year. 5-8 clients = ₹30-80K. 10-15 clients = ₹60K-1.5L.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">💼</span>
+                Three Models (Year 1 = All FREE)
+            </div>
+            <div class="highlight-box blue">
+                <strong>🆓 Free Profile:</strong> Verified badge, directory listing, reviews, messaging, Q&A (Always free)
+            </div>
+            <div class="highlight-box orange">
+                <strong>💼 Professional (₹500/month - Year 2+):</strong> Priority search, "Top Vet" badge, analytics, promoted posts. ROI: 1 client/month pays for itself
+            </div>
+            <p style="margin-top: 10px; font-size: 13px;"><strong>Note:</strong> ALL features FREE in Year 1. Prove value before any payment. 0% commission on consultations.</p>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📊</span>
+                6-Month Success Projections
+            </div>
+            <div class="two-col">
+                <div class="col-box">
+                    <h4>Young Vet</h4>
+                    <p><strong>Before:</strong> 15 clients, ₹30-40K/mo<br><strong>After:</strong> 45 clients (+30), ₹70-90K/mo<br><strong>Growth: +100%</strong></p>
+                </div>
+                <div class="col-box">
+                    <h4>Established Vet</h4>
+                    <p><strong>Before:</strong> 60 clients, ₹1.2-1.5L/mo<br><strong>After:</strong> 95 clients (+35), ₹2-2.5L/mo<br><strong>Growth: +70%</strong></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cta-box">
+            <h3>🩺 Join as Founding Veterinarian</h3>
+            <p><strong>What We Ask:</strong> (1) Create profile (15 min) (2) Answer 5-10 questions/week (3) Respond to messages in 24 hrs (4) Share feedback monthly</p>
+            <p><strong>What You Get:</strong> "Founding Veterinarian" badge | Beta access | Influence features | Year 1 completely free | Build practice 2-3x</p>
+            <p style="margin-top: 15px; font-weight: 600;">✅ No risk. No payment Year 1. Test ROI. Continue only if valuable.</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div class="contact">
+            <strong>PoultryTech Innovation Council (PTIC)</strong>
+            President: Janagaran V | +91 98842 48927<br>
+            vet@poultryco.net | partnerships@poultrytech.org
+        </div>
+        <div class="logo-area">
+            <span class="website">PoultryTech.org</span>
+            <span class="tagline">Professional Platform for Vets</span>
+        </div>
+    </div>
+</div>
+
+<!-- PAGE 4: GOVERNMENT -->
+<div class="page">
+    <div class="header">
+        <div class="audience">FOR GOVERNMENT & INSTITUTIONS</div>
+        <h1>PoultryCo</h1>
+        <div class="subtitle">Digital Infrastructure for Poultry Industry | Policy Impact through Technology</div>
+    </div>
+    
+    <div class="content">
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🇮🇳</span>
+                National Impact Potential
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="metric">
+                    <span class="metric-value">₹450 Cr+</span>
+                    <span class="metric-label">Farmer savings (50K users)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">1.5M+</span>
+                    <span class="metric-label">Independent farmers (TAM)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">60%</span>
+                    <span class="metric-label">of market (non-contract)</span>
+                </div>
+            </div>
+            <div class="highlight-box" style="margin-top: 15px; padding: 12px; font-size: 13px;">
+                <strong>Market Focus:</strong> Independent farmers (60% of poultry market). Contract farmers (40%) use integrator ERPs. We serve the underserved majority.
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🎯</span>
+                Policy Alignment
+            </div>
+            <ul class="bullet-list">
+                <li><strong>Digital India:</strong> 1.5M+ independent farmers online, real-time industry data, disease surveillance, 60% rural adoption</li>
+                <li><strong>Doubling Farmer Income:</strong> ₹30-80K savings per farmer annually (validated by surveys), ₹4,500-12,000 Cr national impact at scale</li>
+                <li><strong>Food Security:</strong> Supply chain visibility, quality assurance, 5% production efficiency increase, protein nutrition access</li>
+                <li><strong>Atmanirbhar Bharat:</strong> Domestic solution, data sovereignty, export potential, 500+ jobs, farmer empowerment</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🚀</span>
+                Implementation (Simplified)
+            </div>
+            <div class="highlight-box">
+                <strong>Phase 1 - TN Pilot (Year 1):</strong> Feb-Dec 2026 | 5,000 users | ₹8.4L (PTIC funded) | 5 districts | Associations + FPOs
+            </div>
+            <div class="highlight-box orange">
+                <strong>Phase 2 - TN Scale (Year 2):</strong> 50,000 users statewide | Seeking endorsement letter (not co-funding) | Independent assessment
+            </div>
+            <div class="highlight-box blue">
+                <strong>Phase 3 - National (Year 3+):</strong> Multi-state expansion | Partnership based on Year 1 success | Data-driven decision
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">💰</span>
+                Value & Efficiency
+            </div>
+            <div class="two-col">
+                <div class="col-box">
+                    <h4>Cost Advantage</h4>
+                    <p><strong>PoultryCo:</strong> ₹250/farmer (one-time)<br><strong>Traditional extension:</strong> ₹2,000-5,000/farmer<br><strong>8-20x more efficient</strong></p>
+                </div>
+                <div class="col-box">
+                    <h4>FPO Integration</h4>
+                    <p>Works with existing FPO structure | Free tools for cooperatives | Gram panchayat engagement | Complements govt programs</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="cta-box">
+            <h3>🤝 Partnership Request (Simplified)</h3>
+            <p><strong>Year 1 Ask:</strong> Official endorsement letter only (not funding, not MoU, not co-investment). Simple letter for credibility with farmers.</p>
+            <p><strong>Year 2 Discussion:</strong> After independent impact assessment (end 2026), discuss deeper partnership based on data, not promises.</p>
+            <p style="margin-top: 15px; font-weight: 600;">🎯 Low-risk validation approach. Prove impact first, then scale together.</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div class="contact">
+            <strong>PoultryTech Innovation Council (PTIC)</strong>
+            President: Janagaran V | +91 98842 48927<br>
+            govt@poultrytech.org | partnerships@poultrytech.org
+        </div>
+        <div class="logo-area">
+            <span class="website">PoultryTech.org</span>
+            <span class="tagline">Policy Impact · Farmer Welfare</span>
+        </div>
+    </div>
+</div>
+
+<!-- PAGE 5: ACADEMIC -->
+<div class="page">
+    <div class="header">
+        <div class="audience">FOR ACADEMIC INSTITUTIONS</div>
+        <h1>PoultryCo</h1>
+        <div class="subtitle">Action Research Platform for Agricultural Technology & Real-World Impact</div>
+    </div>
+    
+    <div class="content">
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📚</span>
+                Research Opportunity (Practical Focus)
+            </div>
+            <div style="margin-top: 15px;">
+                <div class="metric">
+                    <span class="metric-value">5,000+</span>
+                    <span class="metric-label">Live users (real data)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">10-15</span>
+                    <span class="metric-label">Publications (5 years)</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">₹10-15L</span>
+                    <span class="metric-label">Research funding</span>
+                </div>
+            </div>
+            <div class="highlight-box" style="margin-top: 15px; padding: 12px; font-size: 13px;">
+                <strong>Shift:</strong> Action research solving farmer problems, not just academic papers. Real impact = real publications.
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🔬</span>
+                Student Opportunities (Real Projects)
+            </div>
+            <div class="two-col">
+                <div class="col-box">
+                    <h4>Engineering Students</h4>
+                    <p>Live app development (React Native), AI/ML on real data, portfolio building, placement advantage, stipend internships</p>
+                </div>
+                <div class="col-box">
+                    <h4>Agriculture Students</h4>
+                    <p>Farm data analysis, field research, content creation (Tamil), technology adoption studies, rural engagement</p>
+                </div>
+                <div class="col-box">
+                    <h4>Vet Students</h4>
+                    <p>Telemedicine research, disease surveillance, clinical decision support, rural practice exposure</p>
+                </div>
+                <div class="col-box">
+                    <h4>Management Students</h4>
+                    <p>Platform business models, rural marketing, FPO management, social entrepreneurship, consulting projects</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🤝</span>
+                Three Collaboration Models (Flexible)
+            </div>
+            <div class="highlight-box">
+                <strong>Model 1 - Data Access:</strong> Faculty time + students → Anonymized data + Co-authorship (No funding)
+            </div>
+            <div class="highlight-box orange">
+                <strong>Model 2 - Sponsored Research:</strong> Focused project + team → ₹5-8L funding + Domain expertise (6-12 months)
+            </div>
+            <div class="highlight-box blue">
+                <strong>Model 3 - Co-Development:</strong> Student dev team → ₹10-15L + Joint IP (12-18 months, shared outcomes)
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🎯</span>
+                Key Addition: Training Institutes
+            </div>
+            <p style="font-size: 14px; line-height: 1.6; margin-bottom: 10px;">
+                <strong>Partnership with poultry training institutes:</strong> CARI, ICAR-DPR, State training centers | Platform = e-learning extension | Train 1,000s of farmers annually | Certificate programs integration
+            </p>
+        </div>
+        
+        <div class="cta-box">
+            <h3>🎓 Partnership Benefits (Realistic)</h3>
+            <p><strong>For Institution:</strong> 10-15 publications (not 20-30) | 50+ student projects | ₹10-15L research funding | Real-world impact showcase</p>
+            <p><strong>For Students:</strong> Live project experience | Portfolio | Stipend internships | Placement advantage | Publication co-authorship</p>
+            <p style="margin-top: 15px; font-weight: 600;">📅 Simple MoU (2-4 weeks) | Projects start Month 2 | First outputs: 6-9 months</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <div class="contact">
+            <strong>PoultryTech Innovation Council (PTIC)</strong>
+            President: Janagaran V | +91 98842 48927<br>
+            academic@poultrytech.org | research@poultrytech.org
+        </div>
+        <div class="logo-area">
+            <span class="website">PoultryTech.org</span>
+            <span class="tagline">Research · Innovation · Impact</span>
+        </div>
+    </div>
+</div>
+
+<div style="text-align: center; margin: 30px 0; padding: 20px; background: white; border-radius: 10px;">
+    <h2 style="color: #2B7A4B; margin-bottom: 10px;">Print Instructions</h2>
+    <p style="color: #666; font-size: 14px;">Use Print (Ctrl+P / Cmd+P) → Save as PDF or Print directly on A4 paper<br>
+    <strong>5 Pages:</strong> (1) Associations (2) FPOs (3) Veterinarians (4) Government (5) Academic<br>
+    Each page is a standalone one-pager for distribution</p>
+</div>
+
+</body>
+</html>
