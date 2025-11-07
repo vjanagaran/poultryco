@@ -95,32 +95,32 @@ export default function AboutPTICPage() {
               Why PTIC Had to Be Non-Profit
             </h2>
 
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white p-8 rounded-2xl">
-                <h3 className="text-xl font-bold text-foreground mb-4">Trust Factor</h3>
-                <p className="text-foreground/80 leading-relaxed">
-                  Farmers are skeptical of for-profit platforms: "What's the hidden agenda?" Section 8 structure legally removes commercial conflict. Mission isn't marketing—it's legally binding.
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-xl border border-primary/20">
+                <h3 className="font-bold text-primary mb-2">Trust Without Pressure</h3>
+                <p className="text-sm text-foreground/80">
+                  Section 8 removes future monetization burden. Free forever, legally.
                 </p>
               </div>
 
-              <div className="bg-white p-8 rounded-2xl">
-                <h3 className="text-xl font-bold text-foreground mb-4">Neutrality Requirement</h3>
-                <p className="text-foreground/80 leading-relaxed">
-                  No vendor gets privileged position. No stakeholder has unfair advantage. Everyone has equal standing. Competition remains fair. Community over commerce.
+              <div className="bg-white p-6 rounded-xl border border-primary/20">
+                <h3 className="font-bold text-primary mb-2">Mission Over Returns</h3>
+                <p className="text-sm text-foreground/80">
+                  PTIC reinvests all revenue. No profit extraction to shareholders.
                 </p>
               </div>
 
-              <div className="bg-white p-8 rounded-2xl">
-                <h3 className="text-xl font-bold text-foreground mb-4">Market Positioning</h3>
-                <p className="text-foreground/80 leading-relaxed">
-                  Large integrators (Suguna, Venky's, Godrej) already serve contract farmers (40% of market) with expensive ERPs. PTIC serves the <strong className="text-primary">forgotten 60%</strong>—independent farmers. No commercial conflict.
+              <div className="bg-white p-6 rounded-xl border border-primary/20">
+                <h3 className="font-bold text-primary mb-2">Pay-It-Forward Culture</h3>
+                <p className="text-sm text-foreground/80">
+                  Receive freely. Give freely. Communities grow through reciprocity.
                 </p>
               </div>
 
-              <div className="bg-white p-8 rounded-2xl">
-                <h3 className="text-xl font-bold text-foreground mb-4">Sustainability Model</h3>
-                <p className="text-foreground/80 leading-relaxed">
-                  Free access enables adoption at scale. CSR partnerships + government grants + community contribution = sustainable mission delivery. No paywall barriers.
+              <div className="bg-white p-6 rounded-xl border border-primary/20">
+                <h3 className="font-bold text-primary mb-2">Serve Based on Need</h3>
+                <p className="text-sm text-foreground/80">
+                  Not paying capacity. Profit-free means bias-free.
                 </p>
               </div>
             </div>

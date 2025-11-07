@@ -61,11 +61,7 @@ export default function LetterFromFounderPage() {
                 </p>
 
                 <p className="text-lg text-foreground/80 leading-relaxed">
-                  But there was always a question I couldn't answer: <strong className="text-primary">My mother's birds gave me this opportunity. What am I giving back to the industry that raised me?</strong>
-                </p>
-
-                <p className="text-lg text-foreground/80 leading-relaxed">
-                  That question kept me awake at night. It followed me through every corporate meeting, every successful project delivery, every achievement that should have felt complete but somehow didn't.
+                  But something felt hollow. Missing the village soul. The metro rush felt empty. <strong className="text-primary">Vague dissatisfaction without clear answer.</strong>
                 </p>
 
                 <h3 className="text-2xl font-bold text-foreground mt-10 mb-6">COVID Forced My Hand</h3>
@@ -75,7 +71,7 @@ export default function LetterFromFounderPage() {
                 </p>
 
                 <p className="text-lg text-foreground/80 leading-relaxed">
-                  That's when I spent real time with my friend Prabharan. He runs a serious commercial poultry operation. Not backyard farming like my mother did—he's managing <strong>7 lakh birds</strong>. That's 700,000 birds. A ₹1 Crore+ annual turnover operation with 10 staff members.
+                  That's when I spent real time with my friend Prabharan. He runs a serious commercial poultry operation. <strong>7 lakh birds</strong>. A ₹100 Crore+ annual turnover operation with 40 staff members.
                 </p>
 
                 <p className="text-lg text-foreground/80 leading-relaxed">
@@ -83,18 +79,36 @@ export default function LetterFromFounderPage() {
                 </p>
 
                 <p className="text-lg text-foreground/80 leading-relaxed">
-                  Let that sink in. In 2020-2021, while the world ran on cloud software, while single-owner tea shops used digital POS systems, a multi-crore poultry operation was using pen, paper, and late-night manual calculations.
+                  I watched Prabharan struggle. Late nights after 12-hour farm days. Lost tracking. No historical data. Just survival.
                 </p>
 
                 <p className="text-lg text-foreground/80 leading-relaxed">
-                  I watched Prabharan struggle. Late nights after 12-hour farm days, trying to manually track everything. No historical data. No way to learn from past cycles. Just survival, day after day.
+                  I saw the problem intellectually—tech person seeing tech gap.
                 </p>
 
-                <div className="bg-primary/5 p-8 rounded-xl border-l-4 border-primary my-8">
-                  <p className="text-lg text-foreground/90 font-semibold italic">
-                    The irony was crushing. I'd been building sophisticated ERPs for corporations who threw six-figure budgets at software. Meanwhile, farmers producing actual food for millions—farmers like my mother—couldn't access even basic tools.
+                <h3 className="text-2xl font-bold text-foreground mt-10 mb-6">The Dinner That Found My IKIGAI</h3>
+
+                <p className="text-lg text-foreground/80 leading-relaxed">
+                  I shared Prabharan's struggle with my mother over dinner. She listened quietly. Then:
+                </p>
+
+                <div className="bg-gradient-to-br from-primary/10 to-orange-500/10 p-8 rounded-2xl border-2 border-primary/30 my-8">
+                  <p className="text-xl text-foreground/90 italic leading-relaxed">
+                    <strong>"Mahane,</strong> the problems I faced raising those birds to feed you—he's facing the same, just bigger. You got educated because of those birds. You have the skill to heal this pain. <strong className="text-primary">If you don't use it for farmers like him, like I was—what was their sacrifice for?</strong>"
                   </p>
                 </div>
+
+                <p className="text-lg text-foreground/80 leading-relaxed">
+                  <strong>That moment.</strong>
+                </p>
+
+                <p className="text-lg text-foreground/80 leading-relaxed">
+                  I found my IKIGAI—where profession, passion, vocation, and mission converge. Not abstract debt. Not vague guilt. <strong className="text-primary">Clear purpose.</strong>
+                </p>
+
+                <p className="text-lg text-foreground/80 leading-relaxed">
+                  From that dinner forward, every choice became simple.
+                </p>
 
                 <h3 className="text-2xl font-bold text-foreground mt-10 mb-6">We Built PoultryCare Together</h3>
 

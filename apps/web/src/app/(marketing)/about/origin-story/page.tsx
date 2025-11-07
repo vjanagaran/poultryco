@@ -58,12 +58,12 @@ export default function OriginStoryPage() {
               </p>
 
               <p className="text-lg text-foreground/80 leading-relaxed mb-6">
-                The path seemed clear: escape rural life, build a corporate career, achieve "success." I followed it. Built enterprise ERP solutions for large corporations. Worked across <strong>UAE, Oman, Malaysia, and multiple countries</strong>. Solved complex business problems for clients who could afford anything.
+                The path seemed clear: build a corporate career, achieve "success." I followed it. Built enterprise ERP solutions for large corporations. Worked across <strong>UAE, Oman, Malaysia, and multiple countries</strong>. Solved complex business problems for clients who could afford anything.
               </p>
 
               <div className="bg-primary/5 border-l-4 border-primary p-6 my-8 rounded-r-lg">
                 <p className="text-lg text-foreground/90 italic">
-                  But in every corporate boardroom, a question haunted me: <strong className="text-primary">My mother raised birds to fund my education. What am I doing with that education to serve the industry that raised me?</strong>
+                  But something felt hollow. Missing the village soul. The metro rush felt empty. <strong className="text-primary">Vague dissatisfaction without clear answer.</strong>
                 </p>
               </div>
             </div>
@@ -90,7 +90,7 @@ export default function OriginStoryPage() {
               </p>
 
               <p className="text-lg text-foreground/80 leading-relaxed mb-6">
-                That's when I spent real time with my friend <strong>Prabharan</strong>—a second-generation commercial poultry farmer. Progressive. Educated. Running a serious operation. And completely overwhelmed.
+                That's when I spent real time with my friend <strong>Prabharan</strong>—a second-generation commercial poultry farmer. Progressive. Educated. Running a serious operation.
               </p>
 
               <div className="bg-white p-8 rounded-2xl border-2 border-orange-500/30 my-8">
@@ -98,7 +98,7 @@ export default function OriginStoryPage() {
                   He was managing <span className="text-primary">7 lakh birds</span>. On paper.
                 </p>
                 <p className="text-foreground/80 leading-relaxed">
-                  Not a small backyard operation. Not a hobby farm. Seven hundred thousand birds. A ₹1 Crore+ annual turnover operation. Ten staff members. Modern sheds. Professional approach to farming.
+                  Seven hundred thousand birds. A ₹100 Crore+ annual turnover operation. 40+ staff members. Modern sheds. Professional farming.
                 </p>
                 <p className="text-foreground/80 leading-relaxed mt-4">
                   <strong>All managed with pen, paper, and late nights.</strong>
@@ -110,7 +110,59 @@ export default function OriginStoryPage() {
               </p>
 
               <p className="text-lg text-foreground/80 leading-relaxed mb-6">
-                The irony crushed me: I'd been building sophisticated ERPs for corporations who threw six-figure budgets at software. Meanwhile, farmers producing <strong>actual food for millions</strong>—farmers like my mother—couldn't access even basic digital tools.
+                I saw the problem intellectually—tech person seeing tech gap.
+              </p>
+
+              <h3 className="text-2xl font-bold text-foreground mb-6 mt-10">The Dinner That Changed Everything</h3>
+
+              <p className="text-lg text-foreground/80 leading-relaxed mb-6">
+                I shared Prabharan's struggle with my mother over dinner. She listened quietly. Then said something that changed everything:
+              </p>
+
+              <div className="bg-gradient-to-br from-primary/10 to-orange-500/10 p-10 rounded-3xl border-2 border-primary/30 my-10">
+                <p className="text-xl text-foreground/90 leading-relaxed mb-6 italic">
+                  <strong>"Mahane,</strong> the problems I faced raising those birds to feed you—he's facing the same, just bigger.
+                </p>
+                <p className="text-xl text-foreground/90 leading-relaxed italic">
+                  You got educated because of those birds. You have the skill to heal this pain. <strong className="text-primary">If you don't use it for farmers like him, like I was—what was their sacrifice for?</strong>"
+                </p>
+              </div>
+
+              <p className="text-lg text-foreground/80 leading-relaxed mb-6">
+                <strong>That moment.</strong>
+              </p>
+
+              <p className="text-lg text-foreground/80 leading-relaxed mb-6">
+                I found my <strong className="text-primary">IKIGAI</strong>—the peace my soul had been searching for. Where profession, passion, vocation, and mission converge:
+              </p>
+
+              <div className="bg-white p-8 rounded-2xl border-2 border-primary/20 my-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <p className="font-semibold text-foreground mb-2">What I Love:</p>
+                    <p className="text-sm text-muted-foreground">Technology. Problem-solving. Building systems.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground mb-2">What I'm Good At:</p>
+                    <p className="text-sm text-muted-foreground">Enterprise ERPs. Understanding complex operations.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground mb-2">What the World Needs:</p>
+                    <p className="text-sm text-muted-foreground">Farmers drowning in paper. Losing money. Needing tools.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground mb-2">What Connects It All:</p>
+                    <p className="text-sm text-muted-foreground">Mother's birds. The debt. The obligation. The sacrifice.</p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-lg text-foreground/80 leading-relaxed mb-6">
+                Not abstract debt anymore. Not vague guilt. <strong className="text-primary">Clear purpose. Right now. This is why I exist.</strong>
+              </p>
+
+              <p className="text-lg text-foreground/80 leading-relaxed">
+                From that dinner forward, every choice became simple.
               </p>
 
               <h3 className="text-2xl font-bold text-foreground mb-4 mt-10">The Birth of PoultryCare ERP</h3>
@@ -170,7 +222,7 @@ export default function OriginStoryPage() {
                     <li>• Humans cleaning litter daily across sheds</li>
                     <li>• Humans loading feed multiple times per day</li>
                     <li>• Humans handling dead birds, manual counts</li>
-                    <li>• <strong>₹1 Cr+ farms with 10+ staff on paper registers</strong></li>
+                    <li>• <strong>₹100 Cr+ farms with 40+ staff on paper registers</strong></li>
                   </ul>
                 </div>
               </div>
@@ -198,7 +250,7 @@ export default function OriginStoryPage() {
                   <li>• <strong>No control over demand/supply</strong> (can't ask hens to stop laying when prices drop)</li>
                 </ul>
                 <p className="text-foreground/80 mt-4">
-                  So individual farmers can't afford R&D. Can't bear transformation risk alone. Can't pay enterprise prices for enterprise solutions. <strong>The trap is perfect.</strong>
+                  So individual farmers can't afford R&D alone. Can't bear transformation risk alone. Can't pay enterprise prices for enterprise solutions. <strong>The trap is perfect.</strong>
                 </p>
               </div>
             </div>
@@ -291,14 +343,36 @@ export default function OriginStoryPage() {
                 We created <strong>PTIC—PoultryTech Innovation Council</strong>—as a <strong className="text-primary">Section 8 non-profit company</strong> under India's Companies Act 2013. Mission-driven, not revenue-driven. Legally prohibited from profit distribution.
               </p>
 
-              <div className="bg-white p-8 rounded-2xl border-2 border-primary/20 my-8">
-                <h4 className="text-xl font-bold text-foreground mb-4">Why Non-Profit Was Essential:</h4>
-                <ol className="space-y-3 text-foreground/80">
-                  <li><strong className="text-primary">Trust Factor:</strong> Farmers skeptical of for-profit platforms. Section 8 legally removes commercial conflict.</li>
-                  <li><strong className="text-primary">Neutrality:</strong> No vendor gets privileged position. Everyone has equal standing.</li>
-                  <li><strong className="text-primary">Market Positioning:</strong> Large integrators (Suguna, Venky's, Godrej) serve contract farmers (40%). PTIC serves the forgotten 60%—independent farmers. No commercial conflict.</li>
-                  <li><strong className="text-primary">Sustainability:</strong> Free access enables adoption at scale through mission-driven structure.</li>
-                </ol>
+              <h4 className="text-xl font-bold text-foreground mb-6">Why PTIC Had to Be Non-Profit:</h4>
+
+              <div className="grid md:grid-cols-2 gap-6 my-8">
+                <div className="bg-white p-6 rounded-xl border border-primary/20">
+                  <h5 className="font-bold text-primary mb-2">Trust Without Pressure</h5>
+                  <p className="text-sm text-foreground/80">
+                    Section 8 removes future monetization burden. Free forever, legally.
+                  </p>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl border border-primary/20">
+                  <h5 className="font-bold text-primary mb-2">Mission Over Returns</h5>
+                  <p className="text-sm text-foreground/80">
+                    PTIC reinvests all revenue. No profit extraction to shareholders.
+                  </p>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl border border-primary/20">
+                  <h5 className="font-bold text-primary mb-2">Pay-It-Forward Culture</h5>
+                  <p className="text-sm text-foreground/80">
+                    Receive freely. Give freely. Communities grow through reciprocity.
+                  </p>
+                </div>
+
+                <div className="bg-white p-6 rounded-xl border border-primary/20">
+                  <h5 className="font-bold text-primary mb-2">Serve Based on Need</h5>
+                  <p className="text-sm text-foreground/80">
+                    Not paying capacity. Profit-free means bias-free.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
