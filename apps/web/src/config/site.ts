@@ -34,6 +34,16 @@ export const siteConfig = {
   // Navigation
   mainNav: [
     {
+      title: "Who",
+      href: "#", // Dropdown trigger
+      dropdown: [
+        { title: "About", href: "/about", description: "Our story, mission, and vision" },
+        { title: "Origin Story", href: "/about/origin-story", description: "From farmer's plea to platform" },
+        { title: "Founder's Letter", href: "/about/letter-from-founder", description: "Personal note from Janagaran" },
+        { title: "About PTIC", href: "/about/ptic", description: "Non-profit mission and initiatives" },
+      ],
+    },
+    {
       title: "Whom",
       href: "#", // Dropdown trigger
       dropdown: [
@@ -86,18 +96,6 @@ export const siteConfig = {
         { title: "Trust Stops Exploitation", href: "/impact/trust-stops-exploitation", description: "Verification reduces ₹5,000 Cr loss" },
       ],
     },
-    {
-      title: "Resources",
-      href: "#", // Dropdown trigger
-      dropdown: [
-        { title: "Blog", href: "/blog", description: "Industry insights and guides" },
-        { title: "Contact", href: "/contact", description: "Get in touch with us" },
-      ],
-    },
-    {
-      title: "About",
-      href: "/about",
-    },
   ],
   
   // Features Navigation
@@ -136,32 +134,15 @@ export const siteConfig = {
   
   // Footer Links
   footerLinks: {
-    whom: [
-      { title: "For Farmers", href: "/stakeholders/farmers" },
-      { title: "For Veterinarians", href: "/stakeholders/veterinarians" },
-      { title: "For FPOs", href: "/stakeholders/fpos" },
-      { title: "For Associations", href: "/stakeholders/associations" },
-      { title: "View All Stakeholders", href: "/stakeholders" },
-    ],
-    why: [
-      { title: "Trust-First Architecture", href: "/why/trust-first-architecture" },
-      { title: "Your Profile Matters", href: "/why/your-profile-matters" },
-      { title: "Verification is Trust", href: "/why/verification-is-trust" },
-      { title: "Network Effects", href: "/why/network-effects" },
-    ],
-    how: [
-      { title: "Trust Ladder Works", href: "/how/trust-ladder-works" },
-      { title: "Profiles Work", href: "/how/profiles-work" },
-      { title: "Networking Works", href: "/how/networking-works" },
-      { title: "Verification Works", href: "/how/verification-works" },
-    ],
-    impact: [
-      { title: "Farmers Save ₹60K", href: "/impact/farmers-save-60k" },
-      { title: "Vets Grow 2-3x", href: "/impact/vets-grow-practice" },
-      { title: "FPOs Prove Value", href: "/impact/fpos-prove-value" },
+    platform: [
+      { title: "Whom", href: "/stakeholders" },
+      { title: "Why", href: "/why" },
+      { title: "How", href: "/how" },
+      { title: "Impact", href: "/impact" },
+      { title: "Who", href: "/about" },
     ],
     company: [
-      { title: "About", href: "/about" },
+      { title: "Home", href: "/" },
       { title: "Blog", href: "/blog" },
       { title: "Contact", href: "/contact" },
     ],

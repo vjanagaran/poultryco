@@ -1,24 +1,39 @@
-# PoultryCo Website - Robots.txt
-# Last Updated: October 21, 2025
+# PoultryCo Robots.txt
+# Allow search engines to index marketing pages, block platform pages
 
 User-agent: *
+
+# Allow all marketing pages
 Allow: /
+Allow: /stakeholders/
+Allow: /why/
+Allow: /how/
+Allow: /impact/
+Allow: /about/
+Allow: /blog/
+
+# Block platform pages (require authentication)
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /me/
+Disallow: /dashboard
+Disallow: /home
+Disallow: /messages
+Disallow: /notifications
+Disallow: /settings/
+Disallow: /discover/
+Disallow: /stream
+Disallow: /network
+Disallow: /members
+Disallow: /tools
+Disallow: /welcome
+Disallow: /com/
+Disallow: /org/
+Disallow: /search
+Disallow: /unsubscribe
+Disallow: /early-access
 
 # Sitemap
 Sitemap: https://www.poultryco.net/sitemap.xml
-
-# Disallow admin and API routes
-Disallow: /api/
-Disallow: /_next/
-Disallow: /admin/
-
-# Allow crawling of public pages
-Allow: /blog/
-Allow: /features/
-Allow: /about/
-Allow: /contact/
-Allow: /early-access/
-
-# Crawl-delay (optional, for aggressive bots)
-Crawl-delay: 1
-
