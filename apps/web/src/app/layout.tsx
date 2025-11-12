@@ -3,7 +3,7 @@ import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import { siteConfig } from "@/config/site";
 import Script from "next/script";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+//import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProfileProvider } from "@/contexts/ProfileContext";
 import { QueryProvider } from "@/components/providers/QueryProvider";
@@ -103,7 +103,7 @@ export default function RootLayout({
             </ProfileProvider>
           </AuthProvider>
         </QueryProvider>
-        <SpeedInsights />
+        {/* <SpeedInsights /> */}
       </body>
     </html>
   );

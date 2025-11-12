@@ -17,7 +17,7 @@ interface Connection {
   profile: {
     id: string;
     full_name: string;
-    username: string;
+    profile_slug: string;
     headline?: string;
     profile_photo_url?: string;
     location_city?: string;
@@ -62,9 +62,11 @@ export function ConnectionsList() {
       // Fetch profile details
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, username, headline, profile_photo_url, location_city, location_state')
+        .select('id, full_name, profile_slug, headline, profile_photo_url, location_city, location_state')
         .in('id', otherProfileIds);
-      
+        console.log('Profiles fetched:', profiles);
+        console.log('OtherProfileIds:', otherProfileIds);
+        
       // Map to Connection type
       return (data || []).map(conn => {
         const otherProfileId = conn.profile_id_1 === user.user.id ? conn.profile_id_2 : conn.profile_id_1;
@@ -76,7 +78,7 @@ export function ConnectionsList() {
           profile: profile || {
             id: otherProfileId,
             full_name: 'Unknown User',
-            username: 'unknown',
+            profile_slug: 'unknown',
           }
         };
       }) as Connection[];
@@ -163,7 +165,7 @@ export function ConnectionsList() {
             <div key={connection.id} className="p-6 hover:bg-gray-50 transition-colors">
               <div className="flex items-start gap-4">
                 <Link 
-                  href={`/me/${connection.profile.username}`}
+                  href={`/me/${connection.profile.profile_slug}`}
                   className="flex-shrink-0"
                 >
                   <div className="relative w-16 h-16">
@@ -188,7 +190,7 @@ export function ConnectionsList() {
                   <div className="flex items-start justify-between">
                     <div>
                       <Link 
-                        href={`/me/${connection.profile.username}`}
+                        href={`/me/${connection.profile.profile_slug}`}
                         className="font-semibold text-gray-900 hover:text-primary transition-colors"
                       >
                         {connection.profile.full_name}
