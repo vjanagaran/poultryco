@@ -228,9 +228,10 @@ export default function NewEmailTemplatePage() {
       if (error) throw error;
 
       router.push('/email-campaigns/templates');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating template:', error);
-      alert(error.message || 'Failed to create template');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create template';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

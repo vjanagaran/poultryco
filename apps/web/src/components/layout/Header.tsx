@@ -22,158 +22,184 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Prevent body scroll when mobile menu is open
+  React.useEffect(() => {
+    if (isMenuOpen) {
+      // Prevent body scroll
+      document.body.style.overflow = "hidden";
+    } else {
+      // Restore body scroll
+      document.body.style.overflow = "";
+    }
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMenuOpen]);
+
   const isActive = (href: string) => pathname === href;
 
-  return (
-    <header
-      className={cn(
-        "sticky top-0 z-[100] w-full transition-all duration-300",
-        isScrolled
-          ? "bg-background/95 backdrop-blur-sm shadow-sm"
-          : "bg-background/80 backdrop-blur-sm"
-      )}
-    >
-      <div className="container mx-auto">
-        <div className="flex h-16 md:h-20 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">P</span>
-            </div>
-            <span className="font-heading font-bold text-xl md:text-2xl text-foreground">
-              PoultryCo
-            </span>
-          </Link>
+  // Close dropdown when pathname changes (page navigation)
+  React.useEffect(() => {
+    setOpenDropdown(null);
+  }, [pathname]);
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            {siteConfig.mainNav.map((item) => (
-              <div
-                key={item.title}
-                className="relative group"
-              >
-                {item.dropdown ? (
-                  <>
-                    <button
-                      className={cn(
-                        "flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary",
-                        openDropdown === item.title ? "text-primary" : "text-foreground/80"
-                      )}
-                      onMouseEnter={() => setOpenDropdown(item.title)}
-                    >
-                      {item.title}
-                      <svg
+  return (
+    <>
+      <header
+        className={cn(
+          "sticky top-0 z-[100] w-full transition-all duration-300",
+          isScrolled
+            ? "bg-background/95 backdrop-blur-sm shadow-sm"
+            : "bg-background/80 backdrop-blur-sm"
+        )}
+      >
+        <div className="container mx-auto">
+          <div className="flex h-16 md:h-20 items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xl">P</span>
+              </div>
+              <span className="font-heading font-bold text-xl md:text-2xl text-foreground">
+                PoultryCo
+              </span>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-6">
+              {siteConfig.mainNav.map((item) => (
+                <div
+                  key={item.title}
+                  className="relative group"
+                >
+                  {item.dropdown ? (
+                    <>
+                      <button
                         className={cn(
-                          "w-4 h-4 transition-transform",
-                          openDropdown === item.title && "rotate-180"
+                          "flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary",
+                          openDropdown === item.title ? "text-primary" : "text-foreground/80"
                         )}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </button>
-                    {/* Mega Menu Dropdowns - Whom, Why, How, Impact */}
-                    {openDropdown === item.title && (item.title === "Whom" || item.title === "Why" || item.title === "How" || item.title === "Impact") && (
-                      <div 
-                        className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[800px] bg-white border border-border rounded-lg shadow-2xl p-6 animate-in fade-in slide-in-from-top-2 z-[110]"
                         onMouseEnter={() => setOpenDropdown(item.title)}
-                        onMouseLeave={() => setOpenDropdown(null)}
                       >
-                        <div className={`grid ${item.dropdown && item.dropdown.length > 6 ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
+                        {item.title}
+                        <svg
+                          className={cn(
+                            "w-4 h-4 transition-transform",
+                            openDropdown === item.title && "rotate-180"
+                          )}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </button>
+                      {/* Mega Menu Dropdowns - Whom, Why, How, Impact */}
+                      {openDropdown === item.title && (item.title === "Whom" || item.title === "Why" || item.title === "How" || item.title === "Impact") && (
+                        <div 
+                          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[800px] bg-white border border-border rounded-lg shadow-2xl p-6 animate-in fade-in slide-in-from-top-2 z-[110]"
+                          onMouseEnter={() => setOpenDropdown(item.title)}
+                          onMouseLeave={() => setOpenDropdown(null)}
+                        >
+                          <div className={`grid ${item.dropdown && item.dropdown.length > 6 ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
+                            {item.dropdown?.map((subItem) => (
+                              <Link
+                                key={subItem.href}
+                                href={subItem.href}
+                                className="block p-3 rounded-lg hover:bg-muted/50 transition-all group/item"
+                                onClick={() => setOpenDropdown(null)}
+                              >
+                                <div className="font-semibold text-sm text-foreground mb-1 group-hover/item:text-primary transition-colors">
+                                  {subItem.title}
+                                </div>
+                                <div className="text-xs text-muted-foreground leading-relaxed">
+                                  {subItem.description}
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Regular Dropdown - Resources & Others */}
+                      {openDropdown === item.title && item.title !== "Whom" && item.title !== "Why" && item.title !== "How" && item.title !== "Impact" && item.dropdown && (
+                        <div 
+                          className="absolute left-0 top-full mt-2 w-64 bg-white border border-border rounded-lg shadow-xl py-2 animate-in fade-in slide-in-from-top-2 z-[110]"
+                          onMouseEnter={() => setOpenDropdown(item.title)}
+                          onMouseLeave={() => setOpenDropdown(null)}
+                        >
                           {item.dropdown?.map((subItem) => (
                             <Link
                               key={subItem.href}
                               href={subItem.href}
-                              className="block p-3 rounded-lg hover:bg-muted/50 transition-all group/item"
+                              className="block px-4 py-3 hover:bg-muted/50 transition-colors"
+                              onClick={() => setOpenDropdown(null)}
                             >
-                              <div className="font-semibold text-sm text-foreground mb-1 group-hover/item:text-primary transition-colors">
+                              <div className="font-medium text-sm text-foreground">
                                 {subItem.title}
                               </div>
-                              <div className="text-xs text-muted-foreground leading-relaxed">
+                              <div className="text-xs text-muted-foreground mt-0.5">
                                 {subItem.description}
                               </div>
                             </Link>
                           ))}
                         </div>
-                      </div>
-                    )}
-                    {/* Regular Dropdown - Resources & Others */}
-                    {openDropdown === item.title && item.title !== "Whom" && item.title !== "Why" && item.title !== "How" && item.title !== "Impact" && item.dropdown && (
-                      <div 
-                        className="absolute left-0 top-full mt-2 w-64 bg-white border border-border rounded-lg shadow-xl py-2 animate-in fade-in slide-in-from-top-2 z-[110]"
-                        onMouseEnter={() => setOpenDropdown(item.title)}
-                        onMouseLeave={() => setOpenDropdown(null)}
-                      >
-                        {item.dropdown?.map((subItem) => (
-                          <Link
-                            key={subItem.href}
-                            href={subItem.href}
-                            className="block px-4 py-3 hover:bg-muted/50 transition-colors"
-                          >
-                            <div className="font-medium text-sm text-foreground">
-                              {subItem.title}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              {subItem.description}
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "text-sm font-medium transition-colors hover:text-primary",
-                      isActive(item.href) ? "text-primary" : "text-foreground/80"
-                    )}
-                  >
-                    {item.title}
-                  </Link>
-                )}
-              </div>
-            ))}
-          </nav>
+                      )}
+                    </>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "text-sm font-medium transition-colors hover:text-primary",
+                        isActive(item.href) ? "text-primary" : "text-foreground/80"
+                      )}
+                    >
+                      {item.title}
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </nav>
 
-          {/* Desktop CTA */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/login">Sign in</Link>
-            </Button>
-            <Button variant="primary" size="sm" asChild>
-              <Link href="/register">Join now</Link>
-            </Button>
+            {/* Desktop CTA */}
+            <div className="hidden md:flex items-center space-x-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/login">Sign in</Link>
+              </Button>
+              <Button variant="primary" size="sm" asChild>
+                <Link href="/register">Join now</Link>
+              </Button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden p-2 text-foreground relative z-[102]"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {isMenuOpen ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
           </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 text-foreground"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
         </div>
+      </header>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 space-y-4 border-t border-border">
+      {/* Mobile Menu - Rendered outside header to avoid container constraints */}
+      {isMenuOpen && (
+        <div className="md:hidden fixed inset-0 top-16 bg-white z-[101] overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div className="py-4 px-4 space-y-4">
             {siteConfig.mainNav.map((item) => (
               <div key={item.title}>
                 {item.dropdown ? (
@@ -206,7 +232,7 @@ export function Header() {
                 )}
               </div>
             ))}
-            <div className="pt-4 space-y-2">
+            <div className="pt-4 space-y-2 pb-6">
               <Button variant="outline" size="md" className="w-full" asChild>
                 <Link href="/login">Sign in</Link>
               </Button>
@@ -215,9 +241,9 @@ export function Header() {
               </Button>
             </div>
           </div>
-        )}
-      </div>
-    </header>
+        </div>
+      )}
+    </>
   );
 }
 
