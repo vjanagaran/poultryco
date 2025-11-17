@@ -31,7 +31,7 @@
         ┌──────────────────┼──────────────────┐
         |                  |                  |
    Prabharan          Coordinator      PoultryCare Team
-   (Advisory)         ₹15K/month         (Support)
+   (Advisory)         Full-time         (Support)
    Strategic          Tech Lead          Marketing, QA
    Partner            Project Mgmt       Part-time
         |                  |                  |
@@ -1272,7 +1272,7 @@ If Week 2 of Sprint:
 ```
 Purpose: Source code management
 Users: All developers
-Cost: Free (public repo) or $4/user (private)
+Cost: Free (public repo) or subscription-based (varies by plan)
 
 Setup:
 □ Organization created
@@ -1296,7 +1296,7 @@ Usage:
 ```
 Purpose: Primary development environment
 Users: All developers
-Cost: $20/user/month
+Cost: Subscription-based (varies by plan)
 
 Setup:
 □ Install Cursor
@@ -1320,7 +1320,7 @@ Benefits:
 ```
 Purpose: Sprint planning & task tracking
 Users: All team
-Cost: Free for <10 users
+Cost: Free tier available (subscription-based, varies by plan)
 
 Setup:
 □ Create project
@@ -1342,7 +1342,7 @@ Usage:
 ```
 Purpose: Documentation & knowledge base
 Users: All team
-Cost: Free for small teams
+Cost: Free tier available (subscription-based, varies by plan)
 
 Setup:
 □ Create workspace
@@ -1367,7 +1367,7 @@ Content:
 ```
 Purpose: Team communication
 Users: All team
-Cost: Free (with limits)
+Cost: Free tier available (subscription-based, varies by plan)
 
 Channels:
 #general        → Team-wide updates
@@ -1414,7 +1414,7 @@ Rules:
 **Supabase**
 ```
 Purpose: Backend & Database
-Cost: $25/month (Pro plan)
+Cost: Subscription-based (varies by plan)
 
 Setup:
 □ Create project
@@ -1436,7 +1436,7 @@ Monitoring:
 **Vercel**
 ```
 Purpose: Web hosting
-Cost: $20/month (Pro plan)
+Cost: Subscription-based (varies by plan)
 
 Setup:
 □ Connect GitHub
@@ -1457,7 +1457,7 @@ Monitoring:
 **AWS SES**
 ```
 Purpose: Email sending
-Cost: $0.10 per 1,000 emails
+Cost: Usage-based pricing (varies by volume)
 
 Setup:
 □ Verify domains
@@ -1478,7 +1478,7 @@ Monitoring:
 **Twilio**
 ```
 Purpose: SMS/OTP
-Cost: ~₹0.50 per SMS
+Cost: Per-SMS pricing (varies by region and volume)
 
 Setup:
 □ Get phone number
@@ -1488,7 +1488,7 @@ Setup:
 
 Monitoring:
 □ Delivery rate
-□ Cost per SMS
+□ SMS volume and costs
 □ Response time
 ```
 
@@ -1499,7 +1499,7 @@ Monitoring:
 **PostHog**
 ```
 Purpose: Product analytics
-Cost: Free for <1M events
+Cost: Free tier available (subscription-based, varies by plan)
 
 Setup:
 □ Create project
@@ -1521,7 +1521,7 @@ Key Metrics:
 **Sentry**
 ```
 Purpose: Error tracking
-Cost: Free for <5K errors
+Cost: Free tier available (subscription-based, varies by plan)
 
 Setup:
 □ Create project
@@ -1542,7 +1542,7 @@ Monitoring:
 **Google Analytics 4**
 ```
 Purpose: Marketing analytics
-Cost: Free
+Cost: Free tier available
 
 Setup:
 □ Create property
@@ -1566,7 +1566,7 @@ Tracking:
 ```
 Purpose: UI/UX design
 Users: Designers + Developers
-Cost: Free for 3 projects
+Cost: Free tier available (subscription-based, varies by plan)
 
 Setup:
 □ Create team
@@ -1587,7 +1587,7 @@ Usage:
 ```
 Purpose: Marketing graphics
 Users: Marketing team
-Cost: Free (with limits)
+Cost: Free tier available (subscription-based, varies by plan)
 
 Usage:
 □ Social media graphics
@@ -1604,7 +1604,7 @@ Usage:
 **Notion Database (CRM)**
 ```
 Purpose: Lead tracking
-Cost: Included in Notion
+Cost: Included with Notion subscription
 
 Fields:
 □ Name
@@ -1630,7 +1630,7 @@ Views:
 **Calendly**
 ```
 Purpose: Meeting scheduling
-Cost: Free
+Cost: Free tier available (subscription-based, varies by plan)
 
 Setup:
 □ Create account
