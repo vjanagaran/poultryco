@@ -6,14 +6,14 @@
 
 ## Table of Contents
 
-7.1 Acquisition Metrics  
-7.2 Engagement Metrics  
-7.3 Conversion Metrics  
-7.4 Business Health Metrics  
-7.5 Dashboard Setup Guide  
-7.6 Weekly Review Template  
-7.7 Monthly Business Review  
-7.8 Alert Configuration
+- [7.1 Acquisition Metrics](#71-acquisition-metrics)
+- [7.2 Engagement Metrics](#72-engagement-metrics)
+- [7.3 Conversion Metrics](#73-conversion-metrics)
+- [7.4 Business Health Metrics](#74-business-health-metrics)
+- [7.5 Dashboard Setup Guide](#75-dashboard-setup-guide)
+- [7.6 Weekly Review Template](#76-weekly-review-template)
+- [7.7 Monthly Business Review](#77-monthly-business-review)
+- [7.8 Alert Configuration](#78-alert-configuration)
 
 ---
 

@@ -6,11 +6,11 @@
 
 ## Table of Contents - Part 4
 
-4.1 What to Copy (60% of Effort)  
-4.2 What to Customize (30% of Effort)  
-4.3 What to Innovate (10% of Effort)  
-4.4 Feature Priority Matrix  
-4.5 Technology Stack Decisions
+- [4.1 What to Copy (60% of Effort)](#41-what-to-copy-60-of-effort)
+- [4.2 What to Customize (30% of Effort)](#42-what-to-customize-30-of-effort)
+- [4.3 What to Innovate (10% of Effort)](#43-what-to-innovate-10-of-effort)
+- [4.4 Feature Priority Matrix](#44-feature-priority-matrix)
+- [4.5 Technology Stack Decisions](#45-technology-stack-decisions)
 
 ---
 

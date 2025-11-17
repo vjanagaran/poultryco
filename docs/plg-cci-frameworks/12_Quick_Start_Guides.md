@@ -6,11 +6,11 @@
 
 ## Table of Contents
 
-12.1 Week 1 Action Plan (Your First 7 Days)
-12.2 Day-by-Day Guide (First 2 Weeks)
-12.3 Sprint Planning Template
-12.4 User Testing Protocol
-12.5 Launch Checklist (PTSE Ready)
+- [12.1 Week 1 Action Plan (Your First 7 Days)](#121-week-1-action-plan-your-first-7-days)
+- [12.2 Day-by-Day Guide (First 2 Weeks)](#122-day-by-day-guide-first-2-weeks)
+- [12.3 Sprint Planning Template](#123-sprint-planning-template)
+- [12.4 User Testing Protocol](#124-user-testing-protocol)
+- [12.5 Launch Checklist (PTSE Ready)](#125-launch-checklist-ptse-ready)
 
 ---
 

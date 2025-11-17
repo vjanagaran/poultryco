@@ -5,18 +5,25 @@
 
 ## Table of Contents
 
-1.1 What You're Building
-1.2 The Three-Tier Strategy
-1.3 Three Goals Framework
-1.4 Why PLG+CCI is Perfect for PoultryCo
-1.5 Success Criteria
-1.6 Key Metrics Overview
+- [1.1 What You're Building](#11-what-youre-building)
+- [1.2 The Three-Tier Strategy](#12-the-three-tier-strategy)
+- [1.3 Three Goals Framework](#13-three-goals-framework)
+- [1.4 Why PLG+CCI is Perfect for PoultryCo](#14-why-plgcci-is-perfect-for-poultryco)
+- [1.5 Success Criteria](#15-success-criteria)
+- [1.6 Key Metrics Overview](#16-key-metrics-overview)
 
 ---
 
 ## 1.1 What You're Building
 
-PoultryCo is not just another startup trying to validate a product-market fit. It's a **strategic growth engine** designed to support PoultryCare's enterprise business through a product-led growth model.
+PoultryCo is a **mission-driven platform** serving all poultry industry stakeholders. Built by industry stakeholders for industry stakeholders, it provides genuine value to underserved farmers while creating a natural pathway for those who grow to discover PoultryCare when ready.
+
+**Stakeholder Leadership Model:**
+- **Founder of PoultryCare ERP:** Janagaran initiated PoultryCare to serve commercial farmers
+- **PTIC Promoter:** As a stakeholder in the poultry industry, Janagaran initiated PTIC (Poultry Technology Innovation Center) to bring all stakeholders together
+- **PoultryCo Initiative:** Any PTIC stakeholder can take initiatives for industry benefit - PoultryCo is one such initiative
+- **Natural Progression:** PoultryCare → PTIC → PoultryCo represents a natural journey of industry service
+- **Transparency:** All stakeholder relationships are transparent and documented in our brand story
 
 ### The Core Concept
 
@@ -103,59 +110,37 @@ You're following the playbook of the world's most successful SaaS companies:
 └─────────────────────────────────────────────────────────┘
 ```
 
-### The Growth Funnel
+### The Natural Progression Journey
+
+**Important:** This is not a "conversion funnel" with targets. PoultryCo is mission-driven - we serve all stakeholders genuinely. Some users may naturally progress to PoultryCare when their needs grow, but that's an outcome, not a goal.
 
 ```
 10,000 PoultryCo Users (Year 1 Target)
-    ↓ (Filter: Farm size >50K birds, growing)
-  500 Qualified Prospects (5%)
-    ↓ (Filter: Growth signals, pain points)
-  100 Hot Leads (1%)
-    ↓ (Conversion: Education + timing)
-   30 PoultryCare Customers (0.3%)
+    ↓ (Natural progression: Farm size >50K birds, growing)
+  500 Users Who May Benefit from ERP (5%)
+    ↓ (Natural progression: Growth signals, pain points emerge)
+  100 Users Exploring Upgrade Options (1%)
+    ↓ (Natural progression: Education + timing)
+   30 Users Who Choose PoultryCare (0.3%)
     ↓ (LTV: ₹15K/month × 24 months average)
 ₹1.08 Crore Revenue from this cohort
 
-Cost to Acquire: ₹2.75L
-Return: ₹1.08Cr
+Investment in PoultryCo: ₹2.75L
+Strategic Value: ₹1.08Cr revenue + Brand + Community Impact
 ROI: 393% (39x over 2 years)
+
+Note: These metrics measure impact, not drive decisions. 
+Mission always comes first - serving farmers genuinely.
 ```
 
 ---
 
 ## 1.3 Three Goals Framework
 
-### Goal #1: Bottom of Sales Funnel 🎯
+### Goal #1: Genuine Value for All Stakeholders 💎
 
 **What It Means:**
-PoultryCo identifies, qualifies, and warms up leads for PoultryCare sales team.
-
-**Success Looks Like:**
-- 50+ qualified leads identified per year
-- 30% conversion rate (vs 10% industry average)
-- ₹10K CAC (vs ₹50K traditional sales)
-- 6-9 month conversion cycle (vs 12-18 months cold)
-- Educated buyers (already know product value)
-
-**How to Measure:**
-```
-QUARTERLY METRICS:
-- Qualified Leads Generated: Target 15/quarter
-- PoultryCare Conversions: Target 5/quarter (33%)
-- CAC Reduction: Track vs baseline ₹50K
-- Sales Cycle Length: Track vs baseline 12 months
-- Lead Quality Score: Survey sales team satisfaction
-
-REVENUE ATTRIBUTION:
-- Direct: User clicked "Upgrade to PoultryCare"
-- Indirect: User mentioned PoultryCo in sales call
-- Influenced: User knew brand from PoultryCo
-```
-
-### Goal #2: Genuine Value for Lower Segment 💎
-
-**What It Means:**
-Farmers with <100K birds get real tools they need, not crippled "trial" versions.
+PoultryCo serves **all stakeholders** in the poultry industry - farmers, vets, vendors, associations, researchers. The community itself is the goal, not a means to an end. Farmers with <100K birds get real tools they need, not crippled "trial" versions. We serve larger farmers who may also use PoultryCo for market rates, Q&A, and community access. Even PoultryCare customers use PoultryCo for these community benefits.
 
 **This is NOT:**
 - ❌ "Free trial" that expires
@@ -168,13 +153,14 @@ Farmers with <100K birds get real tools they need, not crippled "trial" versions
 - ✅ Real Q&A help from experts
 - ✅ Actual community connections
 - ✅ Standalone value (even if never upgrade)
-- ✅ Respectful of small farmers
+- ✅ Respectful of all stakeholders
 
 **Why This Matters:**
 1. **Ethical:** Serve underserved market genuinely
 2. **Strategic:** Build goodwill and brand love
 3. **Practical:** Small farmers refer big farmers
 4. **Long-term:** Today's 10K farm = tomorrow's 100K farm
+5. **Community:** The community itself is the goal
 
 **Success Looks Like:**
 - 40%+ weekly active users (they find value)
@@ -198,7 +184,7 @@ SENTIMENT METRICS:
 - Referral Rate: % users who refer others
 ```
 
-### Goal #3: Brand & Thought Leadership 🏆
+### Goal #2: Brand & Thought Leadership 🏆
 
 **What It Means:**
 When anyone thinks "poultry technology," they think of you and PoultryCare.
@@ -233,6 +219,44 @@ AUTHORITY METRICS:
 - Content Shares: Track blog post shares
 - Citation Count: Track in industry reports
 - Award Nominations: Target 3+ per year
+```
+
+### Goal #3: Natural Progression to PoultryCare 🎯
+
+**What It Means:**
+PoultryCo serves all users genuinely. As some farms grow and their needs evolve, they may naturally discover that PoultryCare better fits their scale. This is a natural outcome, not a forced conversion.
+
+**Mission-First Approach:**
+- PoultryCo is free forever - no artificial limitations
+- We never pressure users to upgrade
+- Upgrades happen naturally when users self-identify readiness
+- Metrics measure impact, not drive decisions
+- Mission (serving farmers) always wins over metrics
+
+**What Success Looks Like (Impact Measurement):**
+- Users who naturally progress to PoultryCare when ready
+- Higher conversion rates (30% vs 10% industry average) because users are educated
+- Lower acquisition costs (₹10K vs ₹50K traditional) as natural outcome
+- Shorter decision cycles (6-9 months vs 12-18 months) because trust is built
+- Educated buyers who understand value before purchase
+
+**How to Measure (Impact Tracking, Not Goals):**
+```
+QUARTERLY METRICS (For Understanding Impact):
+- Users who naturally explore PoultryCare: ~15/quarter
+- Users who choose PoultryCare: ~5/quarter (natural progression)
+- Acquisition cost comparison: Track vs baseline ₹50K (for learning)
+- Decision cycle comparison: Track vs baseline 12 months (for learning)
+- User satisfaction: Survey how PoultryCo helped their journey
+
+REVENUE ATTRIBUTION (Understanding, Not Driving):
+- Direct: User naturally clicked "Learn about PoultryCare"
+- Indirect: User mentioned PoultryCo in sales conversation
+- Influenced: User knew brand from PoultryCo community
+
+IMPORTANT: These metrics help us understand impact, not set targets.
+We never force conversions or optimize for these numbers.
+Mission (serving farmers) always comes first.
 ```
 
 ---

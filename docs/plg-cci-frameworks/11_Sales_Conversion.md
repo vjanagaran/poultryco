@@ -6,12 +6,12 @@
 
 ## Table of Contents
 
-11.1 The Natural Upgrade Journey
-11.2 Upgrade Triggers & Signals (Automatic Detection)
-11.3 Sales Call Framework (30-Minute Formula)
-11.4 Demo Script (The Perfect Demo)
-11.5 Pricing & Packaging Strategy
-11.6 Onboarding Flow (First 30 Days)
+- [11.1 The Natural Upgrade Journey](#111-the-natural-upgrade-journey)
+- [11.2 Upgrade Triggers & Signals (Automatic Detection)](#112-upgrade-triggers--signals-automatic-detection)
+- [11.3 Sales Call Framework (30-Minute Formula)](#113-sales-call-framework-30-minute-formula)
+- [11.4 Demo Script (The Perfect Demo)](#114-demo-script-the-perfect-demo)
+- [11.5 Pricing & Packaging Strategy](#115-pricing--packaging-strategy)
+- [11.6 Onboarding Flow (First 30 Days)](#116-onboarding-flow-first-30-days)
 
 ---
 

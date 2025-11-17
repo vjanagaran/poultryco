@@ -6,11 +6,11 @@
 
 ## Table of Contents - Part 8
 
-8.1 Budget Breakdown & Overview  
-8.2 Infrastructure Costs (Detailed)  
-8.3 Development Costs & Team Investment  
-8.4 Marketing Budget (₹0 Strategy)  
-8.5 Contingency Planning & Cost Optimization
+- [8.1 Budget Breakdown & Overview](#81-budget-breakdown--overview)
+- [8.2 Infrastructure Costs (Detailed)](#82-infrastructure-costs-detailed)
+- [8.3 Development Costs & Team Investment](#83-development-costs--team-investment)
+- [8.4 Marketing Budget (₹0 Strategy)](#84-marketing-budget-0-strategy)
+- [8.5 Contingency Planning & Cost Optimization](#85-contingency-planning--cost-optimization)
 
 ---
 

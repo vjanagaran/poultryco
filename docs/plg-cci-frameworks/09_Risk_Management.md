@@ -6,11 +6,11 @@
 
 ## Table of Contents - Part 9
 
-9.1 Top 5 Risks & Mitigations (Executive Overview)  
-9.2 Technical Risks & Solutions  
-9.3 Business Risks & Mitigations  
-9.4 Community & Reputation Risks  
-9.5 Contingency Plans for Major Scenarios
+- [9.1 Top 5 Risks & Mitigations (Executive Overview)](#91-top-5-risks--mitigations-executive-overview)
+- [9.2 Technical Risks & Solutions](#92-technical-risks--solutions)
+- [9.3 Business Risks & Mitigations](#93-business-risks--mitigations)
+- [9.4 Community & Reputation Risks](#94-community--reputation-risks)
+- [9.5 Contingency Plans for Major Scenarios](#95-contingency-plans-for-major-scenarios)
 
 ---
 

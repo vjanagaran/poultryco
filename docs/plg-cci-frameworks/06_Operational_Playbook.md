@@ -6,16 +6,16 @@
 
 ## Table of Contents
 
-6.1 Team Structure & Responsibilities  
-6.2 Your Role (Janagaran - 10 hrs/week)  
-6.3 Development Team Workflow  
-6.4 Weekly Rhythm  
-6.5 Tools & Systems  
-6.6 Communication Protocols  
-6.7 Decision-Making Framework  
-6.8 Quality Assurance  
-6.9 Crisis Management  
-6.10 Knowledge Management
+- [6.1 Team Structure & Responsibilities](#61-team-structure--responsibilities)
+- [6.2 Your Role (Janagaran - 10 hrs/week)](#62-your-role-janagaran---10-hrswweek)
+- [6.3 Development Team Workflow](#63-development-team-workflow)
+- [6.4 Weekly Rhythm](#64-weekly-rhythm)
+- [6.5 Tools & Systems](#65-tools--systems)
+- [6.6 Communication Protocols](#66-communication-protocols)
+- [6.7 Decision-Making Framework](#67-decision-making-framework)
+- [6.8 Quality Assurance](#68-quality-assurance)
+- [6.9 Crisis Management](#69-crisis-management)
+- [6.10 Knowledge Management](#610-knowledge-management)
 
 ---
 

@@ -6,11 +6,11 @@
 
 ## Table of Contents - Part 5
 
-5.1 Phase 1: Foundation (Weeks 1-12) - MVP  
-5.2 Phase 2: Growth (Weeks 13-24) - Scale  
-5.3 Phase 3: Innovation (Weeks 25-36) - Differentiate  
-5.4 Weekly Sprint Templates  
-5.5 Milestone Checklist
+- [5.1 Phase 1: Foundation (Weeks 1-12) - MVP](#51-phase-1-foundation-weeks-1-12---mvp)
+- [5.2 Phase 2: Growth (Weeks 13-24) - Scale](#52-phase-2-growth-weeks-13-24---scale)
+- [5.3 Phase 3: Innovation (Weeks 25-36) - Differentiate](#53-phase-3-innovation-weeks-25-36---differentiate)
+- [5.4 Weekly Sprint Templates](#54-weekly-sprint-templates)
+- [5.5 Milestone Checklist](#55-milestone-checklist)
 
 ---
 

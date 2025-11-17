@@ -4,6 +4,18 @@
 
 ---
 
+## Table of Contents
+
+- [Overview: Product-Led Growth for PoultryCo](#overview-product-led-growth-for-poultryco)
+- [3.1 The Four-Layer PLG Stack](#31-the-four-layer-plg-stack)
+- [3.2 Layer 1: Acquisition (Get Users In)](#32-layer-1-acquisition-get-users-in)
+- [3.3 Layer 2: Activation (Get to Aha Moment)](#33-layer-2-activation-get-to-aha-moment)
+- [3.4 Layer 3: Engagement (Keep Coming Back)](#34-layer-3-engagement-keep-coming-back)
+- [3.5 Layer 4: Natural Progression](#35-layer-4-natural-progression-some-users-may-choose-poultrycare)
+- [3.6 PLG Metrics Framework](#36-plg-metrics-framework)
+
+---
+
 ## Overview: Product-Led Growth for PoultryCo
 
 ### What is PLG?
@@ -42,10 +54,10 @@ Solution: Scalable, high trust, value-first
 - Associations connect members (trust networks)
 - PLG amplifies existing word-of-mouth
 
-**4. You Need Qualified Leads, Not Quantity**
-- Rather have 10 perfect leads than 1,000 cold leads
-- PLG self-selects (users identify themselves)
-- Behavior data shows who's ready to upgrade
+**4. Natural Progression, Not Forced Conversion**
+- Users naturally identify when they're ready for more
+- PLG allows self-selection (users identify themselves)
+- Behavior data helps us understand who may benefit, but we never push
 
 **5. You're Building Educational Product**
 - Teaching technology adoption (ladder model)
@@ -61,12 +73,12 @@ Solution: Scalable, high trust, value-first
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ LAYER 4: CONVERSION                                         │
-│ Graduate users to PoultryCare                               │
-│ • Automatic qualification scoring                           │
-│ • Educational upgrade content                               │
-│ • Self-serve upgrade path                                   │
-│ • Sales-assisted for hot leads                              │
+│ LAYER 4: NATURAL PROGRESSION                               │
+│ Some users may naturally progress to PoultryCare            │
+│ • Understanding readiness (not forcing)                    │
+│ • Educational content available (not pushed)                │
+│ • Self-serve exploration path                               │
+│ • Warm conversations for users who show interest            │
 └─────────────────────────────────────────────────────────────┘
                             ↑
                     When limitations hit
@@ -1665,15 +1677,21 @@ Clean database (remove truly inactive)
 
 ---
 
-## 3.5 Layer 4: Conversion (Graduate to PoultryCare)
+## 3.5 Layer 4: Natural Progression (Some Users May Choose PoultryCare)
 
-### Goal: Natural Upgrade When Users Hit Limitations
+### Goal: Serve Genuinely, Some May Naturally Progress
 
-**Core Strategy:** Build value → Create limitations → Provide upgrade path → Sales assist
+**Core Strategy:** Build genuine value → Some users may hit natural limitations → Educational content available → Warm conversations for those who show interest
 
-### 3.5.1 Identifying Conversion Readiness
+**Mission-First Note:** This layer describes how some users may naturally progress to PoultryCare. We never force, pressure, or optimize for conversions. We serve all users genuinely regardless of progression.
 
-**Behavioral Signals (Automatic Detection):**
+### 3.5.1 Understanding Natural Readiness Signals
+
+**How We Understand Who May Benefit (Not Forcing):**
+
+**Note:** These signals help us understand which users may naturally benefit from PoultryCare. We use this information to make educational content available, not to pressure users.
+
+**Behavioral Signals (For Understanding, Not Pushing):**
 
 ```
 SIGNAL 1: Farm Size Growth
@@ -1763,9 +1781,9 @@ Prepare personalized outreach
 Track outcomes
 ```
 
-### 3.5.2 Non-Pushy Upgrade Prompts
+### 3.5.2 Educational Content Available (Never Pushed)
 
-**In-App Upgrade Messaging:**
+**In-App Educational Messaging (Available, Not Forced):**
 
 ```
 SCENARIO 1: Natural Limitation Encountered
@@ -2112,9 +2130,11 @@ POST-CALL (Within 1 Hour):
 GOAL: Maintain momentum, professional follow-through
 ```
 
-### 3.5.5 Conversion Metrics
+### 3.5.5 Natural Progression Metrics (Impact Measurement)
 
-**Conversion Dashboard:**
+**Understanding Impact Dashboard:**
+
+**Note:** These metrics help us understand the natural progression impact. They measure outcomes, not drive decisions. Mission (serving stakeholders) always comes first.
 
 ```
 ┌────────────────────────────────────────────────────┐
