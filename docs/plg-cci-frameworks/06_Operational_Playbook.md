@@ -26,7 +26,7 @@
 ```
                     Janagaran (Founder)
                     10 hrs/week
-                    Strategy, Sales, Content
+                    Strategy, GTM, PR
                            |
         ┌──────────────────┼──────────────────┐
         |                  |                  |
@@ -60,19 +60,21 @@ STRATEGY (30%):
 □ Competitive analysis
 □ Market positioning
 
-SALES (40%):
-□ Qualified lead outreach
-□ Demo calls
-□ Proposal creation
-□ Deal closing
-□ Customer success check-ins
+GTM (40%):
+□ Association partnerships
+□ Community building
+□ Event participation
+□ Thought leadership
+□ Industry networking
+□ User education & enablement
 
-CONTENT (20%):
+PR (20%):
 □ Blog posts (2/month)
 □ Video content (2/month)
 □ Social media strategy
-□ Community engagement
-□ Thought leadership
+□ Media relations
+□ Press releases
+□ Industry publications
 
 TEAM (10%):
 □ Sprint planning participation
@@ -89,9 +91,9 @@ Monday (2 hours):
 - Review metrics dashboard
 
 Tuesday-Thursday (2 hours each = 6 hours):
-- Sales calls (demos, follow-ups)
-- Content creation
-- Partnership calls
+- GTM activities (partnerships, events)
+- PR content creation
+- Association calls
 - Strategic emails
 
 Friday (2 hours):
@@ -384,7 +386,7 @@ Total: 10 people
 ADD:
 - Senior Developer: Full-time
 - Customer Success: Full-time
-- Sales Associate: Part-time
+- Community Manager: Full-time
 
 Total: 13 people
 ```
@@ -421,22 +423,23 @@ If Week 2 of sprint:
   - PostHog dashboard
   - User growth
   - Engagement trends
-  - Sales pipeline
+  - Community health metrics
 ```
 
 ---
 
 ### Tuesday (2 hours)
 
-**Focus: Sales & Partnerships**
+**Focus: GTM & Partnerships**
 
 **Morning Slot (flexible timing):**
 ```
-□ Sales activities (1.5 hours):
-  - Outreach to qualified leads (3-5 emails)
-  - Follow-up calls
-  - Demo preparation
-  - Proposal refinement
+□ GTM activities (1.5 hours):
+  - Association partnership development
+  - Event planning & coordination
+  - Community engagement
+  - Industry networking
+  - User education content
 
 □ Partnership activities (30 min):
   - Association outreach
@@ -456,7 +459,7 @@ If Week 2 of sprint:
 
 ### Wednesday (2 hours)
 
-**Focus: Content Creation**
+**Focus: PR Content Creation**
 
 **Deep Work Block:**
 ```
@@ -485,27 +488,27 @@ Option C: Social Media Content (2 hours)
 
 ### Thursday (2 hours)
 
-**Focus: Sales Execution**
+**Focus: GTM Execution**
 
 **High-Value Activities:**
 ```
-□ Demo calls (1-2 per week)
-  - 60 min per call
-  - Follow demo script
-  - Record notes
-  - Send follow-up
+□ Event participation (as needed)
+  - Conference speaking
+  - Webinar hosting
+  - Association meetings
+  - Industry workshops
 
-□ Proposal creation
-  - Customize template
-  - ROI calculation
-  - Pricing options
-  - Send + follow up
-
-□ Trial check-ins
-  - Call active trials
+□ Community building
+  - Engage with users
   - Answer questions
-  - Guide usage
-  - Address concerns
+  - Share insights
+  - Build relationships
+
+□ Thought leadership
+  - Industry analysis
+  - Trend identification
+  - Expert commentary
+  - Knowledge sharing
 ```
 
 ---
@@ -534,8 +537,8 @@ If Week 1 of sprint:
 □ Plan next week
   - Top 3 priorities
   - Meetings to schedule
-  - Content to create
-  - Sales actions
+  - PR content to create
+  - GTM activities
 
 □ Team feedback
   - Send appreciation
@@ -547,66 +550,47 @@ If Week 1 of sprint:
 
 ## Your Key Activities (Detailed)
 
-### Sales Activities (4 hrs/week)
+### GTM Activities (4 hrs/week)
 
-**Lead Qualification (30 min/week):**
+**Association Partnerships (1.5 hrs/week):**
 ```
-□ Review new signups in PostHog
-□ Filter by:
-  - Farm size >50K birds
-  - Daily active
-  - Uses 3+ tools
-  - Profile completed
-□ Score using upgrade model
-□ Add top 5 to outreach list
+□ Research new association opportunities (30 min)
+□ Outreach to associations (30 min)
+□ Partnership calls and meetings (30 min)
+□ Partnership agreement development
+□ Co-marketing coordination
 ```
 
-**Outreach (1 hr/week):**
+**Event Participation (1 hr/week):**
 ```
-□ Personalized emails to 5-7 leads
-□ Reference their PoultryCo usage
-□ Offer specific value
-□ Low-pressure CTA
-
-Template:
-"Hi [Name],
-
-I noticed you've been using our FCR calculator consistently - that's great! I see your farm has grown to [XX]K birds.
-
-At this scale, many farmers find that PoultryCare ERP helps them:
-- Track multiple batches simultaneously
-- Generate reports for bank loans
-- Reduce admin time by 2+ hours/day
-
-Would you be open to a 15-minute call to see if it's a fit for [Farm Name]?
-
-Best,
-Janagaran
-PoultryCare Founder"
+□ Conference speaking opportunities
+□ Webinar planning and hosting
+□ Industry workshop participation
+□ Association meeting attendance
+□ Event follow-up and networking
 ```
 
-**Demo Calls (1.5 hrs/week = 1-2 calls):**
+**Community Building (1 hr/week):**
 ```
-□ Schedule via Calendly
-□ Send calendar invite + prep email
-□ Prepare demo environment
-□ Conduct 60-min demo
-□ Send follow-up email same day
-□ Add to CRM with notes
+□ Engage with active users
+□ Answer questions in community
+□ Share insights and knowledge
+□ Build relationships with power users
+□ Recognize community contributors
 ```
 
-**Follow-ups (1 hr/week):**
+**User Education (30 min/week):**
 ```
-□ Email follow-ups (2-3 per week)
-□ Call follow-ups (1-2 per week)
-□ Proposal updates
-□ Trial check-ins
-□ Contract negotiations
+□ Create educational content
+□ Develop how-to guides
+□ Share best practices
+□ Enable user success
+□ Document success stories
 ```
 
 ---
 
-### Content Creation (2 hrs/week)
+### PR Activities (2 hrs/week)
 
 **Blog Posts (2 hrs every 2 weeks = 1 post/2 weeks):**
 ```
@@ -675,20 +659,22 @@ Evening (5 min):
 
 ## Your Success Metrics
 
-**Sales (Primary Focus):**
+**GTM (Primary Focus):**
 ```
-□ Qualified leads identified: 5/week
-□ Outreach emails sent: 5/week
-□ Demo calls conducted: 1-2/week
-□ Trials started: 1/month minimum
-□ Deals closed: 1/month (starting Month 6)
+□ Association partnerships: 2-3 active per quarter
+□ Event participation: 1-2 per month
+□ Community engagement: Active daily
+□ User education content: 2-3 pieces/month
+□ Network growth: 10+ new industry connections/month
 ```
 
-**Content (Secondary Focus):**
+**PR (Secondary Focus):**
 ```
 □ Blog posts: 2/month
 □ Videos: 2/month
 □ Social posts: 10/week
+□ Media mentions: 1-2 per quarter
+□ Press releases: As needed
 □ Engagement rate: >5%
 ```
 
@@ -708,8 +694,8 @@ Evening (5 min):
 ```
 ✅ Block calendar in advance
 ✅ Decline non-essential meetings
-✅ Batch similar work (all sales calls on Thu)
-✅ Use templates (emails, proposals)
+✅ Batch similar work (all GTM activities on Tue/Thu)
+✅ Use templates (emails, content)
 ✅ Delegate everything else to team
 ```
 
@@ -721,8 +707,8 @@ Evening (5 min):
 ❌ Don't: Write documentation
 ❌ Don't: Fix bugs
 
-✅ Do: Focus on sales (only you can do)
-✅ Do: Create strategic content
+✅ Do: Focus on GTM (only you can do)
+✅ Do: Create PR content
 ✅ Do: Build partnerships
 ✅ Do: Make key decisions
 ✅ Do: Guide team direction
@@ -1182,9 +1168,9 @@ If Week 1 of Sprint:
 
 **Janagaran:**
 ```
-Tuesday: Sales activities (2 hrs)
-Wednesday: Content creation (2 hrs)
-Thursday: Sales execution (2 hrs)
+Tuesday: GTM activities (2 hrs)
+Wednesday: PR content creation (2 hrs)
+Thursday: GTM execution (2 hrs)
 ```
 
 ---
@@ -1374,8 +1360,8 @@ Channels:
 #development    → Dev discussions
 #bugs           → Bug reports
 #deployments    → Deploy notifications
-#sales          → Sales updates
-#content        → Content planning
+#gtm            → GTM updates
+#pr             → PR content planning
 #random         → Non-work chat
 #emergency      → Critical issues only
 
@@ -1599,11 +1585,11 @@ Usage:
 
 ---
 
-### 7. Sales & CRM
+### 7. GTM & Community Tracking
 
-**Notion Database (CRM)**
+**Notion Database (Community Tracker)**
 ```
-Purpose: Lead tracking
+Purpose: Community engagement tracking
 Cost: Included with Notion subscription
 
 Fields:
@@ -1611,18 +1597,19 @@ Fields:
 □ Company/Farm
 □ Phone/Email
 □ Farm Size
-□ Upgrade Score
-□ Status (Lead/Demo/Trial/Customer)
+□ Engagement Level
+□ Status (Active User/Power User/Community Leader)
 □ Last Contact
 □ Next Action
 □ Notes
+□ Association/Group
 
 Views:
-□ All Leads
-□ Hot Leads (score >90)
-□ Active Trials
-□ Pipeline Value
-□ Closed Won
+□ All Community Members
+□ Power Users (high engagement)
+□ Community Leaders
+□ Association Members
+□ Recent Engagements
 ```
 
 ---
@@ -1640,7 +1627,7 @@ Setup:
 □ Add to email signature
 
 Event Types:
-□ Demo Call (60 min)
+□ Partnership Call (30 min)
 □ Quick Chat (15 min)
 □ Strategy Call (30 min)
 ```
@@ -1809,58 +1796,57 @@ Use Slack for:
 
 ### External Email Templates
 
-**Lead Outreach Email:**
+**Association Partnership Outreach:**
 ```
-Subject: [Name], noticed your PoultryCo activity 👋
+Subject: Partnership Opportunity: PoultryCo for [Association Name] Members
 
-Hi [Name],
+Hi [Association President Name],
 
-I hope this email finds you well. I noticed you've been actively using PoultryCo's FCR calculator - that's great to see!
+I hope this email finds you well. I'm reaching out because I believe PoultryCo could provide significant value to your members.
 
-I saw that [Farm Name] has grown to [XX]K birds. At this scale, many farmers we work with find that managing everything in spreadsheets becomes challenging.
+PoultryCo is a free professional platform built specifically for the poultry industry, offering:
+• Free calculators (FCR, Feed, Profit)
+• Expert Q&A community
+• Market price updates
+• Professional networking
+• All in Tamil/English, mobile-first
 
-PoultryCare ERP has helped farms like yours:
-• Track multiple batches simultaneously
-• Generate reports for bank loans in minutes
-• Reduce admin time by 2+ hours/day
-• Improve FCR by 0.1-0.2 points
+We're already working with [Other Association] and [Another Association], helping [X] farmers access professional tools at no cost.
 
-Would you be open to a quick 15-minute call to see if it might be helpful for [Farm Name]?
+Would you be open to a 30-minute call to explore how we could serve your members?
 
-You can schedule directly here: [Calendly link]
+You can schedule here: [Calendly link]
 
 Best regards,
 Janagaran
-Founder, PoultryCare & PoultryCo
+Founder, PoultryCo
 +91 [phone]
 ```
 
 ---
 
-**Demo Follow-up Email:**
+**Event Follow-up Email:**
 ```
-Subject: Thanks for the demo call, [Name]!
+Subject: Great connecting at [Event Name]!
 
 Hi [Name],
 
-It was great speaking with you today about how PoultryCare can help [Farm Name].
+It was wonderful meeting you at [Event Name]! I enjoyed our conversation about [specific topic discussed].
 
-As discussed, here's what we covered:
-• Multi-batch tracking for your growing operation
-• Automated reports for your bank requirements
-• Time savings of ~2 hours/day on admin work
+As we discussed, PoultryCo is a free platform serving the poultry community with:
+• Professional tools and calculators
+• Expert community support
+• Market insights
+• Industry networking
 
-Next Steps:
-1. [Download the proposal] - includes ROI calculation
-2. [Start your 30-day free trial]
-3. Schedule implementation call if you'd like to proceed
+I thought you might find it valuable for [specific use case they mentioned]. You can explore it here: poultryco.net
 
-I'm here if you have any questions. Looking forward to helping [Farm Name] scale efficiently!
+I'd love to stay connected and continue the conversation. Feel free to reach out anytime!
 
 Best,
 Janagaran
 
-P.S. I've also included a case study of a similar farm ([Farm Name], [XX]K birds) that's been using PoultryCare for 6 months.
+P.S. If you're interested in partnering or have questions, I'm always happy to chat.
 ```
 
 ---
@@ -2062,7 +2048,7 @@ Examples:
 □ Team reviews doc
 □ Discussion in meeting or async
 □ Address concerns
-□ Refine proposal
+□ Refine recommendation
 □ Seek consensus or decide
 ```
 
