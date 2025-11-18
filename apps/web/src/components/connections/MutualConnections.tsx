@@ -43,7 +43,7 @@ export function MutualConnections({
             {data.profiles.slice(0, 2).map((profile) => (
               <Link
                 key={profile.id}
-                href={`/me/${profile.username}`}
+                href={`/me/${profile.profile_slug}`}
                 className="relative inline-block"
               >
                 <div className="h-6 w-6 rounded-full overflow-hidden border-2 border-white hover:z-10 transition-transform">
@@ -71,13 +71,13 @@ export function MutualConnections({
         <div className="text-sm text-gray-600">
           {data.profiles.length > 0 && (
             <>
-              <Link href={`/me/${data.profiles[0].username}`} className="font-semibold hover:underline hover:text-blue-600">
+              <Link href={`/me/${data.profiles[0].profile_slug}`} className="font-semibold hover:underline hover:text-blue-600">
                 {data.profiles[0].full_name}
               </Link>
               {data.profiles.length > 1 && (
                 <>
                   <span>, </span>
-                  <Link href={`/me/${data.profiles[1].username}`} className="font-semibold hover:underline hover:text-blue-600">
+                  <Link href={`/me/${data.profiles[1].profile_slug}`} className="font-semibold hover:underline hover:text-blue-600">
                     {data.profiles[1].full_name}
                   </Link>
                 </>

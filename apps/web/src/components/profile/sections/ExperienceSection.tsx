@@ -154,7 +154,7 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
       await fetchProfile();
       onClose();
     } catch (error) {
-      console.error('Error saving experience:', error);
+      console.log('Error saving experience:', error);
       alert('Failed to save experience');
     } finally {
       setSaving(false);

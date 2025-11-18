@@ -18,7 +18,7 @@ interface ConnectionRequest {
   requester: {
     id: string;
     full_name: string;
-    username: string;
+    profile_slug: string;
     headline?: string;
     profile_photo_url?: string;
     location_city?: string;
@@ -64,7 +64,7 @@ export function ConnectionRequestsList() {
       
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, username, headline, profile_photo_url, location_city, location_state')
+        .select('id, full_name, profile_slug, headline, profile_photo_url, location_city, location_state')
         .in('id', requesterIds);
       
       // Map profiles to requests
@@ -75,7 +75,7 @@ export function ConnectionRequestsList() {
         requester: profiles?.find(p => p.id === item.requested_by) || {
           id: item.requested_by,
           full_name: 'Unknown User',
-          username: 'unknown',
+          profile_slug: 'unknown',
         }
       })) as ConnectionRequest[];
     }
@@ -114,7 +114,7 @@ export function ConnectionRequestsList() {
       
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('id, full_name, username, headline, profile_photo_url, location_city, location_state')
+        .select('id, full_name, profile_slug, headline, profile_photo_url, location_city, location_state')
         .in('id', targetIds);
       
       // Map profiles to requests
@@ -127,7 +127,7 @@ export function ConnectionRequestsList() {
           requester: profiles?.find(p => p.id === targetId) || {
             id: targetId,
             full_name: 'Unknown User',
-            username: 'unknown',
+            profile_slug: 'unknown',
           }
         };
       }) as ConnectionRequest[];
@@ -262,7 +262,7 @@ export function ConnectionRequestsList() {
                 <div key={request.id} className="p-6">
                   <div className="flex items-start gap-4">
                     <Link 
-                      href={`/me/${request.requester.username}`}
+                      href={`/me/${request.requester.profile_slug}`}
                       className="flex-shrink-0"
                     >
                       <div className="relative w-16 h-16">
@@ -287,7 +287,7 @@ export function ConnectionRequestsList() {
                       <div className="flex items-start justify-between">
                         <div>
                           <Link 
-                            href={`/me/${request.requester.username}`}
+                            href={`/me/${request.requester.profile_slug}`}
                             className="font-semibold text-gray-900 hover:text-primary transition-colors"
                           >
                             {request.requester.full_name}
@@ -363,7 +363,7 @@ export function ConnectionRequestsList() {
                 <div key={request.id} className="p-6">
                   <div className="flex items-start gap-4">
                     <Link 
-                      href={`/me/${request.requester.username}`}
+                      href={`/me/${request.requester.profile_slug}`}
                       className="flex-shrink-0"
                     >
                       <div className="relative w-16 h-16">
@@ -388,7 +388,7 @@ export function ConnectionRequestsList() {
                       <div className="flex items-start justify-between">
                         <div>
                           <Link 
-                            href={`/me/${request.requester.username}`}
+                            href={`/me/${request.requester.profile_slug}`}
                             className="font-semibold text-gray-900 hover:text-primary transition-colors"
                           >
                             {request.requester.full_name}

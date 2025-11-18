@@ -23,10 +23,14 @@ export function ChatList({ selectedConversationId, onSelectConversation }: ChatL
   const [showNewGroup, setShowNewGroup] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      fetchConversations();
-      subscribeToConversations();
-    }
+    if (!user) return;
+
+    fetchConversations();
+    const unsubscribe = subscribeToConversations();
+
+    return () => {
+      unsubscribe?.();
+    };
   }, [user, activeTab]);
 
   const fetchConversations = async () => {
@@ -37,7 +41,7 @@ export function ChatList({ selectedConversationId, onSelectConversation }: ChatL
 
     try {
       // Get user's conversations with participants
-      const { data: participants } = await supabase
+      const { data: participants, error: participantsError } = await supabase
         .from('conversation_participants')
         .select(`
           *,
@@ -45,7 +49,17 @@ export function ChatList({ selectedConversationId, onSelectConversation }: ChatL
         `)
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .order('conversations.last_message_at', { ascending: false, nullsFirst: false });
+        .order('last_message_at', {
+          ascending: false,
+          nullsFirst: false,
+          foreignTable: 'conversations',
+        });
+
+      if (participantsError) {
+        console.error('Error fetching conversation participants:', participantsError);
+        setConversations([]);
+        return;
+      }
 
       if (!participants) {
         setConversations([]);
@@ -68,11 +82,11 @@ export function ChatList({ selectedConversationId, onSelectConversation }: ChatL
           
           if (!conv.is_group) {
             // Get other participant
-            const { data: otherParticipants } = await supabase
+            const { data: otherParticipants, error: otherParticipantsError } = await supabase
               .from('conversation_participants')
               .select(`
                 *,
-                user:profiles!user_id(
+                user:profiles!conversation_participants_user_id_fkey(
                   id,
                   full_name,
                   profile_slug,
@@ -82,7 +96,11 @@ export function ChatList({ selectedConversationId, onSelectConversation }: ChatL
               `)
               .eq('conversation_id', conv.id)
               .neq('user_id', user.id)
-              .single();
+              .maybeSingle();
+
+            if (otherParticipantsError) {
+              console.error('Error fetching other participant:', otherParticipantsError);
+            }
 
             return {
               ...conv,

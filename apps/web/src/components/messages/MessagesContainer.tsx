@@ -6,11 +6,34 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ChatList } from './ChatList';
 import { ChatArea } from './ChatArea';
 import { ContactInfo } from './ContactInfo';
+import { useMutation } from '@tanstack/react-query';
+import { getOrCreateConversation } from '@/lib/messagingUtils';
 
 export function MessagesContainer() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { mutate: startDm, isPending: isStartingDm } = useMutation({
+    mutationFn: async (profileId: string) => {
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+
+      const conversationId = await getOrCreateConversation(user.id, profileId);
+
+      if (!conversationId) {
+        throw new Error('Unable to start conversation');
+      }
+
+      return conversationId;
+    },
+    onSuccess: (conversationId) => {
+      // open that conversation in the UI + update URL
+      setSelectedConversationId(conversationId);
+      router.replace(`/messages?conversation=${conversationId}`, { scroll: false });
+    },
+  });
+
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(
     searchParams.get('conversation')
   );
@@ -24,10 +47,18 @@ export function MessagesContainer() {
 
   useEffect(() => {
     const conversationId = searchParams.get('conversation');
+    // support both ?to= and (old) ?user=
+    const toProfileId = searchParams.get('to') || searchParams.get('user');
+
     if (conversationId) {
+      // normal flow: open existing conversation
       setSelectedConversationId(conversationId);
+    } else if (toProfileId && !selectedConversationId && !isStartingDm) {
+      // coming from "Message" button: create/get DM then open it
+      startDm(toProfileId);
     }
-  }, [searchParams]);
+  }, [searchParams, selectedConversationId, isStartingDm, startDm]);
+
 
   if (loading) {
     return (
@@ -35,6 +66,7 @@ export function MessagesContainer() {
         <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full"></div>
       </div>
     );
+    
   }
 
   return (
