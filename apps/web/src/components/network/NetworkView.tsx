@@ -47,7 +47,7 @@ export function NetworkView() {
                   {stats?.connectionsCount || 0}
                 </p>
               </div>
-              <Users className="h-8 w-8 text-green-600" />
+              <Users className="h-8 w-8 text-green-600" /> {/* @ts-ignore - lucide-react type compatibility */}
             </div>
           </div>
           

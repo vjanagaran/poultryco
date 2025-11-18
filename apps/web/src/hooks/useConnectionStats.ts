@@ -106,7 +106,7 @@ export function useMutualConnections(profileId1?: string, profileId2?: string) {
       if (mutualIds.length > 0) {
         const { data } = await supabase
           .from('profiles')
-          .select('id, full_name, username, profile_photo_url')
+          .select('id, full_name, profile_slug, profile_photo_url')
           .in('id', mutualIds.slice(0, 3));
         profiles = data || [];
       }

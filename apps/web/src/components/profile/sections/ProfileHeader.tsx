@@ -49,7 +49,7 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
               priority
               unoptimized
               onError={(e) => {
-                console.error('Cover image failed to load:', coverPhotoUrl);
+                console.log('Cover image failed to load:', coverPhotoUrl);
                 e.currentTarget.style.display = 'none';
               }}
             />
@@ -85,7 +85,7 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
                   priority
                   unoptimized
                   onError={(e) => {
-                    console.error('Profile image failed to load:', profilePhotoUrl);
+                    console.log('Profile image failed to load:', profilePhotoUrl);
                     e.currentTarget.style.display = 'none';
                   }}
                 />
@@ -265,7 +265,7 @@ function EditProfileModal({ profile, onClose }: { profile: any; onClose: () => v
       await updateProfile(formData);
       onClose();
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.log('Error updating profile:', error);
       alert('Failed to update profile');
     } finally {
       setSaving(false);
