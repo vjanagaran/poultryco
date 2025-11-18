@@ -16,7 +16,7 @@ interface CampaignStep {
     profile_completed?: boolean;
     has_logged_in?: boolean;
     min_connections?: number;
-    [key: string]: any;
+    [key: string]: boolean | number | string | undefined;
   };
   is_active: boolean;
   template?: EmailTemplate;
@@ -172,7 +172,7 @@ export default function NewCampaignPage() {
     }));
   };
 
-  const handleTargetingChange = (field: string, value: any) => {
+  const handleTargetingChange = (field: string, value: string[] | { min?: number; max?: number } | number | boolean | undefined) => {
     setFormData(prev => ({
       ...prev,
       targeting_rules: {
@@ -201,7 +201,7 @@ export default function NewCampaignPage() {
         delay_days: step.delay_days,
         delay_hours: step.delay_hours,
         send_time: undefined,
-        conditions: step.conditions || {},
+        conditions: ('conditions' in step && step.conditions) ? step.conditions : {},
         is_active: true,
         template,
       };
@@ -291,9 +291,10 @@ export default function NewCampaignPage() {
       if (stepsError) throw stepsError;
 
       router.push('/email-campaigns');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating campaign:', error);
-      alert(error.message || 'Failed to create campaign');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create campaign';
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

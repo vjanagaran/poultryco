@@ -135,11 +135,11 @@ export const siteConfig = {
   // Footer Links
   footerLinks: {
     platform: [
+      { title: "Who", href: "/about" },
       { title: "Whom", href: "/stakeholders" },
       { title: "Why", href: "/why" },
       { title: "How", href: "/how" },
       { title: "Impact", href: "/impact" },
-      { title: "Who", href: "/about" },
     ],
     company: [
       { title: "Home", href: "/" },
