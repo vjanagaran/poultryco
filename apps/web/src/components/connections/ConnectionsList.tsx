@@ -213,7 +213,7 @@ export function ConnectionsList() {
                         variant="outline"
                         asChild
                       >
-                        <Link href={`/messages?user=${connection.profile.id}`}>
+                        <Link href={`/messages?to=${connection.profile.id}`}>
                           <MessageCircle className="h-4 w-4 mr-2" />
                           Message
                         </Link>
