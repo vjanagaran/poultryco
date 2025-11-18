@@ -55,11 +55,30 @@ const ROLE_LABELS: Record<string, string> = {
 const AVAILABLE_ROLES = Object.keys(ROLE_LABELS);
 
 export function RolesSection({ profile, isOwner }: RolesSectionProps) {
+  const { removeRole } = useProfile();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [removingRoleId, setRemovingRoleId] = useState<string | null>(null);
 
   const roles = profile.roles || [];
 
   if (!roles.length && !isOwner) return null;
+
+  const handleRemoveRole = async (roleId: string, roleType: string) => {
+    if (!roleId) return;
+
+    const roleLabel = ROLE_LABELS[roleType] || roleType;
+    if (!confirm(`Remove ${roleLabel} from your roles?`)) return;
+
+    setRemovingRoleId(roleId);
+    try {
+      await removeRole(roleId);
+    } catch (error) {
+      console.error('Error removing role:', error);
+      alert('Failed to remove role');
+    } finally {
+      setRemovingRoleId(null);
+    }
+  };
 
   return (
     <>
@@ -83,18 +102,38 @@ export function RolesSection({ profile, isOwner }: RolesSectionProps) {
           <div className="space-y-3">
             {roles.map((role: any, index: number) => (
               <div
-                key={index}
+                key={role.id || index}
                 className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <span className="text-3xl">{ROLE_ICONS[role.role_type] || '💼'}</span>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">
-                    {ROLE_LABELS[role.role_type] || role.role_type}
-                  </h3>
-                  {role.is_primary && (
-                    <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
-                      Primary Role
-                    </span>
+                <div className="flex flex-1 items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">
+                      {ROLE_LABELS[role.role_type] || role.role_type}
+                    </h3>
+                    {role.is_primary && (
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+                        Primary Role
+                      </span>
+                    )}
+                  </div>
+                  {isOwner && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRole(role.id, role.role_type)}
+                      disabled={removingRoleId === role.id}
+                      className="shrink-0 rounded-full p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      aria-label={`Remove ${ROLE_LABELS[role.role_type] || role.role_type}`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
                   )}
                 </div>
               </div>
