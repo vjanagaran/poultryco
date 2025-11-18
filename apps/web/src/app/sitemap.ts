@@ -1,8 +1,29 @@
 import { MetadataRoute } from 'next'
+import { createClient } from '@supabase/supabase-js'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.poultryco.net'
   const lastModified = new Date()
+  
+  // Fetch NECC zones for dynamic sitemap entries (using direct Supabase client for static generation)
+  let zones: Array<{ slug: string }> = []
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+    const { data: zonesData } = await supabase
+      .from('necc_zones')
+      .select('slug')
+      .eq('status', true)
+      .order('sorting', { ascending: true })
+    
+    if (zonesData) {
+      zones = zonesData.map(z => ({ slug: z.slug }))
+    }
+  } catch (error) {
+    console.error('Error fetching zones for sitemap:', error)
+  }
 
   return [
     // Homepage
@@ -276,6 +297,52 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
+
+    // NECC Pages
+    {
+      url: `${baseUrl}/necc`,
+      lastModified,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/necc/today`,
+      lastModified,
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/necc/analysis`,
+      lastModified,
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/necc/trends`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/necc/about`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/necc/zones`,
+      lastModified,
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    
+    // NECC Zone Pages (dynamic)
+    ...zones.map(zone => ({
+      url: `${baseUrl}/necc/zones/${zone.slug}`,
+      lastModified,
+      changeFrequency: 'daily' as const,
+      priority: 0.7,
+    })),
   ]
 }
 

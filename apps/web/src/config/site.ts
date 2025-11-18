@@ -142,8 +142,8 @@ export const siteConfig = {
       { title: "Impact", href: "/impact" },
     ],
     company: [
-      { title: "Home", href: "/" },
       { title: "Blog", href: "/blog" },
+      { title: "NECC", href: "/necc" },
       { title: "Contact", href: "/contact" },
     ],
     legal: [
