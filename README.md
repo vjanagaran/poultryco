@@ -21,25 +21,29 @@ Empower poultry professionals worldwide with the tools and network they need to 
 
 ---
 
-## 📱 Features
+## 📱 Platform Features
 
-### For Individuals
-- **Professional Profiles:** Showcase your expertise, experience, and skills
-- **Multi-Role Support:** Farmer, Veterinarian, Nutritionist, Supplier, etc.
-- **Networking:** Connect with peers, mentors, and industry leaders
-- **Knowledge Sharing:** Access industry insights, best practices, and resources
-- **Job Opportunities:** Find and post poultry industry jobs
+### 10 Core Modules (All Live on Web ✅)
 
-### For Businesses
-- **Business Profiles:** Promote your products, services, and team
-- **Product Listings:** Showcase feed, equipment, medications, and more
-- **Verification:** Build trust with verified business status
-- **Team Management:** Connect your team members to your business
+1. **Authentication** - Email, Google, LinkedIn OAuth
+2. **Profiles** - Personal, Business, Organization profiles
+3. **Network** - Connections (2-way) & Following (1-way)
+4. **Discover** - Find members, businesses, orgs, products, jobs, events
+5. **Stream** - Social feed (posts, problems, expert Q&A, articles)
+6. **Messages** - Real-time chat (1:1, groups, business leads)
+7. **Resources** - Tools, calculators, market data, references
+8. **Home** - Customizable dashboard with widgets
+9. **Notifications** - Multi-channel alerts
+10. **Settings** - Preferences, privacy, email controls
 
-### For Organizations
-- **Event Management:** Create and promote industry events, webinars, and conferences
-- **Membership Management:** Manage association members and benefits
-- **Industry Insights:** Share research, publications, and updates
+**See [MVP Complete Scope](docs/MVP_COMPLETE_SCOPE.md) for detailed feature descriptions**
+
+### For Different Users
+
+**Farmers:** Market data, calculators, expert connections, problem solving  
+**Veterinarians:** Expert Q&A, case discussions, client management  
+**Suppliers:** Product listings, business inquiries, market intelligence  
+**Organizations:** Member management, events, announcements, resources
 
 ---
 
@@ -148,22 +152,26 @@ For detailed setup instructions, see [QUICK_START.md](docs/QUICK_START.md).
 
 ## 📖 Documentation
 
-### Getting Started
-- [Quick Start Guide](docs/QUICK_START.md) - Setup and installation
-- [Contributing Guidelines](docs/CONTRIBUTING.md) - How to contribute
+**📚 [Complete Documentation Index](docs/00_README.md)** - Main documentation hub
 
-### Development
-- [Mobile MVP Sprint](docs/sprints/MOBILE_FIRST_MVP_SPRINT.md) - Current roadmap
-- [Current Status](docs/strategy/CURRENT_STATUS.md) - Project progress
-- [Brand Guidelines](docs/brand/poultryco_brand_guidelines.md) - Brand identity
+### Essential Reads
+- **[MVP Complete Scope](docs/MVP_COMPLETE_SCOPE.md)** ⭐ - Complete feature reference
+- **[Project Status](docs/PROJECT_STATUS.md)** - Current status & roadmap
+- **[Quick Start](docs/QUICK_START.md)** - Development setup
+- **[Contributing](docs/CONTRIBUTING.md)** - How to contribute
 
-### Deployment
-- [Deployment Guide](docs/deployment/REACT_18_DEPLOYMENT_SUCCESS.md) - Vercel setup
-- [Deployment Strategy](docs/deployment/DEPLOYMENT_STRATEGY.md) - Hosting options
+### By Topic
+- **Features:** [docs/03-features/](docs/03-features/) - All platform features
+- **Authentication:** [docs/03-features/authentication/](docs/03-features/authentication/) - OAuth & login
+- **Database:** [supabase/schema/INDEX.md](supabase/schema/INDEX.md) - Schema reference
+- **Deployment:** [docs/deployment/](docs/deployment/) - Deploy guides
+- **Brand:** [docs/brand/](docs/brand/) - Brand guidelines
+- **Marketing:** [docs/website/](docs/website/) - Marketing strategy
 
-### Architecture
-- [React Version Strategy](docs/strategy/REACT_18_VS_19_ANALYSIS.md) - Technical decisions
-- [Database Schema](supabase/schema/README.md) - Database structure
+### Quick Links
+- Current Sprint: [Mobile MVP Sprint](docs/sprints/MOBILE_FIRST_MVP_SPRINT.md)
+- Tech Stack: [React 18 vs 19](docs/strategy/REACT_18_VS_19_ANALYSIS.md)
+- Legal Pages: [Privacy](https://www.poultryco.net/privacy) | [Terms](https://www.poultryco.net/terms)
 
 ---
 
@@ -177,28 +185,29 @@ For detailed setup instructions, see [QUICK_START.md](docs/QUICK_START.md).
 - [x] Mobile app foundation
 - [x] Authentication system
 
-### 🚧 Phase 2: Mobile MVP (In Progress - 9 Weeks)
-- [ ] User onboarding and profile wizard (Weeks 1-2)
-- [ ] Personal profiles with roles (Weeks 3-4)
-- [ ] Networking and connections (Weeks 5-6)
+### 🚧 Phase 2: Mobile MVP (Week 2 of 9)
+- [x] Mobile foundation and navigation
+- [x] Authentication screens
+- [ ] Profile creation wizard (Weeks 1-2) ← Current
+- [ ] Personal profiles (Weeks 3-4)
+- [ ] Networking features (Weeks 5-6)
 - [ ] Business profiles (Week 7)
-- [ ] Beta launch (Week 8)
+- [ ] Beta testing (Week 8)
 - [ ] Public launch (Week 9)
 
-### 📅 Phase 3: Growth (Planned)
-- [ ] Advanced search and filters
-- [ ] Messaging system
-- [ ] Job board
-- [ ] Events platform
+### 📅 Phase 3: Post-Launch (Q1 2026)
+- [ ] Advanced search & AI recommendations
+- [ ] Video content support
 - [ ] Analytics dashboard
-- [ ] Mobile notifications
-
-### 🔮 Phase 4: Scale (Future)
-- [ ] Video content
-- [ ] E-commerce integration
 - [ ] International expansion
-- [ ] API for integrations
-- [ ] Mobile web version
+- [ ] API for third-party integrations
+
+### 🔮 Phase 4: Scale (Q2-Q4 2026)
+- [ ] E-commerce integration
+- [ ] Certification programs
+- [ ] Premium subscriptions
+- [ ] Enterprise features
+- [ ] IoT device integration
 
 ---
 

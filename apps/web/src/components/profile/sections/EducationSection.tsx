@@ -149,7 +149,7 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
       await fetchProfile();
       onClose();
     } catch (error) {
-      console.error('Error saving education:', error);
+      console.log('Error saving education:', error);
       alert('Failed to save education');
     } finally {
       setSaving(false);

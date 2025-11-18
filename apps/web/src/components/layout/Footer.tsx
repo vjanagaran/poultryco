@@ -158,9 +158,9 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Company Links */}
+          {/* Column 3: Resources Links */}
           <div>
-            <h3 className="font-semibold text-white mb-4">Company</h3>
+            <h3 className="font-semibold text-white mb-4">Resources</h3>
             <ul className="space-y-2">
               {siteConfig.footerLinks.company.map((link) => (
                 <li key={link.href}>

@@ -53,10 +53,16 @@ export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
             setLoading(false);
             return;
           }
-          query = query.eq('profile_slug', profileSlug);
+          // Try to match by profile_slug first, then fallback to id if profileSlug is a UUID
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileSlug);
+          if (isUUID) {
+            query = query.eq('id', profileSlug);
+          } else {
+            query = query.eq('profile_slug', profileSlug);
+          }
         }
 
-        const { data, error } = await query.single();
+        const { data, error } = await query.maybeSingle();
 
         if (error) throw error;
 
@@ -83,7 +89,7 @@ export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
           }
         }
       } catch (error) {
-        console.error('Error fetching profile:', error);
+        console.log('Error fetching profile:', error);
       } finally {
         setLoading(false);
       }
