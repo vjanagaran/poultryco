@@ -310,3 +310,36 @@ export async function getYesterdayAverage(): Promise<number | null> {
   return stats.count > 0 ? stats.average : null;
 }
 
+/**
+ * Get prices for a date range
+ */
+export async function getPricesByDateRange(
+  startDate: string,
+  endDate: string
+): Promise<NECCPrice[]> {
+  const supabase = await createClient(await cookies());
+  const { data, error } = await supabase
+    .from('necc_prices')
+    .select(`
+      *,
+      zone:necc_zones(id, name, slug, zone_type, state, city)
+    `)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true });
+
+  if (error) throw error;
+  
+  // Sort by date first, then zone name
+  const sorted = (data || []).sort((a, b) => {
+    if (a.date !== b.date) {
+      return a.date.localeCompare(b.date);
+    }
+    const nameA = a.zone?.name || '';
+    const nameB = b.zone?.name || '';
+    return nameA.localeCompare(nameB);
+  });
+  
+  return sorted;
+}
+
