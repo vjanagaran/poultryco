@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,11 +10,29 @@ interface ExperienceSectionProps {
   isOwner: boolean;
 }
 
+const EMPLOYMENT_TYPES = [
+  { value: 'full_time', label: 'Full-time' },
+  { value: 'part_time', label: 'Part-time' },
+  { value: 'self_employed', label: 'Self-employed' },
+  { value: 'contract', label: 'Contract' },
+  { value: 'internship', label: 'Internship' },
+  { value: 'seasonal', label: 'Seasonal' },
+];
+
 export function ExperienceSection({ profile, isOwner }: ExperienceSectionProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExperience, setEditingExperience] = useState<any>(null);
 
   const experiences = profile.experiences || [];
+  const sortedExperiences = useMemo(
+    () =>
+      [...experiences].sort((a, b) => {
+        const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
+        const dateB = b.start_date ? new Date(b.start_date).getTime() : 0;
+        return dateB - dateA;
+      }),
+    [experiences],
+  );
 
   if (!experiences.length && !isOwner) return null;
 
@@ -36,16 +54,17 @@ export function ExperienceSection({ profile, isOwner }: ExperienceSectionProps) 
           )}
         </div>
 
-        {experiences.length > 0 ? (
+        {sortedExperiences.length > 0 ? (
           <div className="space-y-4">
-            {experiences.map((exp: any) => (
+            {sortedExperiences.map((exp: any) => (
               <div key={exp.id} className="flex gap-4 pb-4 border-b border-gray-200 last:border-0">
                 <div className="flex-shrink-0 w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
                   <span className="text-xl">💼</span>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{exp.job_title}</h3>
+                  <h3 className="font-semibold text-gray-900">{exp.title}</h3>
                   <p className="text-gray-700">{exp.company_name}</p>
+                  <p className="text-sm text-gray-500 capitalize">{exp.employment_type?.replace('_', ' ')}</p>
                   <p className="text-sm text-gray-500">
                     {formatDate(exp.start_date)} - {exp.is_current ? 'Present' : formatDate(exp.end_date)}
                   </p>
@@ -110,13 +129,17 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
   const { fetchProfile } = useProfile();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    job_title: experience?.job_title || '',
+    title: experience?.title || '',
     company_name: experience?.company_name || '',
+    employment_type: experience?.employment_type || EMPLOYMENT_TYPES[0].value,
     location: experience?.location || '',
     start_date: experience?.start_date?.substring(0, 7) || '', // YYYY-MM format
     end_date: experience?.end_date?.substring(0, 7) || '',
     is_current: experience?.is_current || false,
     description: experience?.description || '',
+    key_achievements: Array.isArray(experience?.key_achievements)
+      ? experience.key_achievements.join('\n')
+      : '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,10 +151,19 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
 
     try {
       const data = {
-        ...formData,
         profile_id: user.id,
+        title: formData.title.trim(),
+        company_name: formData.company_name.trim(),
+        employment_type: formData.employment_type,
+        location: formData.location.trim() || null,
+        is_current: formData.is_current,
         start_date: formData.start_date ? `${formData.start_date}-01` : null,
-        end_date: formData.is_current ? null : (formData.end_date ? `${formData.end_date}-01` : null),
+        end_date: formData.is_current ? null : formData.end_date ? `${formData.end_date}-01` : null,
+        description: formData.description.trim() || null,
+        key_achievements: formData.key_achievements
+          .split('\n')
+          .map((item) => item.trim())
+          .filter(Boolean),
       };
 
       if (experience) {
@@ -183,8 +215,8 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
             </label>
             <input
               type="text"
-              value={formData.job_title}
-              onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="E.g., Poultry Farm Manager"
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
@@ -204,6 +236,25 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
+          </div>
+
+          {/* Employment Type */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Employment Type *
+            </label>
+            <select
+              value={formData.employment_type}
+              onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              {EMPLOYMENT_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Location */}
@@ -273,10 +324,26 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Describe your responsibilities and achievements..."
               rows={5}
+              maxLength={300}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+            <p className="text-xs text-gray-500 mt-1">{formData.description.length}/300 characters</p>
+          </div>
+
+          {/* Key Achievements */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Key Achievements (one per line)
+            </label>
+            <textarea
+              value={formData.key_achievements}
+              onChange={(e) => setFormData({ ...formData, key_achievements: e.target.value })}
+              placeholder="Eg: Reduced broiler mortality by 12%"
+              rows={4}
               maxLength={500}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
-            <p className="text-xs text-gray-500 mt-1">{formData.description.length}/500 characters</p>
+            <p className="text-xs text-gray-500 mt-1">Optional, helps highlight measurable results</p>
           </div>
 
           {/* Actions */}
