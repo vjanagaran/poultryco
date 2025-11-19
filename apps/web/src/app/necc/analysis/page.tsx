@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { getYearPrices, getPriceStats } from "@/lib/api/necc-prices";
+import { getYearPrices, getPriceStats, getPricesByDateRange } from "@/lib/api/necc-prices";
 import { getAllZones } from "@/lib/api/necc-zones";
 import { getYearDateRange, getTodayDate } from "@/lib/utils/necc-date";
 
@@ -22,17 +22,27 @@ export default async function AnalysisPage() {
   const { start, end } = getYearDateRange(currentYear);
   const today = getTodayDate();
 
+  // Calculate date range for last 4 weeks (regardless of year)
+  const fourWeeksAgo = new Date();
+  fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+
   // Fetch data for analysis
-  const [yearPrices, yearStats, zones] = await Promise.all([
+  const [yearPrices, yearStats, zones, weeklyPrices] = await Promise.all([
     getYearPrices(currentYear),
     getPriceStats(start, today),
     getAllZones(),
+    getPricesByDateRange(fourWeeksAgo.toISOString().split('T')[0], today),
   ]);
 
   // Group prices by month for trend analysis
+  // Use date field to extract month if month field is not populated
   const monthlyData = Array.from({ length: 12 }, (_, i) => {
     const month = i + 1;
-    const monthPrices = yearPrices.filter(p => p.month === month && p.suggested_price !== null);
+    const monthPrices = yearPrices.filter(p => {
+      // Use month field if available, otherwise extract from date
+      const priceMonth = p.month || new Date(p.date).getMonth() + 1;
+      return priceMonth === month && p.suggested_price !== null;
+    });
     if (monthPrices.length === 0) return { month, average: null, min: null, max: null, count: 0 };
     
     const prices = monthPrices.map(p => p.suggested_price!);
@@ -59,16 +69,19 @@ export default async function AnalysisPage() {
     };
   }).filter(z => z.average !== null).sort((a, b) => (b.average || 0) - (a.average || 0));
 
-  // Calculate weekly trend (last 4 weeks)
+  // Calculate weekly trend (last 4 weeks) - use weeklyPrices instead of yearPrices
   const weeklyData = Array.from({ length: 4 }, (_, i) => {
     const weekEnd = new Date();
     weekEnd.setDate(weekEnd.getDate() - (i * 7));
+    weekEnd.setHours(23, 59, 59, 999);
     const weekStart = new Date(weekEnd);
     weekStart.setDate(weekStart.getDate() - 6);
+    weekStart.setHours(0, 0, 0, 0);
     
-    const weekPrices = yearPrices.filter(
+    const weekPrices = weeklyPrices.filter(
       p => {
         const priceDate = new Date(p.date);
+        priceDate.setHours(0, 0, 0, 0);
         return priceDate >= weekStart && priceDate <= weekEnd && p.suggested_price !== null;
       }
     );
@@ -122,66 +135,78 @@ export default async function AnalysisPage() {
         {/* Monthly Trend Chart */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Monthly Trend ({currentYear})</h2>
-          <div className="h-80 flex items-end gap-2">
-            {monthlyData.map(({ month, average, min, max }) => {
-              const maxPrice = Math.max(...monthlyData.map(m => m.average || 0));
-              const height = average ? (average / maxPrice) * 100 : 0;
-              
-              return (
-                <div key={month} className="flex-1 flex flex-col items-center group relative">
-                  <div className="w-full flex flex-col items-center">
-                    {average && (
-                      <>
-                        <div className="w-full flex flex-col items-end mb-1">
-                          <div
-                            className="w-full bg-primary rounded-t transition-all duration-300 hover:bg-primary/80"
-                            style={{ height: `${height}%`, minHeight: '4px' }}
-                            title={`${monthNames[month - 1]}: ₹${average} (Min: ₹${min}, Max: ₹${max})`}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-500 mt-2">{monthNames[month - 1]}</span>
-                        <span className="text-xs font-medium text-primary mt-1">₹{average}</span>
-                      </>
-                    )}
-                    {!average && (
-                      <span className="text-xs text-gray-400 mt-2">{monthNames[month - 1]}</span>
-                    )}
+          {monthlyData.some(m => m.average !== null) ? (
+            <div className="h-80 flex items-end gap-2">
+              {monthlyData.map(({ month, average, min, max }) => {
+                const maxPrice = Math.max(...monthlyData.map(m => m.average || 0), 1);
+                const height = average ? (average / maxPrice) * 100 : 0;
+                
+                return (
+                  <div key={month} className="flex-1 flex flex-col items-center group relative">
+                    <div className="w-full flex flex-col items-center">
+                      {average && (
+                        <>
+                          <div className="w-full flex flex-col items-end mb-1">
+                            <div
+                              className="w-full bg-primary rounded-t transition-all duration-300 hover:bg-primary/80"
+                              style={{ height: `${height}%`, minHeight: '4px' }}
+                              title={`${monthNames[month - 1]}: ₹${average} (Min: ₹${min}, Max: ₹${max})`}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-500 mt-2">{monthNames[month - 1]}</span>
+                          <span className="text-xs font-medium text-primary mt-1">₹{average}</span>
+                        </>
+                      )}
+                      {!average && (
+                        <span className="text-xs text-gray-400 mt-2">{monthNames[month - 1]}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-80 flex items-center justify-center text-gray-400">
+              <p>No data available for {currentYear}</p>
+            </div>
+          )}
         </div>
 
         {/* Weekly Trend */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Last 4 Weeks Trend</h2>
-          <div className="h-64 flex items-end gap-4">
-            {weeklyData.map(({ week, average, label }) => {
-              const maxPrice = Math.max(...weeklyData.map(w => w.average || 0));
-              const height = average ? (average / maxPrice) * 100 : 0;
-              
-              return (
-                <div key={week} className="flex-1 flex flex-col items-center">
-                  <div className="w-full flex flex-col items-center">
-                    {average ? (
-                      <>
-                        <div
-                          className="w-full bg-blue-500 rounded-t transition-all duration-300 hover:bg-blue-600"
-                          style={{ height: `${height}%`, minHeight: '4px' }}
-                          title={`${label}: ₹${average}`}
-                        />
-                        <span className="text-xs text-gray-500 mt-2">{label}</span>
-                        <span className="text-xs font-medium text-blue-600 mt-1">₹{average}</span>
-                      </>
-                    ) : (
-                      <span className="text-xs text-gray-400 mt-2">{label}</span>
-                    )}
+          {weeklyData.some(w => w.average !== null) ? (
+            <div className="h-64 flex items-end gap-4">
+              {weeklyData.map(({ week, average, label }) => {
+                const maxPrice = Math.max(...weeklyData.map(w => w.average || 0), 1);
+                const height = average ? (average / maxPrice) * 100 : 0;
+                
+                return (
+                  <div key={week} className="flex-1 flex flex-col items-center">
+                    <div className="w-full flex flex-col items-center">
+                      {average ? (
+                        <>
+                          <div
+                            className="w-full bg-blue-500 rounded-t transition-all duration-300 hover:bg-blue-600"
+                            style={{ height: `${height}%`, minHeight: '4px' }}
+                            title={`${label}: ₹${average}`}
+                          />
+                          <span className="text-xs text-gray-500 mt-2">{label}</span>
+                          <span className="text-xs font-medium text-blue-600 mt-1">₹{average}</span>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-400 mt-2">{label}</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="h-64 flex items-center justify-center text-gray-400">
+              <p>No data available for the last 4 weeks</p>
+            </div>
+          )}
         </div>
 
         {/* Zone Comparison */}
