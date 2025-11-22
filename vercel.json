@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/scrape-necc-prices",
-      "schedule": "*/15 * * * *"
+      "schedule": "30 0 * * *"
     }
   ]
 }
