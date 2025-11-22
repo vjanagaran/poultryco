@@ -318,6 +318,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
+      url: `${baseUrl}/necc/rate`,
+      lastModified,
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/necc/compare`,
+      lastModified,
+      changeFrequency: 'daily',
+      priority: 0.7,
+    },
+    {
       url: `${baseUrl}/necc/trends`,
       lastModified,
       changeFrequency: 'weekly',
