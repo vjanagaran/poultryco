@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { getAllZones, getZonesByType } from "@/lib/api/necc-zones";
 import { getTodayPrices } from "@/lib/api/necc-prices";
+import { NECCQuickLinks } from "@/components/necc/NECCQuickLinks";
 
 export const metadata: Metadata = {
   title: "NECC Zones - All Production & Consumption Centers | PoultryCo",
@@ -106,6 +107,11 @@ export default async function ZonesPage() {
               );
             })}
           </div>
+        </div>
+
+        {/* NECC Quick Links */}
+        <div className="mt-12">
+          <NECCQuickLinks />
         </div>
       </div>
     </div>

@@ -1,8 +1,12 @@
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getPricesByDateWithPrevious } from "@/lib/api/necc-prices";
+import { getPricesByDateWithPrevious, getPricesByDateRange, getPricesByDate } from "@/lib/api/necc-prices";
+import { getAllZones } from "@/lib/api/necc-zones";
 import { formatDateDisplay, getMonthName, getPreviousDate, getNextDate, isValidDateString } from "@/lib/utils/necc-date";
+import { ShareableInfographicCard } from "@/components/necc/ShareableInfographicCard";
+import { PriceTrendChart } from "@/components/necc/PriceTrendChart";
+import { CrossLinkSection } from "@/components/necc/CrossLinkSection";
 
 interface PageProps {
   params: Promise<{ year: string; month: string; day: string }>;
@@ -47,8 +51,18 @@ export default async function DayPage({ params }: PageProps) {
   const previousDate = getPreviousDate(dateStr);
   const nextDate = getNextDate(dateStr);
 
+  // Calculate date range for 7-day trend
+  const sevenDaysAgo = new Date(dateStr);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+
   // Fetch prices with previous day data (for missing data handling)
-  const prices = await getPricesByDateWithPrevious(dateStr);
+  const [prices, weekPrices, yesterdayPrices, allZones] = await Promise.all([
+    getPricesByDateWithPrevious(dateStr),
+    getPricesByDateRange(sevenDaysAgoStr, dateStr),
+    getPricesByDate(previousDate),
+    getAllZones(),
+  ]);
 
   // Calculate stats
   const pricesWithData = prices.filter(p => p.suggested_price !== null || p.prevailing_price !== null);
@@ -61,6 +75,80 @@ export default async function DayPage({ params }: PageProps) {
   const maxPrice = pricesWithData.length > 0
     ? Math.max(...pricesWithData.map(p => p.suggested_price!).filter(p => p !== null))
     : null;
+
+  // Calculate yesterday average for comparison
+  const yesterdayAvg = yesterdayPrices.length > 0
+    ? Math.round(yesterdayPrices.reduce((sum, p) => sum + (p.suggested_price || 0), 0) / yesterdayPrices.length)
+    : null;
+  const priceChange = avgPrice && yesterdayAvg ? avgPrice - yesterdayAvg : null;
+  const priceChangePercent = priceChange && yesterdayAvg ? ((priceChange / yesterdayAvg) * 100).toFixed(1) : null;
+
+  // Prepare 7-day trend data (average per day)
+  const dailyAverages = new Map<string, number[]>();
+  weekPrices.forEach(price => {
+    if (price.suggested_price !== null) {
+      if (!dailyAverages.has(price.date)) {
+        dailyAverages.set(price.date, []);
+      }
+      dailyAverages.get(price.date)!.push(price.suggested_price);
+    }
+  });
+
+  const trendData = Array.from(dailyAverages.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, prices]) => {
+      const avg = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+      const dateObj = new Date(date);
+      return {
+        date,
+        price: avg,
+        label: `${dateObj.getDate()}/${dateObj.getMonth() + 1}`,
+      };
+    });
+
+  // Get top zones by price (for cross-linking)
+  const topZones = prices
+    .filter(p => p.suggested_price !== null && p.zone)
+    .sort((a, b) => (b.suggested_price || 0) - (a.suggested_price || 0))
+    .slice(0, 5)
+    .map(p => ({
+      name: p.zone?.name || 'Unknown',
+      slug: p.zone?.slug || '',
+      price: p.suggested_price || 0,
+    }));
+
+  // Prepare cross-links
+  const sameDayLastYear = `${yearNum - 1}/${monthNum}/${dayNum}`;
+  const weekStart = new Date(dateStr);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekStartStr = `${weekStart.getFullYear()}/${weekStart.getMonth() + 1}/${weekStart.getDate()}`;
+  
+  const crossLinks = [
+    {
+      title: `Same Day Last Year (${yearNum - 1})`,
+      href: `/necc/${sameDayLastYear}`,
+      description: `Compare with ${monthName} ${dayNum}, ${yearNum - 1}`,
+      icon: 'calendar' as const,
+    },
+    {
+      title: `View This Week`,
+      href: `/necc/analysis?start=${sevenDaysAgoStr}&end=${dateStr}`,
+      description: 'See 7-day trend analysis',
+      icon: 'trend' as const,
+    },
+    {
+      title: `View This Month`,
+      href: `/necc/${yearNum}/${monthNum}`,
+      description: `See all days in ${monthName} ${yearNum}`,
+      icon: 'calendar' as const,
+    },
+    ...topZones.slice(0, 3).map(zone => ({
+      title: `${zone.name} Zone`,
+      href: `/necc/zones/${zone.slug}`,
+      description: `₹${zone.price} - View zone details`,
+      icon: 'location' as const,
+    })),
+  ];
 
   return (
     <div className="container mx-auto px-6 py-12">
@@ -99,12 +187,41 @@ export default async function DayPage({ params }: PageProps) {
           </div>
         </div>
 
+        {/* Shareable Infographic Card */}
+        {avgPrice && (
+          <div className="mb-8">
+            <ShareableInfographicCard
+              title={`NECC Egg Prices - ${formattedDate}`}
+              subtitle="All Zones Average"
+              data={[
+                {
+                  label: 'Average Price',
+                  value: `₹${avgPrice}`,
+                  change: priceChangePercent ? parseFloat(priceChangePercent) : undefined,
+                  changeType: priceChange && priceChange > 0 ? 'increase' : priceChange && priceChange < 0 ? 'decrease' : 'neutral',
+                },
+                { label: 'Highest Zone', value: `₹${maxPrice}` },
+                { label: 'Lowest Zone', value: `₹${minPrice}` },
+                { label: 'Zones Tracked', value: pricesWithData.length },
+              ]}
+              shareUrl={`https://poultryco.net/necc/${yearNum}/${monthNum}/${dayNum}`}
+              shareTitle={`NECC Egg Prices ${formattedDate} - Average: ₹${avgPrice}`}
+              shareDescription={`Today's NECC egg prices: Average ₹${avgPrice}, High ₹${maxPrice}, Low ₹${minPrice}`}
+            />
+          </div>
+        )}
+
         {/* Stats Cards */}
         {avgPrice && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-sm font-medium text-gray-500 mb-2">Average Price</h3>
               <p className="text-3xl font-bold text-primary">₹{avgPrice}</p>
+              {priceChange !== null && priceChangePercent && (
+                <p className={`text-sm mt-2 ${priceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {priceChange >= 0 ? '+' : ''}₹{priceChange} ({priceChangePercent}%) vs Yesterday
+                </p>
+              )}
             </div>
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-sm font-medium text-gray-500 mb-2">Lowest</h3>
@@ -114,6 +231,22 @@ export default async function DayPage({ params }: PageProps) {
               <h3 className="text-sm font-medium text-gray-500 mb-2">Highest</h3>
               <p className="text-3xl font-bold text-red-600">₹{maxPrice}</p>
             </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Zones</h3>
+              <p className="text-3xl font-bold text-gray-700">{pricesWithData.length}</p>
+              <p className="text-sm text-gray-500 mt-2">With data</p>
+            </div>
+          </div>
+        )}
+
+        {/* 7-Day Trend Chart */}
+        {trendData.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 mb-8">
+            <PriceTrendChart
+              data={trendData}
+              title="7-Day Price Trend"
+              height={300}
+            />
           </div>
         )}
 
@@ -152,9 +285,18 @@ export default async function DayPage({ params }: PageProps) {
                     return (
                       <tr key={price.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {price.zone?.name || 'Unknown'}
-                          </div>
+                          {price.zone?.slug ? (
+                            <Link
+                              href={`/necc/zones/${price.zone.slug}`}
+                              className="text-sm font-medium text-primary hover:underline"
+                            >
+                              {price.zone.name}
+                            </Link>
+                          ) : (
+                            <div className="text-sm font-medium text-gray-900">
+                              {price.zone?.name || 'Unknown'}
+                            </div>
+                          )}
                           {price.zone?.city && (
                             <div className="text-sm text-gray-500">{price.zone.city}</div>
                           )}
@@ -201,6 +343,14 @@ export default async function DayPage({ params }: PageProps) {
               </p>
             </div>
           )}
+        </div>
+
+        {/* Cross-Links Section */}
+        <div className="mt-8">
+          <CrossLinkSection
+            title="Related Pages & Insights"
+            links={crossLinks}
+          />
         </div>
       </div>
     </div>
