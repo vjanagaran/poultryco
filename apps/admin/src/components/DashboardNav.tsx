@@ -79,6 +79,25 @@ export function DashboardNav() {
         <span className="font-medium">Contact</span>
       </Link>
       
+      {/* NECC Section */}
+      <div className="pt-4 pb-2 px-4">
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          NECC System
+        </div>
+      </div>
+      <Link
+        href="/necc"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname.startsWith("/necc")
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>🥚</span>
+        <span className="font-medium">NECC Dashboard</span>
+      </Link>
+      
       {/* Other Sections */}
       <div className="pt-4 pb-2 px-4">
         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">

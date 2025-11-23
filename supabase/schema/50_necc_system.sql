@@ -334,9 +334,41 @@ CREATE POLICY "NECC zones viewable by everyone"
   ON necc_zones FOR SELECT
   USING (true);
 
+-- NECC Zones: Service role can insert (for scraper/admin)
+CREATE POLICY "Service role can insert zones"
+  ON necc_zones FOR INSERT
+  WITH CHECK (true);
+
+-- NECC Zones: Service role can update
+CREATE POLICY "Service role can update zones"
+  ON necc_zones FOR UPDATE
+  USING (true)
+  WITH CHECK (true);
+
+-- NECC Zones: Service role can delete
+CREATE POLICY "Service role can delete zones"
+  ON necc_zones FOR DELETE
+  USING (true);
+
 -- NECC Prices: Everyone can view
 CREATE POLICY "NECC prices viewable by everyone"
   ON necc_prices FOR SELECT
+  USING (true);
+
+-- NECC Prices: Service role can insert (for scraper/admin)
+CREATE POLICY "Service role can insert prices"
+  ON necc_prices FOR INSERT
+  WITH CHECK (true);
+
+-- NECC Prices: Service role can update
+CREATE POLICY "Service role can update prices"
+  ON necc_prices FOR UPDATE
+  USING (true)
+  WITH CHECK (true);
+
+-- NECC Prices: Service role can delete
+CREATE POLICY "Service role can delete prices"
+  ON necc_prices FOR DELETE
   USING (true);
 
 -- NECC Scraper Logs: Admin only (via service role)
