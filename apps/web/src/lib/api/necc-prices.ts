@@ -203,7 +203,8 @@ export async function getMonthPrices(year: number, month: number): Promise<NECCP
     `)
     .eq('year', year)
     .eq('month', month)
-    .order('date', { ascending: true });
+    .order('date', { ascending: true })
+    .limit(2000); // Support up to ~60 zones * 31 days = 1860 max
 
   if (error) throw error;
   
