@@ -98,6 +98,121 @@ export function DashboardNav() {
         <span className="font-medium">NECC Dashboard</span>
       </Link>
       
+      {/* Marketing Section */}
+      <div className="pt-4 pb-2 px-4">
+        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          Marketing
+        </div>
+      </div>
+      <Link
+        href="/marketing"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname === "/marketing"
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>🎯</span>
+        <span className="font-medium">Dashboard</span>
+      </Link>
+      <Link
+        href="/marketing/topics"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname.startsWith("/marketing/topics")
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>💡</span>
+        <span className="font-medium">NDP Topics</span>
+      </Link>
+      <Link
+        href="/marketing/segments"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname.startsWith("/marketing/segments")
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>👥</span>
+        <span className="font-medium">Segments</span>
+      </Link>
+      <Link
+        href="/marketing/pillars"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname.startsWith("/marketing/pillars")
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>🏛️</span>
+        <span className="font-medium">Content Pillars</span>
+      </Link>
+      <Link
+        href="/marketing/campaigns"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname.startsWith("/marketing/campaigns")
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>🚀</span>
+        <span className="font-medium">Campaigns</span>
+      </Link>
+      <Link
+        href="/marketing/channels"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname.startsWith("/marketing/channels")
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>📱</span>
+        <span className="font-medium">Channels</span>
+      </Link>
+      <Link
+        href="/marketing/calendar"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname.startsWith("/marketing/calendar")
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>📅</span>
+        <span className="font-medium">Calendar</span>
+      </Link>
+      <Link
+        href="/marketing/kpis"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname.startsWith("/marketing/kpis")
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>📊</span>
+        <span className="font-medium">KPIs</span>
+      </Link>
+      <Link
+        href="/marketing/settings/tags"
+        className={cn(
+          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
+          pathname.startsWith("/marketing/settings/tags")
+            ? "bg-gray-100 text-gray-900"
+            : "text-gray-700 hover:bg-gray-100"
+        )}
+      >
+        <span>🏷️</span>
+        <span className="font-medium">Tags</span>
+      </Link>
+      
       {/* Other Sections */}
       <div className="pt-4 pb-2 px-4">
         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
