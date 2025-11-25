@@ -574,14 +574,14 @@ export default function NewContentPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-            <TagSelector selectedTags={selectedTags} onTagsChange={setSelectedTags} />
+            <TagSelector selectedTagIds={selectedTags} onTagsChange={setSelectedTags} />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Campaign</label>
             <CampaignSelector
-              selectedCampaign={selectedCampaign}
-              onCampaignChange={setSelectedCampaign}
+              value={selectedCampaign}
+              onChange={setSelectedCampaign}
             />
           </div>
         </div>

@@ -739,14 +739,14 @@ export default function PillarDetailPage() {
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
-                  <TagSelector selectedTags={assignedTags} onTagsChange={setAssignedTags} />
+                  <TagSelector selectedTagIds={assignedTags} onTagsChange={setAssignedTags} />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Campaign</label>
                   <CampaignSelector
-                    selectedCampaign={assignedCampaign}
-                    onCampaignChange={setAssignedCampaign}
+                    value={assignedCampaign}
+                    onChange={setAssignedCampaign}
                   />
                 </div>
               </>

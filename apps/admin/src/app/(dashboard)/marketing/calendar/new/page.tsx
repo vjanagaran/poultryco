@@ -142,7 +142,7 @@ export default function NewSchedulePage() {
               <option value="">Select channel...</option>
               {Object.entries(groupedChannels).map(([platform, platformChannels]) => (
                 <optgroup key={platform} label={platform.toUpperCase()}>
-                  {platformChannels.map((channel) => (
+                  {(platformChannels as typeof channels).map((channel) => (
                     <option key={channel.id} value={channel.id}>
                       {channel.name} {channel.handle ? `(${channel.handle})` : ''}
                     </option>

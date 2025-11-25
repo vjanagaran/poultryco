@@ -13,6 +13,9 @@ interface Content {
   status: string;
   published_at: string | null;
   total_views: number;
+  total_likes: number;
+  total_comments: number;
+  total_shares: number;
   total_engagement: number;
   created_at: string;
   content_types?: { name: string };
