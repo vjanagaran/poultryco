@@ -1,8 +1,13 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { getYearPrices, getPriceStats, getPricesByDateRange } from "@/lib/api/necc-prices";
+import { getYearPrices, getPriceStats, getPricesByDateRange, getMonthPrices } from "@/lib/api/necc-prices";
 import { getAllZones } from "@/lib/api/necc-zones";
 import { getYearDateRange, getTodayDate } from "@/lib/utils/necc-date";
+import { BarChart } from "@/components/necc/BarChart";
+import { PriceTrendChart } from "@/components/necc/PriceTrendChart";
+import { ShareableInfographicCard } from "@/components/necc/ShareableInfographicCard";
+import { AnalysisFilters } from "@/components/necc/AnalysisFilters";
+import { NECCQuickLinks } from "@/components/necc/NECCQuickLinks";
 
 export const metadata: Metadata = {
   title: "NECC Egg Price Analysis - Trends, Insights & Expert Reviews | PoultryCo",
@@ -17,22 +22,54 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function AnalysisPage() {
+export default async function AnalysisPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string; zone?: string }>;
+}) {
+  const params = await searchParams;
+  const view = params.view || 'year'; // 'year', 'month', '30days'
+  const selectedZone = params.zone;
+  
   const currentYear = new Date().getFullYear();
-  const { start, end } = getYearDateRange(currentYear);
+  const currentMonth = new Date().getMonth() + 1;
+  const { start: yearStart, end: yearEnd } = getYearDateRange(currentYear);
   const today = getTodayDate();
 
-  // Calculate date range for last 4 weeks (regardless of year)
+  // Calculate date ranges
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
   const fourWeeksAgo = new Date();
   fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
 
-  // Fetch data for analysis
-  const [yearPrices, yearStats, zones, weeklyPrices] = await Promise.all([
-    getYearPrices(currentYear),
-    getPriceStats(start, today),
+  // Fetch data based on view
+  const fetchPromises = [
     getAllZones(),
-    getPricesByDateRange(fourWeeksAgo.toISOString().split('T')[0], today),
-  ]);
+  ];
+
+  if (view === 'year') {
+    fetchPromises.push(
+      getYearPrices(currentYear),
+      getPriceStats(yearStart, today, selectedZone),
+      getPricesByDateRange(fourWeeksAgo.toISOString().split('T')[0], today)
+    );
+  } else if (view === 'month') {
+    fetchPromises.push(
+      getMonthPrices(currentYear, currentMonth),
+      getPriceStats(`${currentYear}-${String(currentMonth).padStart(2, '0')}-01`, today, selectedZone),
+      getPricesByDateRange(fourWeeksAgo.toISOString().split('T')[0], today)
+    );
+  } else if (view === '30days') {
+    fetchPromises.push(
+      getPricesByDateRange(thirtyDaysAgoStr, today),
+      getPriceStats(thirtyDaysAgoStr, today, selectedZone),
+      getPricesByDateRange(thirtyDaysAgoStr, today)
+    );
+  }
+
+  const [zones, yearPrices = [], yearStats = { average: 0, min: 0, max: 0, count: 0 }, weeklyPrices = []] = await Promise.all(fetchPromises);
 
   // Group prices by month for trend analysis
   // Use date field to extract month if month field is not populated
@@ -108,21 +145,25 @@ export default async function AnalysisPage() {
           <p className="text-gray-600">
             Comprehensive analysis of NECC egg prices with trends and insights
           </p>
+
+          <AnalysisFilters zones={zones} currentView={view} />
         </div>
 
-        {/* Year Overview Stats */}
+        {/* Overview Stats */}
         {yearStats.count > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Year Average</h3>
+              <h3 className="text-sm font-medium text-gray-500 mb-2">
+                {view === 'year' ? 'Year' : view === 'month' ? 'Month' : '30-Day'} Average
+              </h3>
               <p className="text-3xl font-bold text-primary">₹{yearStats.average}</p>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Year Low</h3>
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Period Low</h3>
               <p className="text-3xl font-bold text-green-600">₹{yearStats.min}</p>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Year High</h3>
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Period High</h3>
               <p className="text-3xl font-bold text-red-600">₹{yearStats.max}</p>
             </div>
             <div className="bg-white rounded-lg shadow p-6">
@@ -132,81 +173,54 @@ export default async function AnalysisPage() {
           </div>
         )}
 
-        {/* Monthly Trend Chart */}
+        {/* Shareable Year Summary Card */}
+        {yearStats.count > 0 && (
+          <div className="mb-8">
+            <ShareableInfographicCard
+              title={`NECC Egg Prices ${currentYear} Summary`}
+              subtitle="Year Overview"
+              data={[
+                { label: 'Year Average', value: `₹${yearStats.average}` },
+                { label: 'Year High', value: `₹${yearStats.max}` },
+                { label: 'Year Low', value: `₹${yearStats.min}` },
+                { label: 'Data Points', value: yearStats.count.toLocaleString() },
+              ]}
+              shareUrl={`https://poultryco.net/necc/${currentYear}`}
+              shareTitle={`NECC Egg Prices ${currentYear} - Average: ₹${yearStats.average}`}
+              shareDescription={`${currentYear} NECC egg prices: Average ₹${yearStats.average}, High ₹${yearStats.max}, Low ₹${yearStats.min}`}
+            />
+          </div>
+        )}
+
+        {/* Monthly Trend Chart - Interactive */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Monthly Trend ({currentYear})</h2>
-          {monthlyData.some(m => m.average !== null) ? (
-            <div className="h-80 flex items-end gap-2">
-              {monthlyData.map(({ month, average, min, max }) => {
-                const maxPrice = Math.max(...monthlyData.map(m => m.average || 0), 1);
-                const height = average ? (average / maxPrice) * 100 : 0;
-                
-                return (
-                  <div key={month} className="flex-1 flex flex-col items-center group relative">
-                    <div className="w-full flex flex-col items-center">
-                      {average && (
-                        <>
-                          <div className="w-full flex flex-col items-end mb-1">
-                            <div
-                              className="w-full bg-primary rounded-t transition-all duration-300 hover:bg-primary/80"
-                              style={{ height: `${height}%`, minHeight: '4px' }}
-                              title={`${monthNames[month - 1]}: ₹${average} (Min: ₹${min}, Max: ₹${max})`}
-                            />
-                          </div>
-                          <span className="text-xs text-gray-500 mt-2">{monthNames[month - 1]}</span>
-                          <span className="text-xs font-medium text-primary mt-1">₹{average}</span>
-                        </>
-                      )}
-                      {!average && (
-                        <span className="text-xs text-gray-400 mt-2">{monthNames[month - 1]}</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="h-80 flex items-center justify-center text-gray-400">
-              <p>No data available for {currentYear}</p>
-            </div>
-          )}
+          <BarChart
+            data={monthlyData
+              .filter(m => m.average !== null)
+              .map(({ month, average }) => ({
+                name: monthNames[month - 1],
+                value: average!,
+              }))}
+            title={`Monthly Trend (${currentYear})`}
+            height={350}
+            color="#3b82f6"
+          />
         </div>
 
-        {/* Weekly Trend */}
+        {/* Weekly Trend - Interactive */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Last 4 Weeks Trend</h2>
-          {weeklyData.some(w => w.average !== null) ? (
-            <div className="h-64 flex items-end gap-4">
-              {weeklyData.map(({ week, average, label }) => {
-                const maxPrice = Math.max(...weeklyData.map(w => w.average || 0), 1);
-                const height = average ? (average / maxPrice) * 100 : 0;
-                
-                return (
-                  <div key={week} className="flex-1 flex flex-col items-center">
-                    <div className="w-full flex flex-col items-center">
-                      {average ? (
-                        <>
-                          <div
-                            className="w-full bg-blue-500 rounded-t transition-all duration-300 hover:bg-blue-600"
-                            style={{ height: `${height}%`, minHeight: '4px' }}
-                            title={`${label}: ₹${average}`}
-                          />
-                          <span className="text-xs text-gray-500 mt-2">{label}</span>
-                          <span className="text-xs font-medium text-blue-600 mt-1">₹{average}</span>
-                        </>
-                      ) : (
-                        <span className="text-xs text-gray-400 mt-2">{label}</span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="h-64 flex items-center justify-center text-gray-400">
-              <p>No data available for the last 4 weeks</p>
-            </div>
-          )}
+          <PriceTrendChart
+            data={weeklyData
+              .filter(w => w.average !== null)
+              .map(({ label, average }) => ({
+                date: label,
+                price: average!,
+                label: label,
+              }))}
+            title="Last 4 Weeks Trend"
+            height={300}
+            color="#10b981"
+          />
         </div>
 
         {/* Zone Comparison */}
@@ -273,6 +287,11 @@ export default async function AnalysisPage() {
               );
             })}
           </div>
+        </div>
+
+        {/* NECC Quick Links */}
+        <div className="mt-12">
+          <NECCQuickLinks />
         </div>
       </div>
     </div>

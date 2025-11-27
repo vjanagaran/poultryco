@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { getTodayPrices, getYesterdayPrices } from "@/lib/api/necc-prices";
 import { formatDateDisplay, getTodayDate } from "@/lib/utils/necc-date";
+import { NECCQuickLinks } from "@/components/necc/NECCQuickLinks";
 
 export const metadata: Metadata = {
   title: "Today's NECC Egg Prices | PoultryCo",
@@ -122,6 +123,11 @@ export default async function TodayPage() {
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* NECC Quick Links */}
+        <div className="mt-12">
+          <NECCQuickLinks />
         </div>
       </div>
     </div>
