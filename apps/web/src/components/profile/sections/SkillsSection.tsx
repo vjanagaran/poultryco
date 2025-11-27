@@ -123,7 +123,7 @@ function SkillModal({ onClose }: { onClose: () => void }) {
       await fetchProfile();
       onClose();
     } catch (error) {
-      console.error('Error adding skill:', error);
+      console.log('Error adding skill:', error);
       alert('Failed to add skill');
     } finally {
       setSaving(false);
@@ -231,7 +231,7 @@ function DeleteSkillButton({ skillId, skillName }: { skillId: string; skillName:
 
       await fetchProfile();
     } catch (error) {
-      console.error('Error deleting skill:', error);
+      console.log('Error deleting skill:', error);
       alert('Failed to delete skill');
     } finally {
       setDeleting(false);

@@ -162,7 +162,7 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
         description: formData.description.trim() || null,
         key_achievements: formData.key_achievements
           .split('\n')
-          .map((item) => item.trim())
+          .map((item: string) => item.trim())
           .filter(Boolean),
       };
 
@@ -338,7 +338,7 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
             <textarea
               value={formData.key_achievements}
               onChange={(e) => setFormData({ ...formData, key_achievements: e.target.value })}
-              placeholder="Eg: Reduced broiler mortality by 12%"
+              placeholder="Eg: ed broiler mortality by 12%"
               rows={4}
               maxLength={500}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
