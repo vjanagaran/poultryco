@@ -63,7 +63,16 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
           roles:profile_roles(*),
           experiences:profile_experience(*),
           education:profile_education(*),
-          skills:profile_skills(*)
+          skills:profile_skills(
+            id,
+            profile_id,
+            skill_id,
+            proficiency_level,
+            years_of_experience,
+            sort_order,
+            created_at,
+            skills(id, skill_name, skill_category)
+          )
         `)
         .eq('id', user.id)
         .single();
