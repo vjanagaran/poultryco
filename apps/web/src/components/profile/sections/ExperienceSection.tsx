@@ -162,7 +162,7 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
         description: formData.description.trim() || null,
         key_achievements: formData.key_achievements
           .split('\n')
-          .map((item) => item.trim())
+          .map((item: string) => item.trim())
           .filter(Boolean),
       };
 
@@ -277,7 +277,14 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
               type="checkbox"
               id="is_current"
               checked={formData.is_current}
-              onChange={(e) => setFormData({ ...formData, is_current: e.target.checked })}
+              onChange={(e) => {
+                const isChecked = e.target.checked;
+                setFormData({
+                  ...formData,
+                  is_current: isChecked,
+                  end_date: isChecked ? '' : formData.end_date, // Clear end date when checked
+                });
+              }}
               className="w-4 h-4 text-green-600 rounded"
             />
             <label htmlFor="is_current" className="text-sm text-gray-700">
@@ -291,26 +298,44 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Start Date *
               </label>
-              <input
-                type="month"
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
+              <div className="relative">
+                <input
+                  type="month"
+                  value={formData.start_date}
+                  onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                  required
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    !formData.start_date ? 'text-transparent' : ''
+                  }`}
+                />
+                {!formData.start_date && (
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    MM YYYY
+                  </span>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 End Date {!formData.is_current && '*'}
               </label>
-              <input
-                type="month"
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                disabled={formData.is_current}
-                required={!formData.is_current}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
-              />
+              <div className="relative">
+                <input
+                  type="month"
+                  value={formData.is_current ? '' : formData.end_date}
+                  onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                  disabled={formData.is_current}
+                  required={!formData.is_current}
+                  className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 ${
+                    !formData.end_date || formData.is_current ? 'text-transparent' : ''
+                  }`}
+                />
+                {!formData.end_date && !formData.is_current && (
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                    MM YYYY
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -338,7 +363,7 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
             <textarea
               value={formData.key_achievements}
               onChange={(e) => setFormData({ ...formData, key_achievements: e.target.value })}
-              placeholder="Eg: Reduced broiler mortality by 12%"
+              placeholder="Eg: ed broiler mortality by 12%"
               rows={4}
               maxLength={500}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
