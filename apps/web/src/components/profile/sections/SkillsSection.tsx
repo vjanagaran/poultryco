@@ -42,14 +42,14 @@ export function SkillsSection({ profile, isOwner }: SkillsSectionProps) {
                 key={skill.id}
                 className="group relative px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-800 text-sm font-medium transition-colors"
               >
-                <span>{skill.skill_name}</span>
+                <span>{skill.skills?.skill_name || 'Unknown Skill'}</span>
                 {(skill.endorsements_count || 0) > 0 && (
                   <span className="ml-2 text-xs text-gray-600">
                     • {skill.endorsements_count || 0}
                   </span>
                 )}
                 {isOwner && (
-                  <DeleteSkillButton skillId={skill.id} skillName={skill.skill_name} />
+                  <DeleteSkillButton skillId={skill.id} skillName={skill.skills?.skill_name || 'Unknown'} />
                 )}
               </div>
             ))}
@@ -110,15 +110,25 @@ function SkillModal({ onClose }: { onClose: () => void }) {
     const supabase = createClient();
 
     try {
-      const { error } = await supabase
+      // Step 1: Find or create the skill using the database function
+      const { data: skillId, error: skillError } = await supabase
+        .rpc('find_or_create_skill', {
+          p_skill_name: skillName.trim(),
+          p_category: 'other',
+          p_created_by: user.id
+        });
+
+      if (skillError) throw skillError;
+
+      // Step 2: Add skill to user's profile
+      const { error: insertError } = await supabase
         .from('profile_skills')
         .insert({
           profile_id: user.id,
-          skill_name: skillName.trim(),
-          // endorsements_count will be added after migration 58
+          skill_id: skillId,
         });
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
       await fetchProfile();
       onClose();
