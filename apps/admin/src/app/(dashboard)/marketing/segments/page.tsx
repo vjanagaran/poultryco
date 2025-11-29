@@ -4,31 +4,20 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
-interface CustomerSegment {
+interface StakeholderSegment {
   id: string;
   name: string;
-  slug: string;
   description: string | null;
-  segment_type: string;
-  pain_points: string[];
-  goals: string[];
-  preferred_channels: string[];
-  language_preferences: string[];
-  estimated_market_size: number | null;
-  current_reach: number;
-  priority_score: number;
+  segment_size_estimate: number | null;
+  key_characteristics: string | null;
+  communication_preferences: string | null;
+  priority_level: number;
   is_active: boolean;
   created_at: string;
 }
 
-const SEGMENT_TYPE_COLORS: Record<string, string> = {
-  primary: 'bg-green-100 text-green-800 border-green-200',
-  secondary: 'bg-blue-100 text-blue-800 border-blue-200',
-  niche: 'bg-purple-100 text-purple-800 border-purple-200',
-};
-
 export default function CustomerSegmentsPage() {
-  const [segments, setSegments] = useState<CustomerSegment[]>([]);
+  const [segments, setSegments] = useState<StakeholderSegment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -43,7 +32,7 @@ export default function CustomerSegmentsPage() {
       const { data, error } = await supabase
         .from('stakeholder_segments')
         .select('*')
-        .order('priority_score', { ascending: false });
+        .order('priority_level', { ascending: false });
 
       if (error) throw error;
       setSegments(data || []);
@@ -55,13 +44,10 @@ export default function CustomerSegmentsPage() {
   }
 
   const filteredSegments = segments.filter((segment) => {
-    if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
       segment.name.toLowerCase().includes(query) ||
-      segment.description?.toLowerCase().includes(query) ||
-      segment.pain_points?.some((p) => p.toLowerCase().includes(query)) ||
-      segment.goals?.some((g) => g.toLowerCase().includes(query))
+      segment.description?.toLowerCase().includes(query)
     );
   });
 
@@ -78,9 +64,9 @@ export default function CustomerSegmentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Customer Segments</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Stakeholder Segments</h1>
           <p className="mt-2 text-gray-600">
-            Target audience segments and personas
+            Target audience segments for your marketing content
           </p>
         </div>
         <Link
@@ -103,29 +89,37 @@ export default function CustomerSegmentsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="text-sm font-medium text-green-800 mb-1">
-            Primary Segments
-          </div>
-          <div className="text-2xl font-bold text-green-900">
-            {segments.filter((s) => s.segment_type === 'primary').length}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="text-sm font-medium text-blue-800 mb-1">
-            Secondary Segments
+            Total Segments
           </div>
           <div className="text-2xl font-bold text-blue-900">
-            {segments.filter((s) => s.segment_type === 'secondary').length}
+            {segments.length}
+          </div>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="text-sm font-medium text-green-800 mb-1">
+            Active Segments
+          </div>
+          <div className="text-2xl font-bold text-green-900">
+            {segments.filter((s) => s.is_active).length}
           </div>
         </div>
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <div className="text-sm font-medium text-purple-800 mb-1">
-            Niche Segments
+            High Priority
           </div>
           <div className="text-2xl font-bold text-purple-900">
-            {segments.filter((s) => s.segment_type === 'niche').length}
+            {segments.filter((s) => s.priority_level >= 8).length}
+          </div>
+        </div>
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="text-sm font-medium text-orange-800 mb-1">
+            Total Audience
+          </div>
+          <div className="text-2xl font-bold text-orange-900">
+            {segments.reduce((sum, s) => sum + (s.segment_size_estimate || 0), 0).toLocaleString()}
           </div>
         </div>
       </div>
@@ -140,7 +134,7 @@ export default function CustomerSegmentsPage() {
           <p className="text-gray-600 mb-4">
             {searchQuery
               ? 'Try adjusting your search'
-              : 'Get started by adding your first customer segment'}
+              : 'Get started by adding your first stakeholder segment'}
           </p>
           {!searchQuery && (
             <Link
@@ -159,101 +153,67 @@ export default function CustomerSegmentsPage() {
               href={`/marketing/segments/${segment.id}`}
               className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 hover:border-poultryco-green"
             >
-              {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded border ${
-                        SEGMENT_TYPE_COLORS[segment.segment_type]
-                      }`}
-                    >
-                      {segment.segment_type}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {[...Array(10)].map((_, i) => (
-                        <div
-                          key={i}
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            i < segment.priority_score
-                              ? 'bg-amber-400'
-                              : 'bg-gray-200'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <h3 className="font-semibold text-xl text-gray-900">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
                     {segment.name}
                   </h3>
                   {segment.description && (
-                    <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                    <p className="text-sm text-gray-600 line-clamp-2">
                       {segment.description}
                     </p>
                   )}
                 </div>
+                <span
+                  className={`px-2 py-1 text-xs font-medium rounded border flex-shrink-0 ml-3 ${
+                    segment.is_active
+                      ? 'bg-green-100 text-green-800 border-green-200'
+                      : 'bg-gray-100 text-gray-800 border-gray-200'
+                  }`}
+                >
+                  {segment.is_active ? 'Active' : 'Inactive'}
+                </span>
               </div>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">Market Size</div>
-                  <div className="text-lg font-semibold text-gray-900">
-                    {segment.estimated_market_size
-                      ? segment.estimated_market_size.toLocaleString()
-                      : 'N/A'}
+              <div className="space-y-3">
+                {segment.segment_size_estimate && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Estimated Size</span>
+                    <span className="font-medium text-gray-900">
+                      {segment.segment_size_estimate.toLocaleString()} people
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Priority Level</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-poultryco-green rounded-full h-2"
+                        style={{ width: `${segment.priority_level * 10}%` }}
+                      ></div>
+                    </div>
+                    <span className="font-medium text-gray-900">
+                      {segment.priority_level}/10
+                    </span>
                   </div>
                 </div>
-                <div>
-                  <div className="text-xs text-gray-500 mb-1">Current Reach</div>
-                  <div className="text-lg font-semibold text-gray-900">
-                    {segment.current_reach.toLocaleString()}
+
+                {segment.key_characteristics && (
+                  <div className="pt-3 border-t border-gray-200">
+                    <div className="text-xs text-gray-600 mb-1">Key Characteristics</div>
+                    <p className="text-sm text-gray-900 line-clamp-2">
+                      {segment.key_characteristics}
+                    </p>
                   </div>
+                )}
+
+                <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-200">
+                  <span>Created {new Date(segment.created_at).toLocaleDateString()}</span>
+                  <span className="text-poultryco-green hover:underline">View Details →</span>
                 </div>
               </div>
-
-              {/* Pain Points */}
-              {segment.pain_points && segment.pain_points.length > 0 && (
-                <div className="mb-4">
-                  <div className="text-xs font-medium text-gray-700 mb-2">
-                    Top Pain Points:
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {segment.pain_points.slice(0, 3).map((pain, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 text-xs bg-red-50 text-red-700 rounded"
-                      >
-                        {pain}
-                      </span>
-                    ))}
-                    {segment.pain_points.length > 3 && (
-                      <span className="px-2 py-1 text-xs text-gray-500">
-                        +{segment.pain_points.length - 3} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Channels */}
-              {segment.preferred_channels && segment.preferred_channels.length > 0 && (
-                <div>
-                  <div className="text-xs font-medium text-gray-700 mb-2">
-                    Preferred Channels:
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {segment.preferred_channels.map((channel, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded"
-                      >
-                        {channel}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
             </Link>
           ))}
         </div>
@@ -261,4 +221,3 @@ export default function CustomerSegmentsPage() {
     </div>
   );
 }
-

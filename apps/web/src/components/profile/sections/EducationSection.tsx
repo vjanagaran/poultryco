@@ -198,7 +198,7 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
           {/* Degree */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Degree *
+              Degree 
             </label>
             <input
               type="text"
@@ -230,7 +230,11 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
               type="checkbox"
               id="is_current"
               checked={formData.is_ongoing}
-              onChange={(e) => setFormData({ ...formData, is_ongoing: e.target.checked })}
+              onChange={(e) => setFormData({ 
+                ...formData, 
+                is_ongoing: e.target.checked,
+                end_year: e.target.checked ? '' : formData.end_year
+              })}
               className="w-4 h-4 text-green-600 rounded"
             />
             <label htmlFor="is_ongoing" className="text-sm text-gray-700">
@@ -263,7 +267,7 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
                 type="number"
                 value={formData.end_year}
                 onChange={(e) => setFormData({ ...formData, end_year: e.target.value })}
-                placeholder="2022"
+                placeholder={formData.is_ongoing ? "" : "2022"}
                 min="1950"
                 max={new Date().getFullYear() + 10}
                 disabled={formData.is_ongoing}

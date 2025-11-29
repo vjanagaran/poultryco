@@ -43,9 +43,9 @@ export function SkillsSection({ profile, isOwner }: SkillsSectionProps) {
                 className="group relative px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-800 text-sm font-medium transition-colors"
               >
                 <span>{skill.skill_name}</span>
-                {skill.endorsements_count > 0 && (
+                {(skill.endorsements_count || 0) > 0 && (
                   <span className="ml-2 text-xs text-gray-600">
-                    • {skill.endorsements_count}
+                    • {skill.endorsements_count || 0}
                   </span>
                 )}
                 {isOwner && (
@@ -115,7 +115,7 @@ function SkillModal({ onClose }: { onClose: () => void }) {
         .insert({
           profile_id: user.id,
           skill_name: skillName.trim(),
-          endorsements_count: 0,
+          // endorsements_count will be added after migration 58
         });
 
       if (error) throw error;
@@ -123,7 +123,7 @@ function SkillModal({ onClose }: { onClose: () => void }) {
       await fetchProfile();
       onClose();
     } catch (error) {
-      console.log('Error adding skill:', error);
+      console.error('Error adding skill:', error);
       alert('Failed to add skill');
     } finally {
       setSaving(false);
@@ -231,7 +231,7 @@ function DeleteSkillButton({ skillId, skillName }: { skillId: string; skillName:
 
       await fetchProfile();
     } catch (error) {
-      console.log('Error deleting skill:', error);
+      console.error('Error deleting skill:', error);
       alert('Failed to delete skill');
     } finally {
       setDeleting(false);
