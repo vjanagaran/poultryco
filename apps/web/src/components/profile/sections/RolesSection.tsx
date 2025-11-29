@@ -56,6 +56,7 @@ const AVAILABLE_ROLES = Object.keys(ROLE_LABELS);
 
 export function RolesSection({ profile, isOwner }: RolesSectionProps) {
   const { removeRole } = useProfile();
+  const { fetchProfile } = useProfile();
   const [showAddModal, setShowAddModal] = useState(false);
   const [removingRoleId, setRemovingRoleId] = useState<string | null>(null);
 
@@ -72,6 +73,7 @@ export function RolesSection({ profile, isOwner }: RolesSectionProps) {
     setRemovingRoleId(roleId);
     try {
       await removeRole(roleId);
+      await fetchProfile();
     } catch (error) {
       console.error('Error removing role:', error);
       alert('Failed to remove role');

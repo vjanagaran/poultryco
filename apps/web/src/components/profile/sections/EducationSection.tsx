@@ -9,6 +9,15 @@ interface EducationSectionProps {
   profile: any;
   isOwner: boolean;
 }
+interface EducationForm {
+  institution_name: string;
+  degree: string;
+  field_of_study: string;
+  start_year: string;
+  end_year: string;
+  is_current: boolean;
+  description: string;
+}
 
 export function EducationSection({ profile, isOwner }: EducationSectionProps) {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -111,7 +120,7 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
     field_of_study: education?.field_of_study || '',
     start_year: education?.start_year || '',
     end_year: education?.end_year || '',
-    is_current: education?.is_current || false,
+    is_ongoing: education?.is_current || false,
     description: education?.description || '',
   });
 
@@ -124,9 +133,9 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
 
     try {
       const data = {
-        ...formData,
         profile_id: user.id,
-        end_year: formData.is_current ? null : formData.end_year,
+        ...formData,
+        end_year: formData.is_ongoing ? null : formData.end_year,
       };
 
       if (education) {
@@ -220,11 +229,11 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
             <input
               type="checkbox"
               id="is_current"
-              checked={formData.is_current}
-              onChange={(e) => setFormData({ ...formData, is_current: e.target.checked })}
+              checked={formData.is_ongoing}
+              onChange={(e) => setFormData({ ...formData, is_ongoing: e.target.checked })}
               className="w-4 h-4 text-green-600 rounded"
             />
-            <label htmlFor="is_current" className="text-sm text-gray-700">
+            <label htmlFor="is_ongoing" className="text-sm text-gray-700">
               I am currently studying here
             </label>
           </div>
@@ -248,7 +257,7 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                End Year {!formData.is_current && '*'}
+                End Year {!formData.is_ongoing && '*'}
               </label>
               <input
                 type="number"
@@ -257,8 +266,8 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
                 placeholder="2022"
                 min="1950"
                 max={new Date().getFullYear() + 10}
-                disabled={formData.is_current}
-                required={!formData.is_current}
+                disabled={formData.is_ongoing}
+                required={!formData.is_ongoing}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
               />
             </div>
