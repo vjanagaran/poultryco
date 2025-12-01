@@ -448,23 +448,201 @@ CREATE TABLE example_table (
 
 ---
 
-### **Soft Deletes**
+### **Engagement Counts (Denormalized)**
+
+**Pattern:** Store counts directly on parent table, update via triggers
+
+```sql
+-- Parent table with engagement counts
+CREATE TABLE soc_posts (
+  id UUID PRIMARY KEY,
+  author_id UUID REFERENCES profiles(id),
+  content TEXT NOT NULL,
+  
+  -- Denormalized counts (updated via triggers)
+  likes_count INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
+  shares_count INTEGER DEFAULT 0,
+  views_count INTEGER DEFAULT 0,
+  
+  -- Computed engagement score
+  engagement_score INTEGER GENERATED ALWAYS AS (
+    (likes_count * 1) + 
+    (comments_count * 3) + 
+    (shares_count * 5)
+  ) STORED,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Child table for individual likes
+CREATE TABLE soc_post_likes (
+  id UUID PRIMARY KEY,
+  post_id UUID REFERENCES soc_posts(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(post_id, user_id)
+);
+
+-- Trigger to update likes count
+CREATE OR REPLACE FUNCTION update_post_likes_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    UPDATE soc_posts 
+    SET likes_count = likes_count + 1 
+    WHERE id = NEW.post_id;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE soc_posts 
+    SET likes_count = GREATEST(likes_count - 1, 0)
+    WHERE id = OLD.post_id;
+  END IF;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_post_likes_count
+AFTER INSERT OR DELETE ON soc_post_likes
+FOR EACH ROW EXECUTE FUNCTION update_post_likes_count();
+
+-- Indexes for sorting by engagement
+CREATE INDEX idx_soc_posts_likes ON soc_posts(likes_count DESC);
+CREATE INDEX idx_soc_posts_engagement ON soc_posts(engagement_score DESC);
+CREATE INDEX idx_soc_posts_active ON soc_posts(created_at DESC) 
+WHERE is_deleted = false;
+```
+
+**Why this pattern:**
+- ✅ Fast queries (no COUNT(*) needed)
+- ✅ Atomic updates (database handles concurrency)
+- ✅ Indexable (sort by likes_count)
+- ✅ Audit trail preserved (individual like records)
+
+**Apply to:** Posts, comments, products, jobs, events (any user-generated content)
+
+---
+
+### **Content Versioning**
+
+**Pattern:** Keep current + 2 previous versions for restore capability
+
+```sql
+-- Main content table
+CREATE TABLE soc_posts (
+  id UUID PRIMARY KEY,
+  author_id UUID REFERENCES profiles(id),
+  content TEXT NOT NULL,
+  current_version INTEGER DEFAULT 1,
+  
+  -- Soft delete (see pattern below)
+  is_deleted BOOLEAN DEFAULT false,
+  deleted_at TIMESTAMPTZ,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Version history (keep last 3 versions)
+CREATE TABLE soc_post_versions (
+  id UUID PRIMARY KEY,
+  post_id UUID REFERENCES soc_posts(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL,
+  content TEXT NOT NULL,
+  
+  -- Snapshot of engagement at this version
+  likes_count_snapshot INTEGER DEFAULT 0,
+  comments_count_snapshot INTEGER DEFAULT 0,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(post_id, version)
+);
+
+-- Auto-cleanup old versions (keep last 3)
+CREATE OR REPLACE FUNCTION cleanup_old_versions()
+RETURNS TRIGGER AS $$
+BEGIN
+  DELETE FROM soc_post_versions
+  WHERE post_id = NEW.post_id
+  AND version < (
+    SELECT MAX(version) - 2
+    FROM soc_post_versions
+    WHERE post_id = NEW.post_id
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_cleanup_old_versions
+AFTER INSERT ON soc_post_versions
+FOR EACH ROW EXECUTE FUNCTION cleanup_old_versions();
+
+-- Index for version queries
+CREATE INDEX idx_post_versions_post ON soc_post_versions(post_id, version DESC);
+```
+
+**Content types requiring versioning:**
+- ✅ Posts (soc_posts)
+- ✅ Job descriptions (job_postings)
+- ✅ Q&A answers (if implemented)
+- ✅ Business descriptions (biz_profiles)
+- ✅ Event descriptions (evt_events)
+- ❌ Comments (too short, rarely edited)
+- ❌ Profile bio (current state only)
+- ❌ Messages (immutable)
+
+---
+
+### **Soft Deletes with 30-Day Trash**
+
+**Pattern:** Hide from active views, allow restore within 30 days, auto-purge after
 
 ```sql
 CREATE TABLE soc_posts (
   id UUID PRIMARY KEY,
   content TEXT NOT NULL,
+  
+  -- Soft delete fields
   is_deleted BOOLEAN DEFAULT false,
   deleted_at TIMESTAMPTZ,
   deleted_by UUID REFERENCES profiles(id),
+  deletion_reason TEXT,
+  
+  -- Auto-calculated purge date
+  purge_at TIMESTAMPTZ GENERATED ALWAYS AS (
+    deleted_at + INTERVAL '30 days'
+  ) STORED,
+  
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Index for active records only
 CREATE INDEX idx_soc_posts_active 
-ON soc_posts(created_at) 
+ON soc_posts(created_at DESC) 
 WHERE is_deleted = false;
+
+-- Index for trash folder
+CREATE INDEX idx_soc_posts_trash
+ON soc_posts(deleted_at DESC)
+WHERE is_deleted = true AND purge_at > NOW();
+
+-- Scheduled function to permanently delete (run daily)
+CREATE OR REPLACE FUNCTION purge_old_deleted_posts()
+RETURNS INTEGER AS $$
+DECLARE
+  deleted_count INTEGER;
+BEGIN
+  DELETE FROM soc_posts
+  WHERE is_deleted = true
+  AND purge_at < NOW();
+  
+  GET DIAGNOSTICS deleted_count = ROW_COUNT;
+  RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql;
 ```
+
+**Apply to:** All user-generated content (posts, comments, jobs, events)
 
 ---
 
@@ -485,17 +663,12 @@ CREATE TABLE important_table (
 
 ---
 
-### **Slug Generation**
+### **PostgreSQL Functions for Data Logic**
+
+**Pattern:** Keep data-related logic in PostgreSQL, business logic in application
 
 ```sql
-CREATE TABLE usr_profiles (
-  id UUID PRIMARY KEY,
-  full_name TEXT NOT NULL,
-  profile_slug TEXT UNIQUE NOT NULL,  -- 'john-doe-chennai'
-  location_city TEXT
-);
-
--- Function to generate slug
+-- Slug generation
 CREATE OR REPLACE FUNCTION generate_profile_slug(
   p_full_name TEXT, 
   p_location_city TEXT, 
@@ -516,7 +689,7 @@ BEGIN
   final_slug := base_slug;
   
   WHILE EXISTS (
-    SELECT 1 FROM usr_profiles 
+    SELECT 1 FROM profiles 
     WHERE profile_slug = final_slug AND id != p_id
   ) LOOP
     counter := counter + 1;
@@ -526,7 +699,141 @@ BEGIN
   RETURN final_slug;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Profile strength calculation
+CREATE OR REPLACE FUNCTION calculate_profile_strength(p_profile_id UUID)
+RETURNS INTEGER AS $$
+DECLARE
+  strength INTEGER := 0;
+BEGIN
+  -- Basic info (30 points)
+  IF EXISTS (SELECT 1 FROM profiles WHERE id = p_profile_id AND profile_photo_url IS NOT NULL) THEN
+    strength := strength + 10;
+  END IF;
+  IF EXISTS (SELECT 1 FROM profiles WHERE id = p_profile_id AND headline IS NOT NULL) THEN
+    strength := strength + 10;
+  END IF;
+  IF EXISTS (SELECT 1 FROM profiles WHERE id = p_profile_id AND bio IS NOT NULL) THEN
+    strength := strength + 10;
+  END IF;
+  
+  -- Professional info (40 points)
+  strength := strength + (SELECT COUNT(*) * 10 FROM usr_experiences WHERE profile_id = p_profile_id LIMIT 4);
+  strength := strength + (SELECT COUNT(*) * 10 FROM usr_education WHERE profile_id = p_profile_id LIMIT 2);
+  
+  -- Skills (30 points)
+  strength := strength + (SELECT COUNT(*) * 5 FROM usr_profile_skills WHERE profile_id = p_profile_id LIMIT 6);
+  
+  RETURN LEAST(strength, 100);
+END;
+$$ LANGUAGE plpgsql;
 ```
+
+**PostgreSQL Functions (Data Logic):**
+- ✅ Slug generation
+- ✅ Engagement count updates
+- ✅ Profile strength calculation
+- ✅ Version cleanup
+- ✅ Soft delete purging
+- ✅ Data validation
+- ✅ Computed fields
+
+**NestJS Services (Business Logic):**
+- ✅ Notification sending
+- ✅ Email campaigns
+- ✅ Payment processing
+- ✅ Region-specific rules
+- ✅ Cache invalidation
+- ✅ External API calls
+- ✅ Complex workflows
+
+---
+
+### **File Organization Strategy**
+
+**Pattern:** Group related tables logically within modules (200-300 lines per file)
+
+```
+/aws/database/
+├── schema/
+│   ├── 00_extensions.sql              (~50 lines)
+│   ├── 01_core_and_ref.sql           (~300 lines)
+│   │   # profiles, ref_countries, ref_states, ref_business_types, etc.
+│   │
+│   ├── 10_usr_core.sql               (~250 lines)
+│   │   # usr_profiles extensions, usr_profile_roles
+│   ├── 11_usr_roles.sql              (~200 lines)
+│   │   # usr_farmer_details, usr_veterinarian_details, etc.
+│   ├── 12_usr_professional.sql       (~200 lines)
+│   │   # usr_experiences, usr_education, usr_certifications
+│   ├── 13_usr_skills.sql             (~150 lines)
+│   │   # usr_profile_skills, usr_skill_endorsements
+│   ├── 14_usr_engagement.sql         (~150 lines)
+│   │   # usr_badges, usr_stats, usr_preferences
+│   │
+│   ├── 20_biz_core.sql               (~250 lines)
+│   │   # biz_profiles, biz_contact_info, biz_locations
+│   ├── 21_biz_details.sql            (~200 lines)
+│   │   # biz_team_members, biz_certifications, biz_stats
+│   │
+│   ├── 30_org_core.sql               (~250 lines)
+│   ├── 31_org_membership.sql         (~200 lines)
+│   ├── 32_org_structure.sql          (~200 lines)
+│   │
+│   ├── 40_soc_posts.sql              (~250 lines)
+│   ├── 41_soc_engagement.sql         (~200 lines)
+│   ├── 42_soc_connections.sql        (~150 lines)
+│   │
+│   ├── 50_msg_core.sql               (~200 lines)
+│   ├── 60_ntf_core.sql               (~150 lines)
+│   ├── 70_mkt_core.sql               (~250 lines)
+│   ├── 71_mkt_campaigns.sql          (~200 lines)
+│   ├── 80_eml_core.sql               (~250 lines)
+│   ├── 90_cms_core.sql               (~200 lines)
+│   │
+│   └── 99_functions.sql              (~300 lines)
+│       # All PostgreSQL functions
+│
+├── seed/
+│   ├── production/
+│   │   ├── 01_ref_countries.sql
+│   │   ├── 02_ref_states.sql
+│   │   ├── 03_ref_business_types.sql
+│   │   ├── 04_ref_job_categories.sql
+│   │   └── 05_ref_skills.sql
+│   │
+│   └── dev/
+│       └── (same as production, no fake data)
+│
+└── scripts/
+    ├── setup-db.sh                   # Initial setup
+    ├── run-schema.sh                 # Execute all schema files
+    ├── run-seed.sh                   # Execute seed data
+    └── backup-db.sh                  # Backup scripts
+```
+
+**Execution order:**
+```bash
+#!/bin/bash
+# run-schema.sh
+
+for file in /aws/database/schema/*.sql; do
+  echo "Executing: $file"
+  psql -h $DB_HOST -U $DB_USER -d $DB_NAME -f $file
+  if [ $? -ne 0 ]; then
+    echo "Error executing $file"
+    exit 1
+  fi
+done
+```
+
+**Benefits:**
+- ✅ Manageable file count (~50-60 files for 500 tables)
+- ✅ Clear execution order (numbered)
+- ✅ Logical grouping (related tables together)
+- ✅ Easy to review (200-300 lines per file)
+- ✅ Minimal merge conflicts (solo until MVP)
+- ✅ Scalable (add files as needed)
 
 ---
 
