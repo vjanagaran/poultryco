@@ -51,6 +51,7 @@ RETURNS INTEGER AS $$
 DECLARE
   strength INTEGER := 0;
   profile_rec RECORD;
+  conn_count INTEGER;
 BEGIN
   SELECT * INTO profile_rec FROM profiles WHERE id = p_profile_id;
   
@@ -99,9 +100,14 @@ BEGIN
   END IF;
   
   -- Connections (10 points)
-  IF profile_rec.connections_count >= 10 THEN
+  SELECT COUNT(*) INTO conn_count
+  FROM soc_connections
+  WHERE (profile_id_1 = p_profile_id OR profile_id_2 = p_profile_id)
+    AND status = 'accepted';
+  
+  IF conn_count >= 10 THEN
     strength := strength + 10;
-  ELSIF profile_rec.connections_count >= 5 THEN
+  ELSIF conn_count >= 5 THEN
     strength := strength + 5;
   END IF;
   
@@ -419,8 +425,18 @@ SELECT
   p.verification_level,
   COUNT(DISTINCT sp.id) AS posts_count,
   COUNT(DISTINCT spc.id) AS comments_count,
-  p.connections_count,
-  p.followers_count
+  (
+    SELECT COUNT(*)
+    FROM soc_connections
+    WHERE (profile_id_1 = p.id OR profile_id_2 = p.id)
+      AND status = 'accepted'
+  ) AS connections_count,
+  (
+    SELECT COUNT(*)
+    FROM soc_follows
+    WHERE following_type = 'individual'
+      AND following_id = p.id
+  ) AS followers_count
 FROM profiles p
 LEFT JOIN soc_posts sp ON sp.author_type = 'individual' AND sp.author_id = p.id AND sp.created_at > NOW() - INTERVAL '30 days'
 LEFT JOIN soc_post_comments spc ON spc.profile_id = p.id AND spc.created_at > NOW() - INTERVAL '30 days'

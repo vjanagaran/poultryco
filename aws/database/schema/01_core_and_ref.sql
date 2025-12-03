@@ -83,17 +83,128 @@ CREATE TRIGGER update_profiles_updated_at
 -- Countries
 CREATE TABLE IF NOT EXISTS ref_countries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Names
   name TEXT NOT NULL UNIQUE,
-  code TEXT NOT NULL UNIQUE, -- ISO 3166-1 alpha-2
-  phone_code TEXT,
-  currency TEXT,
+  name_local TEXT, -- Native name (e.g., "भारत" for India)
+  
+  -- ISO Codes (Standard)
+  code TEXT NOT NULL UNIQUE CHECK (char_length(code) = 2), -- ISO 3166-1 alpha-2: 'IN', 'US'
+  iso3 TEXT UNIQUE CHECK (iso3 IS NULL OR char_length(iso3) = 3), -- ISO 3166-1 alpha-3: 'IND', 'USA'
+  iso_numeric TEXT UNIQUE CHECK (iso_numeric IS NULL OR char_length(iso_numeric) = 3), -- ISO 3166-1 numeric: '356', '840'
+  
+  -- Display
+  flag_emoji TEXT, -- '🇮🇳', '🇺🇸'
+  flag_url TEXT, -- For custom flags if needed
+  
+  -- Contact
+  phone_code TEXT, -- '+91', '+1'
+  phone_format TEXT, -- Pattern for validation (e.g., '+91-XXXXXXXXXX')
+  
+  -- Subdivision Label (for dynamic UI: State/Province/Region)
+  subdivision_label TEXT DEFAULT 'State', -- 'State', 'Province', 'Region', etc.
+  
+  -- UX Features
+  is_favourite BOOLEAN NOT NULL DEFAULT false, -- Flag top focus countries
+  is_default BOOLEAN NOT NULL DEFAULT false, -- Default country selection
+  
+  -- Status
   is_active BOOLEAN NOT NULL DEFAULT true,
   sort_order INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  
+  -- Timestamps
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_ref_countries_code ON ref_countries(code);
+CREATE INDEX idx_ref_countries_iso3 ON ref_countries(iso3) WHERE iso3 IS NOT NULL;
 CREATE INDEX idx_ref_countries_active ON ref_countries(is_active) WHERE is_active = true;
+CREATE INDEX idx_ref_countries_favourite ON ref_countries(is_favourite) WHERE is_favourite = true;
+CREATE INDEX idx_ref_countries_default ON ref_countries(is_default) WHERE is_default = true;
+
+CREATE TRIGGER update_ref_countries_updated_at
+  BEFORE UPDATE ON ref_countries
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Currencies (ISO 4217 Compliant)
+CREATE TABLE IF NOT EXISTS ref_currencies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Names
+  name TEXT NOT NULL, -- 'Indian Rupee', 'US Dollar'
+  name_plural TEXT, -- 'Indian Rupees', 'US Dollars'
+  symbol TEXT NOT NULL, -- '₹', '$', '€'
+  
+  -- ISO Codes
+  code TEXT NOT NULL UNIQUE CHECK (char_length(code) = 3), -- ISO 4217: 'INR', 'USD'
+  numeric_code TEXT UNIQUE CHECK (numeric_code IS NULL OR char_length(numeric_code) = 3), -- '356', '840'
+  
+  -- Formatting
+  decimal_places INTEGER NOT NULL DEFAULT 2 CHECK (decimal_places >= 0 AND decimal_places <= 4),
+  decimal_separator TEXT NOT NULL DEFAULT '.', -- '.' or ','
+  thousands_separator TEXT NOT NULL DEFAULT ',', -- ',' or '.' or ' '
+  symbol_position TEXT NOT NULL DEFAULT 'before' CHECK (symbol_position IN ('before', 'after')),
+  symbol_spacing BOOLEAN NOT NULL DEFAULT true, -- '₹ 100' vs '₹100'
+  
+  -- Number System
+  number_system TEXT NOT NULL DEFAULT 'international' CHECK (number_system IN ('international', 'indian')),
+  -- Indian: lakhs/crores (1,23,456.78)
+  -- International: thousands/millions (123,456.78)
+  
+  -- Minor Unit
+  minor_unit_name TEXT, -- 'paise', 'cents'
+  minor_unit_ratio INTEGER NOT NULL DEFAULT 100, -- 100 paise = 1 rupee
+  
+  -- Status
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  is_crypto BOOLEAN NOT NULL DEFAULT false,
+  
+  -- Metadata
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_ref_currencies_code ON ref_currencies(code);
+CREATE INDEX idx_ref_currencies_active ON ref_currencies(is_active) WHERE is_active = true;
+
+CREATE TRIGGER update_ref_currencies_updated_at
+  BEFORE UPDATE ON ref_currencies
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Country-Currency Junction (Many-to-Many)
+CREATE TABLE IF NOT EXISTS ref_country_currencies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  country_id UUID NOT NULL REFERENCES ref_countries(id) ON DELETE CASCADE,
+  currency_id UUID NOT NULL REFERENCES ref_currencies(id) ON DELETE CASCADE,
+  
+  -- Relationship
+  is_default BOOLEAN NOT NULL DEFAULT false,
+  is_primary BOOLEAN NOT NULL DEFAULT false, -- Only one primary per country
+  
+  -- Historical (for countries that changed currencies)
+  valid_from DATE,
+  valid_until DATE, -- NULL = current
+  
+  -- Display
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  
+  -- Constraints
+  UNIQUE(country_id, currency_id)
+);
+
+CREATE INDEX idx_ref_country_currencies_country ON ref_country_currencies(country_id);
+CREATE INDEX idx_ref_country_currencies_currency ON ref_country_currencies(currency_id);
+CREATE INDEX idx_ref_country_currencies_default ON ref_country_currencies(country_id, is_default) WHERE is_default = true;
+CREATE INDEX idx_ref_country_currencies_primary ON ref_country_currencies(country_id, is_primary) WHERE is_primary = true;
+
+CREATE TRIGGER update_ref_country_currencies_updated_at
+  BEFORE UPDATE ON ref_country_currencies
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
 
 -- States/Provinces
 CREATE TABLE IF NOT EXISTS ref_states (
@@ -353,11 +464,111 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
+-- SECTION 4: CURRENCY HELPER FUNCTIONS
+-- =====================================================
+
+-- Format currency amount with proper formatting
+CREATE OR REPLACE FUNCTION format_currency(
+  amount DECIMAL,
+  currency_code TEXT
+)
+RETURNS TEXT AS $$
+DECLARE
+  currency_rec RECORD;
+  formatted TEXT;
+  integer_part TEXT;
+  decimal_part TEXT;
+BEGIN
+  SELECT * INTO currency_rec
+  FROM ref_currencies
+  WHERE code = currency_code AND is_active = true;
+  
+  IF NOT FOUND THEN
+    RETURN amount::TEXT || ' ' || currency_code;
+  END IF;
+  
+  -- Format number based on system
+  IF currency_rec.number_system = 'indian' THEN
+    -- Indian numbering: 1,23,456.78
+    formatted := to_char(amount, 'FM999G999G999G999D' || repeat('0', currency_rec.decimal_places));
+    -- Replace G with thousands_separator (but Indian uses different grouping)
+    -- Indian: 1,23,456.78 (first 3 digits, then groups of 2)
+    -- This is complex, so we'll use a simpler approach
+    formatted := to_char(amount, 'FM999G999G999G999D' || repeat('0', currency_rec.decimal_places));
+    formatted := replace(formatted, 'G', currency_rec.thousands_separator);
+    formatted := replace(formatted, 'D', currency_rec.decimal_separator);
+  ELSE
+    -- International: 123,456.78
+    formatted := to_char(amount, 'FM999G999G999G999D' || repeat('0', currency_rec.decimal_places));
+    formatted := replace(formatted, 'G', currency_rec.thousands_separator);
+    formatted := replace(formatted, 'D', currency_rec.decimal_separator);
+  END IF;
+  
+  -- Add symbol
+  IF currency_rec.symbol_position = 'before' THEN
+    IF currency_rec.symbol_spacing THEN
+      RETURN currency_rec.symbol || ' ' || formatted;
+    ELSE
+      RETURN currency_rec.symbol || formatted;
+    END IF;
+  ELSE
+    IF currency_rec.symbol_spacing THEN
+      RETURN formatted || ' ' || currency_rec.symbol;
+    ELSE
+      RETURN formatted || currency_rec.symbol;
+    END IF;
+  END IF;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- Get default currency for country
+CREATE OR REPLACE FUNCTION get_country_default_currency(p_country_id UUID)
+RETURNS UUID AS $$
+DECLARE
+  currency_id UUID;
+BEGIN
+  SELECT currency_id INTO currency_id
+  FROM ref_country_currencies
+  WHERE country_id = p_country_id
+    AND is_default = true
+    AND is_active = true
+    AND (valid_until IS NULL OR valid_until >= CURRENT_DATE)
+  ORDER BY is_primary DESC, sort_order ASC
+  LIMIT 1;
+  
+  RETURN currency_id;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- Get currency code for country (helper for queries)
+CREATE OR REPLACE FUNCTION get_country_currency_code(p_country_id UUID)
+RETURNS TEXT AS $$
+DECLARE
+  currency_code TEXT;
+BEGIN
+  SELECT c.code INTO currency_code
+  FROM ref_country_currencies cc
+  JOIN ref_currencies c ON c.id = cc.currency_id
+  WHERE cc.country_id = p_country_id
+    AND cc.is_default = true
+    AND cc.is_active = true
+    AND c.is_active = true
+    AND (cc.valid_until IS NULL OR cc.valid_until >= CURRENT_DATE)
+  ORDER BY cc.is_primary DESC, cc.sort_order ASC
+  LIMIT 1;
+  
+  RETURN COALESCE(currency_code, 'INR'); -- Fallback to INR
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- =====================================================
 -- Comments
 -- =====================================================
 
 COMMENT ON TABLE profiles IS 'Core personal profiles (1:1 with auth.users)';
-COMMENT ON TABLE ref_countries IS 'Reference: Countries';
+COMMENT ON TABLE ref_countries IS 'Reference: Countries with ISO codes and subdivision labels';
+COMMENT ON TABLE ref_currencies IS 'Reference: Currencies (ISO 4217 compliant) with formatting rules';
+COMMENT ON TABLE ref_country_currencies IS 'Reference: Country-currency relationships (many-to-many)';
 COMMENT ON TABLE ref_states IS 'Reference: States/Provinces';
 COMMENT ON TABLE ref_business_types IS 'Reference: Business types with categories';
 COMMENT ON TABLE ref_organization_types IS 'Reference: Organization types';
@@ -365,4 +576,8 @@ COMMENT ON TABLE ref_event_types IS 'Reference: Event types';
 COMMENT ON TABLE ref_job_categories IS 'Reference: Hierarchical job categories';
 COMMENT ON TABLE ref_skills IS 'Reference: Skills with synonyms and relationships';
 COMMENT ON TABLE ref_notification_types IS 'Reference: Notification types with templates';
+
+COMMENT ON FUNCTION format_currency IS 'Format currency amount with proper symbol and number formatting';
+COMMENT ON FUNCTION get_country_default_currency IS 'Get default currency UUID for a country';
+COMMENT ON FUNCTION get_country_currency_code IS 'Get default currency code (e.g., INR, USD) for a country';
 

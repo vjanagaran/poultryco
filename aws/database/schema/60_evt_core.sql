@@ -72,7 +72,7 @@ CREATE INDEX idx_evt_events_type ON evt_events(event_type_id);
 CREATE INDEX idx_evt_events_start_date ON evt_events(start_date);
 CREATE INDEX idx_evt_events_status ON evt_events(status);
 CREATE INDEX idx_evt_events_location ON evt_events(location_type);
-CREATE INDEX idx_evt_events_upcoming ON evt_events(start_date) WHERE status = 'published' AND start_date > NOW();
+CREATE INDEX idx_evt_events_upcoming ON evt_events(start_date) WHERE status = 'published';
 CREATE INDEX idx_evt_events_location_state ON evt_events(venue_state, venue_city);
 
 -- Full-text search
