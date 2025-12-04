@@ -124,7 +124,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       // Refetch profile
       await fetchProfile();
     } catch (error) {
-      console.error('Error adding role:', error);
+      console.log('Error adding role:', error);
       throw error;
     }
   };
