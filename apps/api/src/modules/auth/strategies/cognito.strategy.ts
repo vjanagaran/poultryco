@@ -15,13 +15,13 @@ export class CognitoStrategy extends PassportStrategy(Strategy, 'cognito') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKeyProvider: async (request, rawJwtToken, done) => {
+      secretOrKeyProvider: async (request: any, rawJwtToken: string, done: (err: any, secret?: string) => void) => {
         try {
           // Verify with Cognito
           const payload = await cognitoService.verifyToken(rawJwtToken);
-          done(null, payload);
+          done(null, JSON.stringify(payload));
         } catch (error) {
-          done(error, null);
+          done(error, undefined);
         }
       },
     });

@@ -1,6 +1,6 @@
 /**
- * @poultryco/api
- * Supabase client and API calls for PoultryCo
+ * @poultryco/shared-api
+ * Shared API utilities (Supabase client - legacy, migrating to AWS)
  */
 
 // Export API modules here

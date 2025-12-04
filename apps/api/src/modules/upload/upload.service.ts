@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { S3Service } from './s3.service';
 import { DATABASE_CONNECTION } from '@/database/database.module';
 import { mediaUploads } from '@/database/schema';
-import * as sharp from 'sharp';
+// Dynamic import for sharp to avoid webpack bundling issues
 
 @Injectable()
 export class UploadService {
@@ -200,7 +200,7 @@ export class UploadService {
    */
   async deleteFile(uploadId: string, profileId: string) {
     const upload = await this.db.query.mediaUploads.findFirst({
-      where: (mediaUploads, { eq, and }) =>
+      where: (mediaUploads: any, { eq, and }: any) =>
         and(eq(mediaUploads.id, uploadId), eq(mediaUploads.uploaderId, profileId)),
     });
 
@@ -213,7 +213,7 @@ export class UploadService {
     await this.db
       .update(mediaUploads)
       .set({ deletedAt: new Date() })
-      .where((mediaUploads, { eq }) => eq(mediaUploads.id, uploadId));
+      .where((mediaUploads: any, { eq }: any) => eq(mediaUploads.id, uploadId));
 
     return { success: true };
   }
@@ -226,6 +226,7 @@ export class UploadService {
     maxWidth: number,
     maxHeight: number,
   ): Promise<Buffer> {
+    const sharp = (await import('sharp')).default;
     return sharp(buffer)
       .resize(maxWidth, maxHeight, {
         fit: 'inside',

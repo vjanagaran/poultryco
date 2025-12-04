@@ -30,7 +30,7 @@ export class CognitoService {
     try {
       const payload = await this.verifier.verify(token);
       return payload;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Token verification failed: ${error.message}`);
     }
   }
@@ -42,6 +42,10 @@ export class CognitoService {
     const userPoolId = this.configService.get<string>('AWS_COGNITO_USER_POOL_ID');
     const clientId = this.configService.get<string>('AWS_COGNITO_CLIENT_ID');
 
+    if (!userPoolId || !clientId) {
+      throw new Error('Cognito configuration missing. Check AWS_COGNITO_* environment variables.');
+    }
+
     const idTokenVerifier = CognitoJwtVerifier.create({
       userPoolId,
       tokenUse: 'id',
@@ -51,7 +55,7 @@ export class CognitoService {
     try {
       const payload = await idTokenVerifier.verify(token);
       return payload;
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`ID token verification failed: ${error.message}`);
     }
   }

@@ -21,7 +21,7 @@ import { SocketModule } from './modules/socket/socket.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['.env.local', '.env'],
     }),
     DatabaseModule,
     AuthModule,

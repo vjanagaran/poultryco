@@ -32,7 +32,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getCurrentUser(@Request() req) {
+  async getCurrentUser(@Request() req: any) {
     return {
       user: {
         id: req.user.userId,
@@ -47,7 +47,7 @@ export class AuthController {
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Refresh JWT token' })
   @ApiResponse({ status: 200, description: 'Token refreshed' })
-  async refreshToken(@Request() req) {
+  async refreshToken(@Request() req: any) {
     const user = await this.authService.getUserProfile(req.user.userId);
     const token = await this.authService.generateToken({
       id: req.user.userId,
