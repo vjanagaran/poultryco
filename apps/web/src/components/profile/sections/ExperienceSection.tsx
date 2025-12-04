@@ -146,6 +146,17 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
     e.preventDefault();
     if (!user) return;
 
+    // Basic validation: end date must be after start date when not a current role
+    if (!formData.is_current && formData.start_date && formData.end_date) {
+      const start = new Date(`${formData.start_date}-01`).getTime();
+      const end = new Date(`${formData.end_date}-01`).getTime();
+
+      if (end < start) {
+        alert('End date must be after start date');
+        return;
+      }
+    }
+
     setSaving(true);
     const supabase = createClient();
 
@@ -185,9 +196,16 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
 
       await fetchProfile();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.log('Error saving experience:', error);
-      alert('Failed to save experience');
+
+      // Surface clearer validation message when backend enforces date ordering
+      const message = typeof error?.message === 'string' ? error.message.toLowerCase() : '';
+      if (message.includes('end_date') && message.includes('after') && message.includes('start_date')) {
+        alert('End date must be after start date');
+      } else {
+        alert('Failed to save experience');
+      }
     } finally {
       setSaving(false);
     }

@@ -33,13 +33,23 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
   // Get proper URLs for images
   const coverPhotoUrl = getPublicUrl(profile.cover_photo_url);
   const profilePhotoUrl = getPublicUrl(profile.profile_photo_url);
+  const locationParts = [
+    profile.location_city,
+    profile.location_district,
+    profile.location_state,
+  ].filter((part) => part && part.toLowerCase() !== 'unknown');
+  const locationText = locationParts.join(', ');
 
 
   return (
     <>
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         {/* Cover Photo */}
-        <div className="relative h-48 bg-gradient-to-r from-green-400 to-blue-500">
+        <div
+          className={`relative h-48 ${
+            coverPhotoUrl ? 'bg-gray-200' : 'bg-gradient-to-r from-green-400 to-blue-500'
+          }`}
+        >
           {coverPhotoUrl && (
             <Image
               src={coverPhotoUrl}
@@ -145,11 +155,9 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
                 </button>
               )
             )}
-            <p className="text-gray-600 mb-2">
-              📍 {profile.location_city && `${profile.location_city}, `}
-              {profile.location_district && `${profile.location_district}, `}
-              {profile.location_state}
-            </p>
+            {locationText && (
+              <p className="text-gray-600 mb-2">📍 {locationText}</p>
+            )}
             
             {/* Connection Count - LinkedIn style */}
             <div className="mb-2">
