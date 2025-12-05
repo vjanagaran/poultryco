@@ -10,9 +10,9 @@
 -- SECTION 1: CORE PROFILES TABLE
 -- =====================================================
 
--- Main personal profile table (1:1 with auth.users)
+-- Main personal profile table (1:1 with auth_users)
 CREATE TABLE IF NOT EXISTS profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY REFERENCES auth_users(id) ON DELETE CASCADE,
   
   -- Basic Information
   full_name TEXT NOT NULL,
@@ -565,7 +565,7 @@ $$ LANGUAGE plpgsql STABLE;
 -- Comments
 -- =====================================================
 
-COMMENT ON TABLE profiles IS 'Core personal profiles (1:1 with auth.users)';
+COMMENT ON TABLE profiles IS 'Core personal profiles (1:1 with auth_users)';
 COMMENT ON TABLE ref_countries IS 'Reference: Countries with ISO codes and subdivision labels';
 COMMENT ON TABLE ref_currencies IS 'Reference: Currencies (ISO 4217 compliant) with formatting rules';
 COMMENT ON TABLE ref_country_currencies IS 'Reference: Country-currency relationships (many-to-many)';

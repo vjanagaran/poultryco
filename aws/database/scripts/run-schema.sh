@@ -129,7 +129,7 @@ main() {
     
     # Execute schema files in order
     local files=(
-        "00_extensions.sql"
+        "00_auth_custom.sql"
         "01_core_and_ref.sql"
         "10_usr_core.sql"
         "11_usr_roles.sql"

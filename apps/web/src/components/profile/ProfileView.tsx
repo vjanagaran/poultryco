@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import * as usersApi from '@/lib/api/users';
+import * as businessesApi from '@/lib/api/businesses';
 import { Container } from '@/components/ui';
 import { ProfileHeader } from '@/components/profile/sections/ProfileHeader';
 import { ProfileStrengthCard } from '@/components/profile/sections/ProfileStrengthCard';
@@ -27,65 +28,38 @@ export function ProfileView({ profileSlug, isOwnProfile }: ProfileViewProps) {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const supabase = createClient();
-      
       try {
-        let query = supabase
-          .from('profiles')
-          .select(`
-            *,
-            roles:profile_roles(*),
-            experiences:profile_experience(*),
-            education:profile_education(*),
-            skills:profile_skills(*)
-          `);
+        let profileData;
 
         if (isOwnProfile) {
-          // Viewing own profile - use user ID
+          // Viewing own profile
           if (!user) {
             window.location.href = '/login';
             return;
           }
-          query = query.eq('id', user.id);
+          profileData = await usersApi.getCurrentProfile();
         } else {
           // Viewing someone else's profile by slug
           if (!profileSlug) {
             setLoading(false);
             return;
           }
-          // Try to match by profile_slug first, then fallback to id if profileSlug is a UUID
-          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(profileSlug);
-          if (isUUID) {
-            query = query.eq('id', profileSlug);
-          } else {
-            query = query.eq('profile_slug', profileSlug);
-          }
+          profileData = await usersApi.getProfileBySlug(profileSlug);
         }
 
-        const { data, error } = await query.maybeSingle();
-
-        if (error) throw error;
-
-        console.log('Fetched profile data:', {
-          profile_photo_url: data.profile_photo_url,
-          cover_photo_url: data.cover_photo_url,
-          full_name: data.full_name
-        });
-
-        setProfile(data);
+        setProfile(profileData);
         
         // Check if current user is the profile owner
-        if (user && data.id === user.id) {
+        if (user && profileData.id === user.id) {
           setIsOwner(true);
           
           // Fetch owned business profiles
-          const { data: businesses, error: bizError } = await supabase
-            .from('business_profiles')
-            .select('id, business_name, business_slug, logo_url')
-            .eq('owner_id', user.id);
-          
-          if (!bizError && businesses) {
-            setOwnedBusinesses(businesses);
+          try {
+            // TODO: Implement businesses API endpoint
+            // const businesses = await businessesApi.getOwnedBusinesses();
+            // setOwnedBusinesses(businesses);
+          } catch (error) {
+            console.error('Error fetching businesses:', error);
           }
         }
       } catch (error) {

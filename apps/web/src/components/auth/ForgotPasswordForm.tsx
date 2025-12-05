@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { forgotPassword } from '@/lib/auth/cognito';
 
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
@@ -16,13 +16,11 @@ export default function ForgotPasswordForm() {
     setSuccess(false);
 
     try {
-      const supabase = createClient();
+      const result = await forgotPassword(email);
 
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
-      });
-
-      if (resetError) throw resetError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send reset email');
+      }
 
       setSuccess(true);
       setEmail('');
@@ -84,8 +82,8 @@ export default function ForgotPasswordForm() {
             <p className="font-medium mb-1">How it works:</p>
             <ol className="list-decimal list-inside space-y-1 text-blue-800">
               <li>Enter your email address</li>
-              <li>Check your inbox for reset link</li>
-              <li>Click the link to set a new password</li>
+              <li>Check your inbox for reset code</li>
+              <li>Enter the code and new password</li>
             </ol>
           </div>
         </div>
@@ -116,10 +114,9 @@ export default function ForgotPasswordForm() {
           disabled={loading}
           className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Sending...' : 'Send Reset Instructions →'}
+          {loading ? 'Sending...' : 'Send Reset Code →'}
         </button>
       </form>
     </div>
   );
 }
-

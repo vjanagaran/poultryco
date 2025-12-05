@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
-import { createClient } from '@/lib/supabase/client';
+import * as usersApi from '@/lib/api/users';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ExperienceSectionProps {
@@ -158,11 +158,9 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
     }
 
     setSaving(true);
-    const supabase = createClient();
 
     try {
       const data = {
-        profile_id: user.id,
         title: formData.title.trim(),
         company_name: formData.company_name.trim(),
         employment_type: formData.employment_type,
@@ -179,19 +177,10 @@ function ExperienceModal({ experience, onClose }: { experience?: any; onClose: (
 
       if (experience) {
         // Update existing
-        const { error } = await supabase
-          .from('profile_experience')
-          .update(data)
-          .eq('id', experience.id);
-
-        if (error) throw error;
+        await usersApi.updateExperience(experience.id, data);
       } else {
         // Create new
-        const { error } = await supabase
-          .from('profile_experience')
-          .insert(data);
-
-        if (error) throw error;
+        await usersApi.addExperience(data);
       }
 
       await fetchProfile();
@@ -423,16 +412,9 @@ function DeleteExperienceButton({ experienceId, companyName }: { experienceId: s
     }
 
     setDeleting(true);
-    const supabase = createClient();
 
     try {
-      const { error } = await supabase
-        .from('profile_experience')
-        .delete()
-        .eq('id', experienceId);
-
-      if (error) throw error;
-
+      await usersApi.deleteExperience(experienceId);
       await fetchProfile();
     } catch (error) {
       console.error('Error deleting experience:', error);

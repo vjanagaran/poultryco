@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
+import { getConnections, removeConnection } from '@/lib/api/connections';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -26,7 +27,7 @@ interface Connection {
 }
 
 export function ConnectionsList() {
-  const supabase = createClient();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,69 +36,42 @@ export function ConnectionsList() {
   const { data: connections = [], isLoading } = useQuery({
     queryKey: ['connections'],
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return [];
+      if (!user) return [];
       
-      // Get all connected connections
-      const { data, error } = await supabase
-        .from('connections')
-        .select(`
-          id,
-          created_at,
-          profile_id_1,
-          profile_id_2
-        `)
-        .or(`profile_id_1.eq.${user.user.id},profile_id_2.eq.${user.user.id}`)
-        .eq('status', 'connected');
+      const result = await getConnections();
+      if (!result.success || !result.data) return [];
       
-      if (error) throw error;
-      
-      // Get the other profile IDs
-      const otherProfileIds = (data || []).map(conn => 
-        conn.profile_id_1 === user.user.id ? conn.profile_id_2 : conn.profile_id_1
-      );
-      
-      if (otherProfileIds.length === 0) return [];
-      
-      // Fetch profile details
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, profile_slug, headline, profile_photo_url, location_city, location_state')
-        .in('id', otherProfileIds);
-        console.log('Profiles fetched:', profiles);
-        console.log('OtherProfileIds:', otherProfileIds);
-        
-      // Map to Connection type
-      return (data || []).map(conn => {
-        const otherProfileId = conn.profile_id_1 === user.user.id ? conn.profile_id_2 : conn.profile_id_1;
-        const profile = profiles?.find(p => p.id === otherProfileId);
+      // Map API response to Connection type
+      return result.data.map((conn: any) => {
+        // Determine the other profile
+        const otherProfile = conn.profile_id_1 === user.id 
+          ? conn.profile_id_2 
+          : conn.profile_id_1;
         
         return {
           id: conn.id,
-          created_at: conn.created_at,
-          profile: profile || {
-            id: otherProfileId,
+          created_at: conn.created_at || conn.requested_at,
+          profile: conn.profile || {
+            id: otherProfile,
             full_name: 'Unknown User',
             profile_slug: 'unknown',
           }
         };
       }) as Connection[];
-    }
+    },
+    enabled: !!user,
   });
   
   // Remove connection
   const removeConnectionMutation = useMutation({
-    mutationFn: async (profileId: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
+    mutationFn: async (connectionId: string) => {
       if (!user) throw new Error('Not authenticated');
       
-      const minId = user.id < profileId ? user.id : profileId;
-      const maxId = user.id < profileId ? profileId : user.id;
-      
-      const { error } = await supabase
-        .from('connections')
-        .delete()
-        .eq('profile_id_1', minId)
+      const result = await removeConnection(connectionId);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to remove connection');
+      }
+      return connectionId;
         .eq('profile_id_2', maxId);
       
       if (error) throw error;
