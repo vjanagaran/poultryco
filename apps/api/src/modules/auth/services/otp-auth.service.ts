@@ -2,7 +2,8 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
-  TooManyRequestsException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -69,8 +70,9 @@ export class OtpAuthService {
 
       if (timeSinceRequest < minInterval) {
         const waitTime = Math.ceil((minInterval - timeSinceRequest) / 1000);
-        throw new TooManyRequestsException(
+        throw new HttpException(
           `Please wait ${waitTime} seconds before requesting another OTP.`,
+          HttpStatus.TOO_MANY_REQUESTS,
         );
       }
     }

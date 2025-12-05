@@ -4,35 +4,21 @@ import { ConfigService } from '@nestjs/config';
 import { eq } from 'drizzle-orm';
 import { DATABASE_CONNECTION } from '@/database/database.module';
 import { authUsers, profiles } from '@/database/schema';
-import { CognitoService } from './cognito.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @Inject(DATABASE_CONNECTION) private db: any,
     private jwtService: JwtService,
-    private cognitoService: CognitoService,
     private configService: ConfigService,
   ) {}
 
   /**
    * Validate Cognito JWT token and sync user to database
+   * @deprecated Cognito is no longer used. Use OTP authentication instead.
    */
-  async validateCognitoToken(token: string) {
-    try {
-      // Verify token with AWS Cognito
-      const payload = await this.cognitoService.verifyToken(token);
-
-      // Get or create user in database
-      const user = await this.getOrCreateUser(payload);
-
-      return {
-        user,
-        profile: user.profile,
-      };
-    } catch (error) {
-      throw new UnauthorizedException('Invalid token');
-    }
+  async validateCognitoToken(token: string): Promise<{ user: any; profile: any }> {
+    throw new UnauthorizedException('Cognito authentication is deprecated. Please use OTP authentication.');
   }
 
   /**

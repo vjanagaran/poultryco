@@ -8,6 +8,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { OtpService } from './services/otp.service';
 import { EmailService } from './services/email.service';
 import { TemplateService } from './services/template.service';
+import { OtpAuthService } from './services/otp-auth.service';
 
 @Module({
   imports: [
@@ -29,9 +30,10 @@ import { TemplateService } from './services/template.service';
     OtpService,
     EmailService,
     TemplateService,
+    OtpAuthService,
     JwtStrategy,
   ],
-  exports: [AuthService, OtpService, EmailService, TemplateService, JwtStrategy, PassportModule],
+  exports: [AuthService, OtpAuthService, OtpService, EmailService, TemplateService, JwtStrategy, PassportModule],
 })
 export class AuthModule {}
 
