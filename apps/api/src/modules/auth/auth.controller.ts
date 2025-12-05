@@ -1,29 +1,43 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, Ip, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { OtpAuthService } from './services/otp-auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private otpAuthService: OtpAuthService,
+  ) {}
 
-  @Post('cognito/validate')
-  @ApiOperation({ summary: 'Validate Cognito token and get app JWT' })
-  @ApiResponse({ status: 200, description: 'Token validated successfully' })
-  @ApiResponse({ status: 401, description: 'Invalid token' })
-  async validateCognitoToken(@Body('token') token: string) {
-    const result = await this.authService.validateCognitoToken(token);
-    const appToken = await this.authService.generateToken(result.user);
+  @Post('otp/request')
+  @ApiOperation({ summary: 'Request OTP for email/phone verification' })
+  @ApiResponse({ status: 200, description: 'OTP sent successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request' })
+  @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
+  async requestOtp(
+    @Body() body: { identifier: string; channel: 'email' | 'sms' | 'whatsapp'; requestType: 'verify_email' | 'verify_phone' },
+    @Ip() ipAddress: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.otpAuthService.requestOtp({
+      ...body,
+      ipAddress,
+      userAgent,
+    });
+  }
 
-    return {
-      ...appToken,
-      user: {
-        id: result.user.id,
-        email: result.user.email,
-        profile: result.profile,
-      },
-    };
+  @Post('otp/verify')
+  @ApiOperation({ summary: 'Verify OTP and authenticate user' })
+  @ApiResponse({ status: 200, description: 'OTP verified successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid OTP or expired' })
+  @ApiResponse({ status: 401, description: 'Invalid verification code' })
+  async verifyOtp(
+    @Body() body: { identifier: string; channel: 'email' | 'sms' | 'whatsapp'; code: string },
+  ) {
+    return this.otpAuthService.verifyOtp(body);
   }
 
   @Get('me')

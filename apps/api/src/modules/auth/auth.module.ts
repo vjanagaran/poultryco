@@ -4,9 +4,10 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { CognitoService } from './cognito.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { CognitoStrategy } from './strategies/cognito.strategy';
+import { OtpService } from './services/otp.service';
+import { EmailService } from './services/email.service';
+import { TemplateService } from './services/template.service';
 
 @Module({
   imports: [
@@ -23,8 +24,14 @@ import { CognitoStrategy } from './strategies/cognito.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, CognitoService, JwtStrategy, CognitoStrategy],
-  exports: [AuthService, CognitoService, JwtStrategy, PassportModule],
+  providers: [
+    AuthService,
+    OtpService,
+    EmailService,
+    TemplateService,
+    JwtStrategy,
+  ],
+  exports: [AuthService, OtpService, EmailService, TemplateService, JwtStrategy, PassportModule],
 })
 export class AuthModule {}
 
