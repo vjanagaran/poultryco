@@ -46,13 +46,8 @@ export function MonthScraperForm() {
     setResult(null);
 
     try {
-      const response = await fetch('/api/admin/necc/scraper/run-month', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month, year }),
-      });
-
-      const data = await response.json();
+      const { runScraper } = await import('@/lib/api/necc');
+      const data = await runScraper(month, year);
       setResult(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to scrape data';

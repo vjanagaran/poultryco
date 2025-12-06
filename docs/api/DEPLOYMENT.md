@@ -8,8 +8,8 @@
 - Docker installed
 - ECR repository created
 - ECS cluster created
-- RDS PostgreSQL 17.5 instance running
-- AWS Cognito User Pool configured
+- RDS PostgreSQL 16.11 instance running (with SSL enabled)
+- AWS SES configured for SMTP email delivery
 - S3 bucket created
 - Secrets Manager secrets created
 
@@ -84,12 +84,20 @@ Create `task-definition.json`:
           "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT:secret:poultryco/jwt-secret"
         },
         {
-          "name": "AWS_COGNITO_USER_POOL_ID",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT:secret:poultryco/cognito-pool-id"
+          "name": "SES_SMTP_HOST",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT:secret:poultryco/ses-smtp-host"
         },
         {
-          "name": "AWS_COGNITO_CLIENT_ID",
-          "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT:secret:poultryco/cognito-client-id"
+          "name": "SES_SMTP_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT:secret:poultryco/ses-smtp-username"
+        },
+        {
+          "name": "SES_SMTP_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT:secret:poultryco/ses-smtp-password"
+        },
+        {
+          "name": "SES_SENDER_EMAIL",
+          "valueFrom": "arn:aws:secretsmanager:us-east-1:YOUR_ACCOUNT:secret:poultryco/ses-sender-email"
         },
         {
           "name": "AWS_ACCESS_KEY_ID",
@@ -367,4 +375,3 @@ aws ecs update-service \
 **Deployment Complete! 🎉**
 
 API will be available at: `http://YOUR_LOAD_BALANCER_DNS/api/v1`
-

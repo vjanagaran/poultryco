@@ -2,8 +2,8 @@
 
 **Version:** 1.0.0  
 **Framework:** NestJS 10  
-**Database:** PostgreSQL 17.5 (AWS RDS) with Drizzle ORM  
-**Authentication:** AWS Cognito + JWT  
+**Database:** PostgreSQL 16.11 (AWS RDS) with Drizzle ORM  
+**Authentication:** Custom OTP-based Auth (Email/SMS/WhatsApp) + JWT  
 **Real-time:** Socket.io  
 **Storage:** AWS S3 + CloudFront  
 **Port:** 3002
@@ -38,9 +38,11 @@ PoultryCo API is a comprehensive REST API with real-time capabilities built for 
 ### Key Features
 
 ✅ **Authentication & Authorization**
-- AWS Cognito integration
+- Custom OTP-based authentication (Email, SMS, WhatsApp)
+- Multi-channel verification system
 - JWT token-based auth
 - Role-based access control
+- Template-based OTP delivery
 
 ✅ **User Management**
 - Multi-role profiles (Farmer, Vet, Nutritionist, etc.)
@@ -90,14 +92,17 @@ PoultryCo API is a comprehensive REST API with real-time capabilities built for 
 - **Express** - HTTP server
 
 ### Database
-- **PostgreSQL 17.5** - Relational database (AWS RDS)
+- **PostgreSQL 16.11** - Relational database (AWS RDS)
 - **Drizzle ORM** - Type-safe ORM
 - **~120 tables** - Comprehensive schema
 
 ### Authentication
-- **AWS Cognito** - User pool management
+- **Custom OTP System** - PostgreSQL-based authentication
+- **Multi-channel Delivery** - Email (SES SMTP), SMS, WhatsApp
+- **Template System** - Database-driven OTP templates
 - **JWT** - Token-based authentication
 - **Passport.js** - Authentication middleware
+- **bcryptjs** - OTP hashing
 
 ### Real-time
 - **Socket.io** - WebSocket communication
@@ -202,7 +207,7 @@ apps/api/
 
 - Node.js >= 20.0.0
 - npm >= 10.0.0
-- PostgreSQL 17.5 (AWS RDS)
+- PostgreSQL 16.11 (AWS RDS)
 - AWS Account (Cognito, S3, SES)
 
 ### Installation
@@ -261,15 +266,25 @@ NODE_ENV=development
 PORT=3002
 API_PREFIX=api/v1
 
-# Database (AWS RDS PostgreSQL 17.5)
-DATABASE_URL=postgresql://postgres:password@your-rds-endpoint:5432/poultryco
-DATABASE_URL_TEST=postgresql://postgres:password@your-rds-endpoint:5432/poultryco_test
+# Database (AWS RDS PostgreSQL 16.11)
+DATABASE_URL=postgresql://postgres:password@your-rds-endpoint:5432/poultryco?sslmode=require
+DATABASE_URL_TEST=postgresql://postgres:password@your-rds-endpoint:5432/poultryco_test?sslmode=require
 
-# AWS Cognito
+# AWS SES SMTP (for OTP emails)
 AWS_REGION=us-east-1
-AWS_COGNITO_USER_POOL_ID=us-east-1_XXXXXXXXX
-AWS_COGNITO_CLIENT_ID=your-client-id
-AWS_COGNITO_ISSUER=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_XXXXXXXXX
+SES_SMTP_HOST=email-smtp.us-east-1.amazonaws.com
+SES_SMTP_PORT=587
+SES_SMTP_USERNAME=your-smtp-username
+SES_SMTP_PASSWORD=your-smtp-password
+SES_SENDER_EMAIL=account@auth.poultryco.net
+SES_SENDER_NAME=PoultryCo Account
+SES_MIN_INTERVAL_PER_USER=60
+
+# OTP Configuration
+OTP_LENGTH=6
+OTP_EXPIRY_MINUTES=10
+OTP_MAX_ATTEMPTS=5
+OTP_RATE_LIMIT_SECONDS=60
 
 # AWS S3
 AWS_S3_BUCKET=poultryco-media-staging
@@ -390,14 +405,19 @@ PUT    /api/v1/messages/:id/read      # Mark as read
 
 ## 🔒 Authentication
 
-### Flow
+### OTP-based Authentication Flow
 
-1. **User signs in via Cognito** (handled by client apps)
-2. **Client receives Cognito JWT token**
-3. **Client calls `/api/v1/auth/cognito/validate`** with Cognito token
-4. **API validates token, creates/updates user in database**
-5. **API returns app-specific JWT token**
-6. **Client uses app JWT for subsequent requests**
+1. **User requests OTP** via `/api/v1/auth/otp/request`
+   - Provides: `identifier` (email/phone), `channel` (email/sms/whatsapp), `requestType` (verify_email/verify_phone)
+   - System generates 6-digit OTP, hashes it, stores in database
+   - OTP sent via configured channel (Email via SES SMTP, SMS/WhatsApp via Twilio/Meta)
+2. **User receives OTP** via email/SMS/WhatsApp
+3. **User verifies OTP** via `/api/v1/auth/otp/verify`
+   - Provides: `identifier`, `channel`, `code`
+   - System verifies OTP, creates/updates user, marks email/phone as verified
+   - Returns JWT token for authenticated sessions
+4. **Client uses JWT token** for subsequent requests
+5. **Auto-login tokens** stored for seamless re-authentication
 
 ### Using Protected Endpoints
 
@@ -624,7 +644,9 @@ nest g controller modules/feature
 
 ## 🚢 Deployment
 
-### AWS ECS Fargate (Recommended)
+For detailed deployment instructions, see **[docs/api/DEPLOYMENT.md](../../docs/api/DEPLOYMENT.md)**
+
+### Quick Overview
 
 1. **Build Docker image:**
 ```bash
@@ -657,7 +679,14 @@ Store sensitive credentials in **AWS Secrets Manager** and reference them in ECS
 - **NestJS Documentation:** https://docs.nestjs.com
 - **Drizzle ORM:** https://orm.drizzle.team
 - **Socket.io:** https://socket.io/docs/v4
-- **AWS Cognito:** https://docs.aws.amazon.com/cognito
+- **AWS SES SMTP:** https://docs.aws.amazon.com/ses/latest/dg/send-email-smtp.html
+
+### Documentation Files
+
+- **This README** - Setup and usage guide
+- **[DEPLOYMENT.md](../../docs/api/DEPLOYMENT.md)** - AWS ECS Fargate deployment
+- **[API_SUMMARY.md](../../docs/api/API_SUMMARY.md)** - Complete API summary
+- **[QUICK_REFERENCE.md](../../docs/api/QUICK_REFERENCE.md)** - Quick reference card
 
 ---
 
@@ -666,8 +695,9 @@ Store sensitive credentials in **AWS Secrets Manager** and reference them in ECS
 ### For Frontend Developers
 
 1. **Authentication:**
-   - Get Cognito token from sign-in
-   - Call `/api/v1/auth/cognito/validate`
+   - Request OTP via `/api/v1/auth/otp/request` with email/phone
+   - User receives OTP via email/SMS/WhatsApp
+   - Verify OTP via `/api/v1/auth/otp/verify` with code
    - Store returned JWT token
    - Include in `Authorization: Bearer {token}` header
 

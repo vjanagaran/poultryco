@@ -1,20 +1,18 @@
-import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ZoneTable } from "@/components/necc/zones/ZoneTable";
+import { getAllZones } from "@/lib/api/necc";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function ZonesPage() {
-  const supabase = await createClient();
-
-  const { data: zones, error } = await supabase
-    .from('necc_zones')
-    .select('*')
-    .order('sorting', { ascending: true });
-
-  if (error) {
+  let zones = [];
+  try {
+    zones = await getAllZones();
+    // Sort by sort_order
+    zones.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  } catch (error) {
     console.error('Error fetching zones:', error);
   }
 

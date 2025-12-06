@@ -10,18 +10,27 @@
 ## 🔐 Authentication
 
 ```bash
-# 1. Validate Cognito token (get app JWT)
-POST /auth/cognito/validate
-Body: { "token": "cognito-jwt-token" }
-Response: { "accessToken": "app-jwt", "expiresIn": "7d", "user": {...} }
+# 1. Request OTP
+POST /auth/otp/request
+Body: { "identifier": "user@example.com", "channel": "email", "requestType": "verify_email" }
+Response: { "success": true, "message": "Verification code sent", "expiresIn": 10 }
 
-# 2. Get current user
+# 2. Verify OTP
+POST /auth/otp/verify
+Body: { "identifier": "user@example.com", "channel": "email", "code": "123456" }
+Response: { "success": true, "user": {...}, "token": "jwt-token" }
+
+# 3. Get current user
 GET /auth/me
-Headers: { "Authorization": "Bearer app-jwt" }
+Headers: { "Authorization": "Bearer jwt-token" }
 
-# 3. Refresh token
+# 4. Refresh token
 POST /auth/refresh
-Headers: { "Authorization": "Bearer app-jwt" }
+Headers: { "Authorization": "Bearer jwt-token" }
+
+# 5. Logout
+POST /auth/logout
+Headers: { "Authorization": "Bearer jwt-token" }
 ```
 
 ---
@@ -164,6 +173,9 @@ socket.on('user:offline', (data) => {});
 ### Key Tables
 ```
 profiles                  # Core user profiles
+auth_users                # Authentication users
+auth_requests             # OTP requests
+auth_templates            # OTP templates
 usr_profile_roles         # Multi-role support
 usr_experiences           # Work experience
 usr_education             # Education history
@@ -248,11 +260,22 @@ NODE_ENV=development
 PORT=3002
 
 # Database
-DATABASE_URL=postgresql://postgres:password@localhost:5432/poultryco
+DATABASE_URL=postgresql://postgres:password@localhost:5432/poultryco?sslmode=require
 
-# AWS Cognito
-AWS_COGNITO_USER_POOL_ID=us-east-1_XXXXXXXXX
-AWS_COGNITO_CLIENT_ID=your-client-id
+# AWS SES SMTP (for OTP emails)
+SES_SMTP_HOST=email-smtp.us-east-1.amazonaws.com
+SES_SMTP_PORT=587
+SES_SMTP_USERNAME=your-smtp-username
+SES_SMTP_PASSWORD=your-smtp-password
+SES_SENDER_EMAIL=account@auth.poultryco.net
+SES_SENDER_NAME=PoultryCo Account
+SES_MIN_INTERVAL_PER_USER=60
+
+# OTP Configuration
+OTP_LENGTH=6
+OTP_EXPIRY_MINUTES=10
+OTP_MAX_ATTEMPTS=5
+OTP_RATE_LIMIT_SECONDS=60
 
 # AWS S3
 AWS_S3_BUCKET=poultryco-media
@@ -326,13 +349,23 @@ npm run dev
 # Check DATABASE_URL in .env
 # Verify RDS is accessible
 # Check security groups
+# Ensure SSL is enabled (?sslmode=require)
 ```
 
-### Cognito Token Invalid
+### OTP Not Received
 ```bash
-# Token expired - refresh from Cognito
-# Wrong user pool ID - check AWS_COGNITO_USER_POOL_ID
-# Token from different environment
+# Check SES SMTP credentials
+# Verify SES account is verified (sandbox mode)
+# Check email address is valid
+# Review application logs
+```
+
+### OTP Verification Failed
+```bash
+# Check OTP not expired (10 minutes)
+# Verify attempts not exceeded (5 max)
+# Ensure code entered correctly
+# Check database for OTP request record
 ```
 
 ### S3 Upload Failed
@@ -348,12 +381,11 @@ npm run dev
 ## 📞 Support
 
 - **Swagger Docs:** http://localhost:3002/api/docs
-- **README:** `/apps/api/README.md`
-- **Deployment Guide:** `/apps/api/DEPLOYMENT.md`
-- **Summary:** `/apps/api/API_SUMMARY.md`
+- **README:** `apps/api/README.md`
+- **Deployment Guide:** `docs/api/DEPLOYMENT.md`
+- **Summary:** `docs/api/API_SUMMARY.md`
 
 ---
 
-**Last Updated:** December 2, 2025  
+**Last Updated:** December 6, 2025  
 **Version:** 1.0.0
-

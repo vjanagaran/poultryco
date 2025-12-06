@@ -28,7 +28,7 @@ A comprehensive **NestJS REST API with Socket.io** for the PoultryCo platform, d
 - ✅ Compression & security (Helmet)
 
 ### 2. **Database Layer (Drizzle ORM)**
-- ✅ PostgreSQL 17.5 connection
+- ✅ PostgreSQL 16.11 connection
 - ✅ ~120 tables schema defined
 - ✅ 28 modules organized
 - ✅ Type-safe queries
@@ -53,13 +53,16 @@ A comprehensive **NestJS REST API with Socket.io** for the PoultryCo platform, d
 - Utilities (tags, media uploads, email queue, audit log)
 
 ### 3. **Authentication & Authorization**
-- ✅ AWS Cognito integration
+- ✅ Custom OTP-based authentication system
+- ✅ Multi-channel OTP delivery (Email via SES SMTP, SMS, WhatsApp)
+- ✅ Template-based OTP messages (database-driven)
+- ✅ OTP generation, hashing (bcryptjs), and verification
 - ✅ JWT token generation & validation
-- ✅ Passport.js strategies (JWT, Cognito)
+- ✅ Passport.js strategies (JWT)
 - ✅ Auth guards
 - ✅ Current user decorator
-- ✅ User sync from Cognito to database
-- ✅ Automatic profile creation
+- ✅ Automatic user creation on OTP verification
+- ✅ Email/phone verification flags
 
 ### 4. **Socket.io Real-time**
 - ✅ WebSocket gateway
@@ -91,7 +94,7 @@ A comprehensive **NestJS REST API with Socket.io** for the PoultryCo platform, d
 ### 6. **REST API Modules**
 
 **Fully Implemented:**
-- ✅ **Auth Module** - Cognito validation, JWT refresh, current user
+- ✅ **Auth Module** - OTP request/verification, JWT refresh, current user, logout
 - ✅ **Users Module** - Profile CRUD, search, experience, education, skills, stats
 - ✅ **Upload Module** - All file upload types, presigned URLs
 
@@ -114,9 +117,10 @@ A comprehensive **NestJS REST API with Socket.io** for the PoultryCo platform, d
 - ✅ Authentication examples
 
 ### 8. **Documentation**
-- ✅ **README.md** - Comprehensive setup and usage guide
-- ✅ **DEPLOYMENT.md** - AWS ECS Fargate deployment guide
-- ✅ **API_SUMMARY.md** - This file
+- ✅ **README.md** - Comprehensive setup and usage guide (in `apps/api/`)
+- ✅ **DEPLOYMENT.md** - AWS ECS Fargate deployment guide (in `docs/api/`)
+- ✅ **API_SUMMARY.md** - This file (in `docs/api/`)
+- ✅ **QUICK_REFERENCE.md** - Quick reference card (in `docs/api/`)
 - ✅ **.env.example** - Environment variables template
 
 ### 9. **DevOps**
@@ -164,10 +168,13 @@ apps/api/
 │       │   ├── auth.module.ts
 │       │   ├── auth.service.ts
 │       │   ├── auth.controller.ts
-│       │   ├── cognito.service.ts
+│       │   ├── services/
+│       │   │   ├── otp.service.ts        # OTP generation & hashing
+│       │   │   ├── email.service.ts      # SES SMTP email delivery
+│       │   │   ├── template.service.ts  # Template rendering
+│       │   │   └── otp-auth.service.ts  # OTP auth orchestration
 │       │   ├── strategies/
-│       │   │   ├── jwt.strategy.ts
-│       │   │   └── cognito.strategy.ts
+│       │   │   └── jwt.strategy.ts
 │       │   ├── guards/
 │       │   │   └── jwt-auth.guard.ts
 │       │   └── decorators/
@@ -201,19 +208,14 @@ apps/api/
 │       ├── necc/                  # ⏳ Stub
 │       └── notifications/         # ⏳ Stub
 │
-├── drizzle.config.ts              # Drizzle configuration
-├── package.json                   # Dependencies
-├── tsconfig.json                  # TypeScript config
-├── nest-cli.json                  # NestJS CLI config
-├── .eslintrc.js                   # ESLint config
-├── .prettierrc                    # Prettier config
-├── .env.example                   # Environment template
-├── .gitignore                     # Git ignore
-├── .dockerignore                  # Docker ignore
-├── Dockerfile                     # Production container
 ├── README.md                      # Setup & usage guide
+└── ... (config files)
+
+docs/api/                          # API Documentation
+├── README.md                      # Documentation index
 ├── DEPLOYMENT.md                  # AWS deployment guide
-└── API_SUMMARY.md                 # This file
+├── API_SUMMARY.md                 # This file
+└── QUICK_REFERENCE.md             # Quick reference card
 ```
 
 **Total Files Created:** ~90+ files
@@ -263,9 +265,11 @@ npm run dev
 
 ### Authentication
 ```
-POST   /api/v1/auth/cognito/validate  # Validate Cognito token
+POST   /api/v1/auth/otp/request       # Request OTP (email/sms/whatsapp)
+POST   /api/v1/auth/otp/verify        # Verify OTP and authenticate
 GET    /api/v1/auth/me                # Get current user
 POST   /api/v1/auth/refresh           # Refresh JWT
+POST   /api/v1/auth/logout            # Logout
 ```
 
 ### Users
@@ -344,8 +348,8 @@ socket.on('user:offline', (data) => {})
    ```
 
 2. **Setup AWS Services:**
-   - Create RDS PostgreSQL 17.5 instance
-   - Create Cognito User Pool
+   - Create RDS PostgreSQL 16.11 instance (with SSL)
+   - Configure AWS SES for SMTP email delivery
    - Create S3 bucket
    - Configure Secrets Manager
 
@@ -387,7 +391,7 @@ socket.on('user:offline', (data) => {})
 ### For DevOps
 
 1. **Setup AWS Infrastructure:**
-   - Follow `DEPLOYMENT.md`
+   - Follow [DEPLOYMENT.md](./DEPLOYMENT.md)
    - Create ECS cluster
    - Configure load balancer
    - Setup auto-scaling
@@ -406,8 +410,9 @@ socket.on('user:offline', (data) => {})
 
 ## 📚 Documentation
 
-- **README.md** - Complete setup and usage guide
-- **DEPLOYMENT.md** - AWS ECS Fargate deployment
+- **[README.md](../../apps/api/README.md)** - Complete setup and usage guide
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - AWS ECS Fargate deployment
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick reference card
 - **Swagger Docs** - Interactive API documentation at `/api/docs`
 - **Database Schema** - See `/aws/database/schema/` for SQL files
 
@@ -418,11 +423,11 @@ socket.on('user:offline', (data) => {})
 ### Frontend Developers
 
 **Authentication Flow:**
-1. User signs in with Cognito (handled by client)
-2. Client receives Cognito JWT token
-3. Call `POST /api/v1/auth/cognito/validate` with token
-4. Receive app JWT token
-5. Use app JWT for all subsequent requests
+1. Request OTP via `POST /api/v1/auth/otp/request` with email/phone
+2. User receives OTP via email/SMS/WhatsApp
+3. Verify OTP via `POST /api/v1/auth/otp/verify` with code
+4. Receive JWT token and user data
+5. Use JWT token for all subsequent requests
 
 **API Integration:**
 ```typescript
@@ -476,7 +481,8 @@ const users = await this.db.query.profiles.findMany({
 
 **What You Have:**
 - ✅ Production-ready NestJS API structure
-- ✅ AWS Cognito + JWT authentication
+- ✅ Custom OTP-based authentication (Email/SMS/WhatsApp)
+- ✅ Template-driven OTP delivery system
 - ✅ Socket.io real-time capabilities
 - ✅ S3 file upload with optimization
 - ✅ Drizzle ORM with complete schema
@@ -497,5 +503,4 @@ const users = await this.db.query.profiles.findMany({
 
 **Built with ❤️ for PoultryCo Platform**
 
-**Questions?** Check the README.md or Swagger docs at `/api/docs`
-
+**Questions?** Check the [README.md](../../apps/api/README.md) or Swagger docs at `/api/docs`
