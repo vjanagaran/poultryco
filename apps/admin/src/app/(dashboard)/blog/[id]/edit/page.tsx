@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { getBlogPostById, updateBlogPost, getBlogCategories, type BlogPost, type BlogCategory } from '@/lib/api/content'
 import RichTextEditor from '@/components/RichTextEditor'
 import TagInput from '@/components/TagInput'
 import ImageUpload from '@/components/ImageUpload'
@@ -40,7 +40,7 @@ export default function EditBlogPostPage() {
   const router = useRouter()
   const params = useParams()
   const postId = params.id as string
-  const supabase = createClient()
+  // Using API client
 
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)

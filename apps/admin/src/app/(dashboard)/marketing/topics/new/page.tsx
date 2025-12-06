@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getNdpCategories, getStakeholderSegments, createContentTopic, type NdpCategory, type StakeholderSegment } from '@/lib/api/marketing';
 
 export default function NewTopicPage() {
   const router = useRouter();

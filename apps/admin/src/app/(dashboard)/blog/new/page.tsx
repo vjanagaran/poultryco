@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createBlogPost, getBlogCategories, type BlogCategory } from '@/lib/api/content'
 import RichTextEditor from '@/components/RichTextEditor'
 import TagInput from '@/components/TagInput'
 import ImageUpload from '@/components/ImageUpload'

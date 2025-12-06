@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/client';
+// TODO: Migrate to API endpoints
+// import { apiClient } from './client';
 
 // Types
 export interface FeedbackSubmission {
@@ -79,7 +80,7 @@ export interface FeedbackInsight {
   generated_at: string;
 }
 
-// Feedback Submissions
+// Feedback Submissions - TODO: Migrate to API
 export async function getFeedbackSubmissions(filters?: {
   status?: string;
   priority?: string;
@@ -89,328 +90,68 @@ export async function getFeedbackSubmissions(filters?: {
   limit?: number;
   offset?: number;
 }): Promise<{ data: FeedbackSubmission[]; count: number }> {
-  const supabase = createClient();
-  
-  let query = supabase
-    .from('feedback_submissions')
-    .select(`
-      *,
-      category:feedback_categories(*),
-      tags:feedback_tag_relations(tag:feedback_tags(*)),
-      comments:feedback_comments(*, author:profiles!author_id(email))
-    `, { count: 'exact' });
-  
-  if (filters?.status) {
-    query = query.eq('status', filters.status);
-  }
-  
-  if (filters?.priority) {
-    query = query.eq('priority', filters.priority);
-  }
-  
-  if (filters?.category_id) {
-    query = query.eq('category_id', filters.category_id);
-  }
-  
-  if (filters?.sentiment_label) {
-    query = query.eq('sentiment_label', filters.sentiment_label);
-  }
-  
-  if (filters?.search) {
-    query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-  }
-  
-  query = query.order('created_at', { ascending: false });
-  
-  if (filters?.limit) {
-    query = query.limit(filters.limit);
-  }
-  
-  if (filters?.offset) {
-    query = query.range(filters.offset, filters.offset + (filters.limit || 10) - 1);
-  }
-  
-  const { data, error, count } = await query;
-  
-  if (error) throw error;
-  
-  return { 
-    data: data || [], 
-    count: count || 0 
-  };
+  return { data: [], count: 0 };
 }
 
 export async function getFeedbackSubmission(id: string): Promise<FeedbackSubmission | null> {
-  const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from('feedback_submissions')
-    .select(`
-      *,
-      category:feedback_categories(*),
-      tags:feedback_tag_relations(tag:feedback_tags(*)),
-      comments:feedback_comments(*, author:profiles!author_id(email))
-    `)
-    .eq('id', id)
-    .single();
-  
-  if (error) throw error;
-  return data;
+  return null;
 }
 
 export async function updateFeedbackStatus(
   id: string,
   status: FeedbackSubmission['status'],
-  resolution_notes?: string
+  resolutionNotes?: string
 ): Promise<FeedbackSubmission> {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  const updates: Record<string, unknown> = {
-    status,
-    updated_at: new Date().toISOString(),
-  };
-  
-  if (resolution_notes) {
-    updates.resolution_notes = resolution_notes;
-  }
-  
-  if (status === 'resolved' || status === 'declined') {
-    updates.resolved_by = user?.id;
-    updates.resolved_at = new Date().toISOString();
-  }
-  
-  const { data, error } = await supabase
-    .from('feedback_submissions')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+  throw new Error('Not implemented: API migration pending');
 }
 
 export async function addFeedbackComment(
   feedbackId: string,
   comment: string,
-  isInternal: boolean = true
+  isInternal: boolean = false
 ): Promise<FeedbackComment> {
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  const { data, error } = await supabase
-    .from('feedback_comments')
-    .insert({
-      feedback_id: feedbackId,
-      author_id: user?.id,
-      comment,
-      is_internal: isInternal,
-    })
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data;
+  throw new Error('Not implemented: API migration pending');
 }
 
-// Categories
+// Feedback Categories - TODO: Migrate to API
 export async function getFeedbackCategories(): Promise<FeedbackCategory[]> {
-  const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from('feedback_categories')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order');
-  
-  if (error) throw error;
-  return data || [];
+  return [];
 }
 
-// Tags
+export async function createFeedbackCategory(category: Partial<FeedbackCategory>): Promise<FeedbackCategory> {
+  throw new Error('Not implemented: API migration pending');
+}
+
+export async function updateFeedbackCategory(id: string, updates: Partial<FeedbackCategory>): Promise<FeedbackCategory> {
+  throw new Error('Not implemented: API migration pending');
+}
+
+export async function deleteFeedbackCategory(id: string): Promise<void> {
+  throw new Error('Not implemented: API migration pending');
+}
+
+// Feedback Tags - TODO: Migrate to API
 export async function getFeedbackTags(): Promise<FeedbackTag[]> {
-  const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from('feedback_tags')
-    .select('*')
-    .order('usage_count', { ascending: false })
-    .limit(50);
-  
-  if (error) throw error;
-  return data || [];
+  return [];
 }
 
-export async function addFeedbackTag(feedbackId: string, tagName: string): Promise<void> {
-  const supabase = createClient();
-  
-  // First, find or create the tag
-  let { data: tag } = await supabase
-    .from('feedback_tags')
-    .select('id')
-    .eq('name', tagName.toLowerCase())
-    .single();
-  
-  if (!tag) {
-    const { data: newTag, error: tagError } = await supabase
-      .from('feedback_tags')
-      .insert({
-        name: tagName.toLowerCase(),
-        type: 'theme',
-        is_auto_generated: false,
-      })
-      .select()
-      .single();
-    
-    if (tagError) throw tagError;
-    tag = newTag;
-  }
-  
-  if (!tag) {
-    throw new Error('Failed to create or find tag');
-  }
-  
-  // Create the relation
-  const { error } = await supabase
-    .from('feedback_tag_relations')
-    .insert({
-      feedback_id: feedbackId,
-      tag_id: tag.id,
-      is_manual: true,
-    });
-  
-  if (error && error.code !== '23505') { // Ignore duplicate key errors
-    throw error;
-  }
+export async function createFeedbackTag(tag: Partial<FeedbackTag>): Promise<FeedbackTag> {
+  throw new Error('Not implemented: API migration pending');
 }
 
-// Analytics
-export async function getFeedbackStats(): Promise<{
-  total: number;
-  byStatus: Record<string, number>;
-  byPriority: Record<string, number>;
-  bySentiment: Record<string, number>;
-  recentTrend: number;
-}> {
-  const supabase = createClient();
-  
-  // Get total count
-  const { count: total } = await supabase
-    .from('feedback_submissions')
-    .select('*', { count: 'exact', head: true });
-  
-  // Get counts by status
-  const { data: statusData } = await supabase
-    .from('feedback_submissions')
-    .select('status')
-    .order('status');
-  
-  const byStatus = (statusData || []).reduce((acc, item) => {
-    acc[item.status] = (acc[item.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  // Get counts by priority
-  const { data: priorityData } = await supabase
-    .from('feedback_submissions')
-    .select('priority')
-    .order('priority');
-  
-  const byPriority = (priorityData || []).reduce((acc, item) => {
-    acc[item.priority] = (acc[item.priority] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  // Get counts by sentiment
-  const { data: sentimentData } = await supabase
-    .from('feedback_submissions')
-    .select('sentiment_label')
-    .not('sentiment_label', 'is', null);
-  
-  const bySentiment = (sentimentData || []).reduce((acc, item) => {
-    acc[item.sentiment_label] = (acc[item.sentiment_label] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  
-  // Get trend (last 7 days vs previous 7 days)
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const fourteenDaysAgo = new Date();
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-  
-  const { count: recent } = await supabase
-    .from('feedback_submissions')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', sevenDaysAgo.toISOString());
-  
-  const { count: previous } = await supabase
-    .from('feedback_submissions')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', fourteenDaysAgo.toISOString())
-    .lt('created_at', sevenDaysAgo.toISOString());
-  
-  const recentTrend = previous && previous > 0 
-    ? ((recent || 0) - previous) / previous * 100 
-    : 0;
-  
-  return {
-    total: total || 0,
-    byStatus,
-    byPriority,
-    bySentiment,
-    recentTrend,
-  };
+export async function updateFeedbackTag(id: string, updates: Partial<FeedbackTag>): Promise<FeedbackTag> {
+  throw new Error('Not implemented: API migration pending');
 }
 
-export async function getFeedbackInsights(
-  periodType: 'daily' | 'weekly' | 'monthly'
-): Promise<FeedbackInsight[]> {
-  const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from('feedback_insights')
-    .select('*')
-    .eq('period_type', periodType)
-    .order('period_start', { ascending: false })
-    .limit(10);
-  
-  if (error) throw error;
-  return data || [];
+export async function deleteFeedbackTag(id: string): Promise<void> {
+  throw new Error('Not implemented: API migration pending');
 }
 
-// AI Analysis (mock for now)
-export async function analyzeFeedbackSentiment(text: string): Promise<{
-  score: number;
-  label: 'positive' | 'neutral' | 'negative' | 'mixed';
-  confidence: number;
-}> {
-  // In production, this would call an AI service
-  // For now, return mock data based on simple keywords
-  
-  const positiveWords = ['great', 'excellent', 'love', 'awesome', 'fantastic', 'good'];
-  const negativeWords = ['bad', 'terrible', 'hate', 'awful', 'poor', 'worst'];
-  
-  const lowercaseText = text.toLowerCase();
-  const positiveCount = positiveWords.filter(word => lowercaseText.includes(word)).length;
-  const negativeCount = negativeWords.filter(word => lowercaseText.includes(word)).length;
-  
-  let score = 0;
-  let label: 'positive' | 'neutral' | 'negative' | 'mixed' = 'neutral';
-  
-  if (positiveCount > negativeCount) {
-    score = 0.5 + (positiveCount * 0.1);
-    label = 'positive';
-  } else if (negativeCount > positiveCount) {
-    score = -0.5 - (negativeCount * 0.1);
-    label = 'negative';
-  } else if (positiveCount > 0 && negativeCount > 0) {
-    label = 'mixed';
-  }
-  
-  return {
-    score: Math.max(-1, Math.min(1, score)),
-    label,
-    confidence: 0.75,
-  };
+// Feedback Insights - TODO: Migrate to API
+export async function getFeedbackInsights(periodType: 'daily' | 'weekly' | 'monthly' = 'monthly'): Promise<FeedbackInsight[]> {
+  return [];
+}
+
+export async function generateFeedbackInsight(periodType: 'daily' | 'weekly' | 'monthly'): Promise<FeedbackInsight> {
+  throw new Error('Not implemented: API migration pending');
 }

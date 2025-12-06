@@ -1,4 +1,6 @@
-import { createClient } from '@/lib/supabase/server';
+// TODO: This scraper has been migrated to the API
+// The API now handles NECC scraping at /api/v1/necc/scraper/run-month
+// This file is kept for reference but should not be used
 import { parseNECCTable } from './necc-parser';
 
 export interface ScrapeResult {

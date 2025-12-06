@@ -2,22 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getMarketingChannels, type MarketingChannel } from '@/lib/api/marketing';
 
-interface MarketingChannel {
-  id: string;
-  platform: string;
-  channel_type: string;
-  name: string;
-  handle: string | null;
-  url: string | null;
-  description: string | null;
-  is_active: boolean;
-  target_posts_per_week: number;
-  current_followers: number;
-  current_subscribers: number;
-  created_at: string;
-}
+// Types imported from API
 
 const PLATFORM_COLORS: Record<string, string> = {
   linkedin: 'bg-blue-600 text-white',
@@ -46,20 +33,15 @@ export default function MarketingChannelsPage() {
   const [loading, setLoading] = useState(true);
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
 
-  const supabase = createClient();
-
   useEffect(() => {
     fetchChannels();
   }, []);
 
   async function fetchChannels() {
     try {
-      const { data, error } = await supabase
-        .from('marketing_channels')
-        .select('*')
-        .order('platform', { ascending: true });
+      setLoading(true);
+      const data = await getMarketingChannels();
 
-      if (error) throw error;
       setChannels(data || []);
     } catch (error) {
       console.error('Error fetching channels:', error);

@@ -1,96 +1,67 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api/v1';
+  
+  // Get token from cookie
+  const token = request.cookies.get('admin_token')?.value;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
+  // Allow login page
+  if (request.nextUrl.pathname.startsWith('/login')) {
+    // If already has token, verify and redirect to dashboard
+    if (token) {
+      try {
+        const response = await fetch(`${apiUrl}/admin/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          return NextResponse.redirect(new URL('/dashboard', request.url));
+        }
+      } catch {
+        // Token invalid, allow login
+      }
+    }
+    return NextResponse.next();
+  }
+
+  // Check authentication for protected routes
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  // Verify token
+  try {
+    const response = await fetch(`${apiUrl}/admin/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
       },
-    }
-  )
+    });
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  // Check if user is authenticated
-  if (!session && !request.nextUrl.pathname.startsWith('/login')) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
-  // If authenticated, check if user is admin
-  if (session && !request.nextUrl.pathname.startsWith('/login')) {
-    const { data: adminUser, error } = await supabase
-      .from('admin_users')
-      .select('role, permissions, is_active')
-      .eq('user_id', session.user.id)
-      .single()
-
-    // If user is not an admin, deny access
-    if (error || !adminUser || !adminUser.is_active) {
-      // Clear session and redirect to login with error
-      await supabase.auth.signOut()
-      return NextResponse.redirect(
-        new URL('/login?error=unauthorized', request.url)
-      )
+    if (!response.ok) {
+      // Token invalid, redirect to login
+      const redirectResponse = NextResponse.redirect(new URL('/login', request.url));
+      redirectResponse.cookies.delete('admin_token');
+      return redirectResponse;
     }
 
-    // Store admin role in headers for use in pages
-    response.headers.set('x-user-role', adminUser.role)
-    response.headers.set('x-user-permissions', JSON.stringify(adminUser.permissions))
+    const data = await response.json();
+    
+    // Store user info in headers for use in pages
+    const nextResponse = NextResponse.next();
+    nextResponse.headers.set('x-admin-id', data.user.id);
+    nextResponse.headers.set('x-admin-email', data.user.email);
+    nextResponse.headers.set('x-admin-role', data.user.role.slug);
+    
+    return nextResponse;
+  } catch (error) {
+    // Error verifying token, redirect to login
+    const redirectResponse = NextResponse.redirect(new URL('/login', request.url));
+    redirectResponse.cookies.delete('admin_token');
+    return redirectResponse;
   }
-
-  // Redirect to dashboard if already logged in
-  if (session && request.nextUrl.pathname === '/login') {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  return response
 }
 
 export const config = {
@@ -98,4 +69,3 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
-

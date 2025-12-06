@@ -17,9 +17,17 @@ class ApiClient {
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
-    // Load token from localStorage on initialization
+    // Load token from localStorage or cookie on initialization
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('admin_token');
+      // Also check cookie
+      if (!this.token) {
+        const cookies = document.cookie.split(';');
+        const tokenCookie = cookies.find(c => c.trim().startsWith('admin_token='));
+        if (tokenCookie) {
+          this.token = tokenCookie.split('=')[1];
+        }
+      }
     }
   }
 

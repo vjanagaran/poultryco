@@ -2,22 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getContentPillars, type ContentPillar } from '@/lib/api/marketing';
 
-interface ContentPillar {
-  id: string;
-  title: string;
-  slug: string | null;
-  description: string | null;
-  pillar_type: string;
-  research_question: string | null;
-  key_insights: string[];
-  status: string;
-  priority_score: number;
-  content_pieces_created: number;
-  estimated_pieces: number | null;
-  created_at: string;
-}
+// Types imported from API
 
 const STATUS_COLORS: Record<string, string> = {
   ideation: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -48,8 +35,6 @@ export default function ContentPillarsPage() {
   const [pillarTags, setPillarTags] = useState<Record<string, string[]>>({});
   const [pillarCampaigns, setPillarCampaigns] = useState<Record<string, string>>({});
 
-  const supabase = createClient();
-
   useEffect(() => {
     fetchPillars();
     fetchFilters();
@@ -57,7 +42,8 @@ export default function ContentPillarsPage() {
 
   async function fetchPillars() {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      const data = await getContentPillars();
         .from('content_pillars')
         .select('*')
         .order('priority_score', { ascending: false });
@@ -107,13 +93,9 @@ export default function ContentPillarsPage() {
 
   async function fetchFilters() {
     try {
-      const [tagsRes, campaignsRes] = await Promise.all([
-        supabase.from('content_tags').select('id, name, color').order('name'),
-        supabase.from('content_campaigns').select('id, name, color').order('name'),
-      ]);
-
-      if (tagsRes.data) setTags(tagsRes.data);
-      if (campaignsRes.data) setCampaigns(campaignsRes.data);
+      // TODO: Fetch tags and campaigns when API supports it
+      setTags([]);
+      setCampaigns([]);
     } catch (error) {
       console.error('Error fetching filters:', error);
     }

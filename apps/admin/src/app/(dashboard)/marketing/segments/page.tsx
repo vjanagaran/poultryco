@@ -2,26 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getStakeholderSegments, type StakeholderSegment } from '@/lib/api/marketing';
 
-interface StakeholderSegment {
-  id: string;
-  name: string;
-  description: string | null;
-  segment_size_estimate: number | null;
-  key_characteristics: string | null;
-  communication_preferences: string | null;
-  priority_level: number;
-  is_active: boolean;
-  created_at: string;
-}
+// Types imported from API
 
 export default function CustomerSegmentsPage() {
   const [segments, setSegments] = useState<StakeholderSegment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-
-  const supabase = createClient();
 
   useEffect(() => {
     fetchSegments();
@@ -29,12 +17,8 @@ export default function CustomerSegmentsPage() {
 
   async function fetchSegments() {
     try {
-      const { data, error } = await supabase
-        .from('stakeholder_segments')
-        .select('*')
-        .order('priority_level', { ascending: false });
-
-      if (error) throw error;
+      setLoading(true);
+      const data = await getStakeholderSegments();
       setSegments(data || []);
     } catch (error) {
       console.error('Error fetching segments:', error);

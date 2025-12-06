@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { MetricCard } from '@/components/analytics/MetricCard';
 import { RealtimeMetrics } from '@/components/analytics/RealtimeMetrics';
 import { getUserMetrics, getRecentSignups, type UserMetrics } from '@/lib/api/analytics';
-import { createClient } from '@/lib/supabase/client';
+// TODO: Migrate blog and newsletter counts to API
 import Link from 'next/link';
 
 export default function DashboardPage() {
@@ -28,8 +28,6 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const supabase = createClient();
-      
       // Get user metrics
       const userMetrics = await getUserMetrics();
       setMetrics(userMetrics);
@@ -38,17 +36,10 @@ export default function DashboardPage() {
       const recent = await getRecentSignups(5);
       setRecentUsers(recent);
       
-      // Get blog count
-      const { count: blogPosts } = await supabase
-        .from('blog_posts')
-        .select('*', { count: 'exact', head: true });
-      setBlogCount(blogPosts || 0);
-      
-      // Get email subscriber count
-      const { count: emailSubscribers } = await supabase
-        .from('newsletter_signups')
-        .select('*', { count: 'exact', head: true });
-      setEmailCount(emailSubscribers || 0);
+      // TODO: Migrate blog and newsletter counts to API
+      // For now, set to 0
+      setBlogCount(0);
+      setEmailCount(0);
       
     } catch (error) {
       console.error('Error loading dashboard data:', error);

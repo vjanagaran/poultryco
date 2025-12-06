@@ -102,7 +102,7 @@ export async function scrapeNECCMonth(
           .from(necPrices)
           .where(
             and(
-              eq(necPrices.zoneId, zone_id),
+              eq(necPrices.zoneId, zone_id as string),
               eq(necPrices.date, priceData.date)
             )
           )
@@ -120,7 +120,7 @@ export async function scrapeNECCMonth(
           await db
             .insert(necPrices)
             .values({
-              zoneId: zone_id,
+              zoneId: zone_id as string,
               date: priceData.date,
               year: dateYear,
               month: dateMonth,

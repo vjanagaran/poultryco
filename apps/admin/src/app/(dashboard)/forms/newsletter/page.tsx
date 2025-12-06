@@ -1,25 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getNewsletterSubscribers, updateNewsletterSubscriberStatus, type NewsletterSubscriber } from '@/lib/api/forms'
 
-interface NewsletterSubscriber {
-  id: string
-  email: string
-  full_name: string | null
-  status: string
-  subscribed_topics: string[] | null
-  created_at: string
-  emails_sent: number
-  emails_opened: number
-}
+// Types imported from API
 
 export default function NewsletterSubscribersPage() {
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
-
-  const supabase = createClient()
 
   useEffect(() => {
     fetchSubscribers()
@@ -29,17 +18,8 @@ export default function NewsletterSubscribersPage() {
   async function fetchSubscribers() {
     try {
       setLoading(true)
-      let query = supabase
-        .from('newsletter_subscribers')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter)
-      }
-
-      const { data, error } = await query
-      if (error) throw error
+      const status = statusFilter !== 'all' ? statusFilter : undefined
+      const data = await getNewsletterSubscribers(status)
       setSubscribers(data || [])
     } catch (error) {
       console.error('Error:', error)
@@ -50,12 +30,7 @@ export default function NewsletterSubscribersPage() {
 
   async function updateStatus(id: string, status: string) {
     try {
-      const { error } = await supabase
-        .from('newsletter_subscribers')
-        .update({ status })
-        .eq('id', id)
-
-      if (error) throw error
+      await updateNewsletterSubscriberStatus(id, status)
       setSubscribers(subscribers.map(s => s.id === id ? { ...s, status } : s))
     } catch (error) {
       console.error('Error:', error)

@@ -2,33 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getContentSchedule, getMarketingChannels, type ContentSchedule } from '@/lib/api/marketing';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks } from 'date-fns';
 
+// Types imported from API - simplified for now
 interface ScheduledContent {
   id: string;
   content_id: string;
-  scheduled_date: string;
-  scheduled_time: string | null;
+  scheduled_for: string;
   status: string;
   channel_id: string;
-  channel: {
-    name: string;
-    platform: string;
-  };
-  content: {
-    title: string;
-    content_type_id: string;
-    content_types?: {
-      name: string;
-    };
-  };
-  campaign?: {
-    id: string;
-    name: string;
-    color: string;
-    icon: string;
-  } | null;
+  published_url: string | null;
+  created_at: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -43,8 +28,6 @@ export default function ContentCalendarPage() {
   const [scheduledContent, setScheduledContent] = useState<ScheduledContent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
-
   const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
   const daysOfWeek = eachDayOfInterval({ start: currentWeekStart, end: weekEnd });
 
@@ -54,52 +37,12 @@ export default function ContentCalendarPage() {
 
   async function fetchScheduledContent() {
     try {
-      // Fetch scheduled content with content details
-      const { data: scheduleData, error: scheduleError } = await supabase
-        .from('content_schedule')
-        .select(`
-          *,
-          channel:marketing_channels(name, platform),
-          content:content(
-            title,
-            content_type_id,
-            content_types(name)
-          )
-        `)
-        .gte('scheduled_date', format(currentWeekStart, 'yyyy-MM-dd'))
-        .lte('scheduled_date', format(weekEnd, 'yyyy-MM-dd'))
-        .order('scheduled_date', { ascending: true })
-        .order('scheduled_time', { ascending: true });
-
-      if (scheduleError) throw scheduleError;
-
-      // Fetch campaign assignments for the content
-      const contentIds = scheduleData?.map((s: any) => s.content_id) || [];
-      let campaignMap: Record<string, any> = {};
-
-      if (contentIds.length > 0) {
-        const { data: campaignData } = await supabase
-          .from('content_campaign_assignments')
-          .select(`
-            content_id,
-            campaign:content_campaigns(id, name, color, icon)
-          `)
-          .in('content_id', contentIds);
-
-        if (campaignData) {
-          campaignData.forEach((item: any) => {
-            campaignMap[item.content_id] = item.campaign;
-          });
-        }
-      }
-
-      // Merge campaign data with schedule data
-      const enrichedData = scheduleData?.map((item: any) => ({
-        ...item,
-        campaign: campaignMap[item.content_id] || null,
-      }));
-
-      setScheduledContent(enrichedData as any || []);
+      setLoading(true);
+      const startDate = format(currentWeekStart, 'yyyy-MM-dd');
+      const endDate = format(weekEnd, 'yyyy-MM-dd');
+      const data = await getContentSchedule({ startDate, endDate });
+      // TODO: Map API response to match ScheduledContent interface when API returns full data
+      setScheduledContent((data as any[]) || []);
     } catch (error) {
       console.error('Error fetching scheduled content:', error);
     } finally {
@@ -109,7 +52,7 @@ export default function ContentCalendarPage() {
 
   const getContentForDay = (day: Date) => {
     return scheduledContent.filter((content) =>
-      isSameDay(new Date(content.scheduled_date), day)
+      isSameDay(new Date(content.scheduled_for), day)
     );
   };
 

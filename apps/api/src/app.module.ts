@@ -16,6 +16,11 @@ import { NeccModule } from './modules/necc/necc.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { SocketModule } from './modules/socket/socket.module';
+import { AdminModule } from './modules/admin/admin.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ContentModule } from './modules/content/content.module';
+import { FormsModule } from './modules/forms/forms.module';
+import { MarketingModule } from './modules/marketing/marketing.module';
 
 @Module({
   imports: [
@@ -37,6 +42,11 @@ import { SocketModule } from './modules/socket/socket.module';
     NotificationsModule,
     UploadModule,
     SocketModule,
+    AdminModule,
+    AnalyticsModule,
+    ContentModule,
+    FormsModule,
+    MarketingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

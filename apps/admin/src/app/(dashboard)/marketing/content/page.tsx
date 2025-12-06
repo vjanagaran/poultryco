@@ -2,25 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getContent, type Content } from '@/lib/api/marketing';
 
-interface Content {
-  id: string;
-  title: string;
-  slug: string | null;
-  content_mode: string;
-  content_type_id: string;
-  status: string;
-  published_at: string | null;
-  total_views: number;
-  total_likes: number;
-  total_comments: number;
-  total_shares: number;
-  total_engagement: number;
-  created_at: string;
-  content_types?: { name: string };
-  content_pillars?: { title: string };
-}
+// Types imported from API
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -47,8 +31,6 @@ export default function ContentListPage() {
   const [contentTags, setContentTags] = useState<Record<string, string[]>>({});
   const [contentCampaigns, setContentCampaigns] = useState<Record<string, string>>({});
 
-  const supabase = createClient();
-
   useEffect(() => {
     fetchContent();
     fetchFilters();
@@ -56,8 +38,9 @@ export default function ContentListPage() {
 
   async function fetchContent() {
     try {
-      const { data, error } = await supabase
-        .from('content')
+      setLoading(true);
+      const status = filterStatus !== 'all' ? filterStatus : undefined;
+      const data = await getContent({ status });
         .select('*, content_types(name), content_pillars(title)')
         .order('created_at', { ascending: false });
 
@@ -106,13 +89,9 @@ export default function ContentListPage() {
 
   async function fetchFilters() {
     try {
-      const [tagsRes, campaignsRes] = await Promise.all([
-        supabase.from('content_tags').select('id, name, color').order('name'),
-        supabase.from('content_campaigns').select('id, name, color').order('name'),
-      ]);
-
-      if (tagsRes.data) setTags(tagsRes.data);
-      if (campaignsRes.data) setCampaigns(campaignsRes.data);
+      // TODO: Fetch tags and campaigns when API supports it
+      setTags([]);
+      setCampaigns([]);
     } catch (error) {
       console.error('Error fetching filters:', error);
     }
