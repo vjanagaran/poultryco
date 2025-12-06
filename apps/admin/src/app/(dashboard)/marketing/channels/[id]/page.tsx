@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getMarketingChannelById, updateMarketingChannel, deleteMarketingChannel, getContentSchedule, type MarketingChannel } from '@/lib/api/marketing';
 
 const PLATFORMS = [
   { value: 'linkedin', label: 'LinkedIn', icon: '💼' },
@@ -34,7 +34,6 @@ export default function ChannelDetailPage() {
   const router = useRouter();
   const params = useParams();
   const channelId = params.id as string;
-  const supabase = createClient();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,25 +54,13 @@ export default function ChannelDetailPage() {
       setLoading(true);
 
       // Fetch channel
-      const { data: channelData, error: channelError } = await supabase
-        .from('marketing_channels')
-        .select('*')
-        .eq('id', channelId)
-        .single();
-
-      if (channelError) throw channelError;
+      const channelData = await getMarketingChannelById(channelId);
       setChannel(channelData);
       setFormData(channelData);
 
       // Fetch schedules for this channel
-      const { data: scheduleData } = await supabase
-        .from('content_schedule')
-        .select('*, content(title, content_types(name))')
-        .eq('channel_id', channelId)
-        .order('scheduled_date', { ascending: false })
-        .limit(10);
-
-      if (scheduleData) setSchedules(scheduleData);
+      const scheduleData = await getContentSchedule({ channelId });
+      setSchedules(scheduleData.slice(0, 10));
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -107,27 +94,22 @@ export default function ChannelDetailPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('marketing_channels')
-        .update({
-          platform: formData.platform,
-          channel_type: formData.channel_type,
-          name: formData.name,
-          handle: formData.handle,
-          url: formData.url,
-          description: formData.description,
-          is_active: formData.is_active,
-          posting_schedule: formData.posting_schedule,
-          default_hashtags: formData.default_hashtags,
-          character_limit: formData.character_limit,
-          target_posts_per_week: formData.target_posts_per_week,
-          target_engagement_rate: formData.target_engagement_rate,
-          current_followers: formData.current_followers,
-          current_subscribers: formData.current_subscribers,
-        })
-        .eq('id', channelId);
-
-      if (error) throw error;
+      await updateMarketingChannel(channelId, {
+        platform: formData.platform,
+        channel_type: formData.channel_type,
+        name: formData.name,
+        handle: formData.handle,
+        url: formData.url,
+        description: formData.description,
+        is_active: formData.is_active,
+        posting_schedule: formData.posting_schedule,
+        default_hashtags: formData.default_hashtags,
+        character_limit: formData.character_limit,
+        target_posts_per_week: formData.target_posts_per_week,
+        target_engagement_rate: formData.target_engagement_rate,
+        current_followers: formData.current_followers,
+        current_subscribers: formData.current_subscribers,
+      });
 
       setEditing(false);
       fetchData();
@@ -149,9 +131,7 @@ export default function ChannelDetailPage() {
     }
 
     try {
-      const { error } = await supabase.from('marketing_channels').delete().eq('id', channelId);
-
-      if (error) throw error;
+      await deleteMarketingChannel(channelId);
       router.push('/marketing/channels');
     } catch (error) {
       console.error('Error deleting channel:', error);

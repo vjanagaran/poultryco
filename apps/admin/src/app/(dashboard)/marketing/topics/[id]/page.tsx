@@ -9,14 +9,13 @@ export default function TopicDetailPage() {
   const router = useRouter();
   const params = useParams();
   const topicId = params.id as string;
-  const supabase = createClient();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [topic, setTopic] = useState<any>(null);
-  const [ndpCategories, setNdpCategories] = useState<any[]>([]);
-  const [segments, setSegments] = useState<any[]>([]);
+  const [ndpCategories, setNdpCategories] = useState<NdpCategory[]>([]);
+  const [segments, setSegments] = useState<StakeholderSegment[]>([]);
   const [assignedSegments, setAssignedSegments] = useState<string[]>([]);
   const [relatedContent, setRelatedContent] = useState<any[]>([]);
   const [relatedPillars, setRelatedPillars] = useState<any[]>([]);
@@ -34,54 +33,31 @@ export default function TopicDetailPage() {
       setLoading(true);
 
       // Fetch topic
-      const { data: topicData, error: topicError } = await supabase
-        .from('content_topics')
-        .select('*, ndp_categories(name, description)')
-        .eq('id', topicId)
-        .single();
-
-      if (topicError) throw topicError;
+      const topicData = await getContentTopicById(topicId);
       setTopic(topicData);
       setFormData(topicData);
 
-      // Fetch assigned segments
-      const { data: segmentMappings } = await supabase
-        .from('content_topic_segments')
-        .select('segment_id, stakeholder_segments(id, name)')
-        .eq('topic_id', topicId);
-
-      const assignedIds = segmentMappings?.map((m: any) => m.segment_id) || [];
-      setAssignedSegments(assignedIds);
-      setSelectedSegments(assignedIds);
+      // TODO: Fetch assigned segments when API supports it
+      setAssignedSegments([]);
+      setSelectedSegments([]);
 
       // Fetch lookup data
-      const [categoriesRes, segmentsRes] = await Promise.all([
-        supabase.from('ndp_categories').select('*').order('name'),
-        supabase.from('stakeholder_segments').select('id, name, description').order('name'),
+      const [categories, segmentsData] = await Promise.all([
+        getNdpCategories(),
+        getStakeholderSegments(),
       ]);
 
-      if (categoriesRes.data) setNdpCategories(categoriesRes.data);
-      if (segmentsRes.data) setSegments(segmentsRes.data);
+      setNdpCategories(categories);
+      setSegments(segmentsData);
 
       // Fetch related content
-      const { data: contentData } = await supabase
-        .from('content')
-        .select('id, title, status, content_types(name)')
-        .eq('topic_id', topicId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (contentData) setRelatedContent(contentData);
+      const contentData = await getContent({ topicId });
+      setRelatedContent(contentData.slice(0, 10));
 
       // Fetch related pillars
-      const { data: pillarsData } = await supabase
-        .from('content_pillars')
-        .select('id, title, status')
-        .eq('topic_id', topicId)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (pillarsData) setRelatedPillars(pillarsData);
+      const pillarsData = await getContentPillars();
+      const filteredPillars = pillarsData.filter((p: any) => p.topic_id === topicId);
+      setRelatedPillars(filteredPillars.slice(0, 10));
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -105,36 +81,15 @@ export default function TopicDetailPage() {
     setSaving(true);
     try {
       // Update topic
-      const { error } = await supabase
-        .from('content_topics')
-        .update({
-          title: formData.title,
-          description: formData.description,
-          ndp_category_id: formData.ndp_category_id,
-          target_outcome: formData.target_outcome,
-          key_message: formData.key_message,
-        })
-        .eq('id', topicId);
+      await updateContentTopic(topicId, {
+        title: formData.title,
+        description: formData.description,
+        ndp_category_id: formData.ndp_category_id,
+        target_outcome: formData.target_outcome,
+        key_message: formData.key_message,
+      });
 
-      if (error) throw error;
-
-      // Update segment assignments
-      // Delete existing mappings
-      await supabase.from('content_topic_segments').delete().eq('topic_id', topicId);
-
-      // Insert new mappings
-      if (selectedSegments.length > 0) {
-        const segmentMappings = selectedSegments.map(segmentId => ({
-          topic_id: topicId,
-          segment_id: segmentId,
-        }));
-
-        const { error: mappingError } = await supabase
-          .from('content_topic_segments')
-          .insert(segmentMappings);
-
-        if (mappingError) throw mappingError;
-      }
+      // TODO: Update segment assignments when API supports it
 
       setEditing(false);
       fetchData();
@@ -156,9 +111,7 @@ export default function TopicDetailPage() {
     }
 
     try {
-      const { error } = await supabase.from('content_topics').delete().eq('id', topicId);
-
-      if (error) throw error;
+      await deleteContentTopic(topicId);
       router.push('/marketing/topics');
     } catch (error) {
       console.error('Error deleting topic:', error);
@@ -209,9 +162,9 @@ export default function TopicDetailPage() {
             <h1 className="text-3xl font-bold text-gray-900">{topic.title}</h1>
           )}
           <div className="flex items-center gap-2 mt-2">
-            {topic.ndp_categories && (
+            {topic.ndp_category_id && (
               <span className="px-3 py-1 text-sm font-medium bg-purple-100 text-purple-800 rounded-full">
-                {topic.ndp_categories.name}
+                {ndpCategories.find(c => c.id === topic.ndp_category_id)?.name || 'Unknown'}
               </span>
             )}
             <span className="text-sm text-gray-500">
@@ -332,17 +285,24 @@ export default function TopicDetailPage() {
                     <p className="text-gray-900">{topic.description}</p>
                   </div>
                 )}
-                {topic.ndp_categories && (
+                {topic.ndp_category_id && (
                   <div>
                     <div className="text-sm font-medium text-gray-700 mb-1">NDP Category</div>
                     <div className="flex items-start gap-3">
                       <div>
-                        <p className="font-medium text-gray-900">{topic.ndp_categories.name}</p>
-                        {topic.ndp_categories.description && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            {topic.ndp_categories.description}
-                          </p>
-                        )}
+                        {(() => {
+                          const category = ndpCategories.find(c => c.id === topic.ndp_category_id);
+                          return category ? (
+                            <>
+                              <p className="font-medium text-gray-900">{category.name}</p>
+                              {category.description && (
+                                <p className="text-sm text-gray-600 mt-1">
+                                  {category.description}
+                                </p>
+                              )}
+                            </>
+                          ) : null;
+                        })()}
                       </div>
                     </div>
                   </div>

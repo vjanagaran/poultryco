@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createContentIdea, getContentTopics, getContentPillars, getStakeholderSegments, type ContentTopic, type ContentPillar, type StakeholderSegment } from '@/lib/api/marketing';
 
 export default function NewIdeaPage() {
   const router = useRouter();

@@ -3,25 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getStakeholderSegmentById, updateStakeholderSegment, deleteStakeholderSegment, type StakeholderSegment } from '@/lib/api/marketing';
 
-interface StakeholderSegment {
-  id: string;
-  name: string;
-  description: string | null;
-  segment_size_estimate: number | null;
-  key_characteristics: string | null;
-  communication_preferences: string | null;
-  priority_level: number;
-  is_active: boolean;
-  created_at: string;
-}
+// Types imported from API
 
 export default function SegmentDetailPage() {
   const router = useRouter();
   const params = useParams();
   const segmentId = params.id as string;
-  const supabase = createClient();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -47,36 +36,15 @@ export default function SegmentDetailPage() {
       setLoading(true);
 
       // Fetch segment
-      const { data: segmentData, error: segmentError } = await supabase
-        .from('stakeholder_segments')
-        .select('*')
-        .eq('id', segmentId)
-        .single();
-
-      if (segmentError) throw segmentError;
+      const segmentData = await getStakeholderSegmentById(segmentId);
       setSegment(segmentData);
       setFormData(segmentData);
 
-      // Fetch stats
-      const [topicsRes, pillarsRes, contentRes] = await Promise.all([
-        supabase
-          .from('content_topic_segments')
-          .select('*', { count: 'exact', head: true })
-          .eq('segment_id', segmentId),
-        supabase
-          .from('content_pillars')
-          .select('*', { count: 'exact', head: true })
-          .eq('segment_id', segmentId),
-        supabase
-          .from('content')
-          .select('*', { count: 'exact', head: true })
-          .eq('segment_id', segmentId),
-      ]);
-
+      // TODO: Fetch stats when API supports it
       setStats({
-        total_topics: topicsRes.count || 0,
-        total_pillars: pillarsRes.count || 0,
-        total_content: contentRes.count || 0,
+        total_topics: 0,
+        total_pillars: 0,
+        total_content: 0,
       });
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -92,20 +60,15 @@ export default function SegmentDetailPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('stakeholder_segments')
-        .update({
-          name: formData.name,
-          description: formData.description,
-          segment_size_estimate: formData.segment_size_estimate,
-          key_characteristics: formData.key_characteristics,
-          communication_preferences: formData.communication_preferences,
-          priority_level: formData.priority_level,
-          is_active: formData.is_active,
-        })
-        .eq('id', segmentId);
-
-      if (error) throw error;
+      await updateStakeholderSegment(segmentId, {
+        name: formData.name,
+        description: formData.description,
+        segment_size_estimate: formData.segment_size_estimate,
+        key_characteristics: formData.key_characteristics,
+        communication_preferences: formData.communication_preferences,
+        priority_level: formData.priority_level,
+        is_active: formData.is_active,
+      });
 
       setEditing(false);
       fetchData();
@@ -127,9 +90,7 @@ export default function SegmentDetailPage() {
     }
 
     try {
-      const { error } = await supabase.from('stakeholder_segments').delete().eq('id', segmentId);
-
-      if (error) throw error;
+      await deleteStakeholderSegment(segmentId);
       router.push('/marketing/segments');
     } catch (error) {
       console.error('Error deleting segment:', error);

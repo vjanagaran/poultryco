@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { createMarketingChannel, type MarketingChannel } from '@/lib/api/marketing';
 
 const PLATFORMS = [
   { value: 'linkedin', label: 'LinkedIn', icon: '💼' },
@@ -31,7 +31,6 @@ const CHANNEL_TYPES = [
 
 export default function NewChannelPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
 
   // Form state
@@ -70,14 +69,12 @@ export default function NewChannelPage() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('marketing_channels')
-        .insert({
-          platform,
-          channel_type: channelType,
-          name,
-          handle: handle || null,
-          url: url || null,
+      await createMarketingChannel({
+        platform,
+        channel_type: channelType,
+        name,
+        handle: handle || undefined,
+        url: url || undefined,
           description: description || null,
           is_active: isActive,
           posting_schedule: postingSchedule || null,
