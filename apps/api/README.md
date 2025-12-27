@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **Framework:** NestJS 10  
-**Database:** PostgreSQL 16.11 (AWS RDS) with Drizzle ORM  
+**Database:** PostgreSQL 18.1 (AWS RDS) with Drizzle ORM  
 **Authentication:** Custom OTP-based Auth (Email/SMS/WhatsApp) + JWT  
 **Real-time:** Socket.io  
 **Storage:** AWS S3 + CloudFront  
@@ -92,7 +92,7 @@ PoultryCo API is a comprehensive REST API with real-time capabilities built for 
 - **Express** - HTTP server
 
 ### Database
-- **PostgreSQL 16.11** - Relational database (AWS RDS)
+- **PostgreSQL 18.1** - Relational database (AWS RDS)
 - **Drizzle ORM** - Type-safe ORM
 - **~120 tables** - Comprehensive schema
 
@@ -207,7 +207,7 @@ apps/api/
 
 - Node.js >= 20.0.0
 - npm >= 10.0.0
-- PostgreSQL 16.11 (AWS RDS)
+- PostgreSQL 18.1 (AWS RDS)
 - AWS Account (Cognito, S3, SES)
 
 ### Installation
@@ -266,7 +266,7 @@ NODE_ENV=development
 PORT=3002
 API_PREFIX=api/v1
 
-# Database (AWS RDS PostgreSQL 16.11)
+# Database (AWS RDS PostgreSQL 18.1)
 DATABASE_URL=postgresql://postgres:password@your-rds-endpoint:5432/poultryco?sslmode=require
 DATABASE_URL_TEST=postgresql://postgres:password@your-rds-endpoint:5432/poultryco_test?sslmode=require
 

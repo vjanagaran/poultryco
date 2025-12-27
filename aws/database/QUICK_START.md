@@ -41,7 +41,7 @@ This approach:
 1. Go to RDS → Create database
 2. **Engine options:**
    - Engine type: PostgreSQL
-   - Engine version: **PostgreSQL 16.11-R1** (or latest 16.x)
+   - Engine version: **PostgreSQL 18.1-R1** (or latest 18.x)
 3. Templates: Production (or Dev/Test for staging)
 4. Settings:
    - DB instance identifier: `poultryco-db`
@@ -99,7 +99,7 @@ export RDS_PASSWORD="your-master-password"
 psql -h $RDS_ENDPOINT -U postgres -d postgres
 
 # If successful, you'll see:
-# psql (16.11)
+# psql (18.1)
 # Type "help" for help.
 # postgres=>
 ```
@@ -245,7 +245,7 @@ SELECT COUNT(*) FROM ref_roles;
 
 After deployment, verify for **both databases** (`poultryco_test` and `poultryco`):
 
-- [ ] RDS instance running PostgreSQL 16.11
+- [ ] RDS instance running PostgreSQL 18.1
 - [ ] Both databases created
 - [ ] All tables created (~120) in both databases
 - [ ] All functions created (15+) in both databases
@@ -501,7 +501,7 @@ npm run migrate:verify
 
 If you've completed all steps, you now have:
 
-- ✅ AWS RDS PostgreSQL 16.11 instance running
+- ✅ AWS RDS PostgreSQL 18.1 instance running
 - ✅ Two databases: `poultryco_test` (testing) and `poultryco` (production)
 - ✅ Complete database schema deployed to both
 - ✅ Reference data loaded to both

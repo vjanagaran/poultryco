@@ -65,7 +65,7 @@ Empower poultry professionals worldwide with the tools and network they need to 
 
 ### Backend
 - **API:** NestJS 10 (REST API with Socket.io)
-- **Database:** PostgreSQL 16.11 (AWS RDS)
+- **Database:** PostgreSQL 18.1 (AWS RDS)
 - **Authentication:** Custom OTP-based Auth (Email/SMS/WhatsApp)
 - **Storage:** AWS S3 + CloudFront CDN
 - **Real-time:** Socket.io
@@ -113,7 +113,7 @@ poultryco/
 ### Prerequisites
 - **Node.js:** >= 20.0.0
 - **npm:** >= 10.0.0
-- **PostgreSQL 16.11:** AWS RDS or local instance
+- **PostgreSQL 18.1:** AWS RDS or local instance
 - **AWS Account:** For S3, SES, and RDS
 - **Expo Account:** For mobile development (optional but recommended)
 

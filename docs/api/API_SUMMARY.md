@@ -28,7 +28,7 @@ A comprehensive **NestJS REST API with Socket.io** for the PoultryCo platform, d
 - ✅ Compression & security (Helmet)
 
 ### 2. **Database Layer (Drizzle ORM)**
-- ✅ PostgreSQL 16.11 connection
+- ✅ PostgreSQL 18.1 connection
 - ✅ ~120 tables schema defined
 - ✅ 28 modules organized
 - ✅ Type-safe queries
@@ -348,7 +348,7 @@ socket.on('user:offline', (data) => {})
    ```
 
 2. **Setup AWS Services:**
-   - Create RDS PostgreSQL 16.11 instance (with SSL)
+   - Create RDS PostgreSQL 18.1 instance (with SSL)
    - Configure AWS SES for SMTP email delivery
    - Create S3 bucket
    - Configure Secrets Manager

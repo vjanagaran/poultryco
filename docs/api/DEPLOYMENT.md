@@ -8,7 +8,7 @@
 - Docker installed
 - ECR repository created
 - ECS cluster created
-- RDS PostgreSQL 16.11 instance running (with SSL enabled)
+- RDS PostgreSQL 18.1 instance running (with SSL enabled)
 - AWS SES configured for SMTP email delivery
 - S3 bucket created
 - Secrets Manager secrets created
