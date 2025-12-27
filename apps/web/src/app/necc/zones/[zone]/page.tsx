@@ -178,9 +178,11 @@ export default async function ZonePage({ params, searchParams }: PageProps) {
     trendData = monthlyData
       .map(m => {
         const [year, month] = m.month.split('-');
+        // Use avg_suggested_price as primary, fallback to avg_price if available
+        const price = m.avg_suggested_price || m.avg_price || 0;
         return {
           date: m.month,
-          price: m.avg_price,
+          price: price,
           label: `${monthNames[parseInt(month) - 1]} ${year}`,
         };
       })

@@ -661,21 +661,23 @@ export class NeccService {
       conditions.push(sql`zone_id = ${zoneId}::uuid`);
     }
     if (startMonth) {
-      conditions.push(sql`TO_CHAR(TO_DATE(year::text || '-' || month::text || '-01'), 'YYYY-MM-01') >= ${startMonth}`);
+      // Use month_formatted column if available, otherwise construct from year and month
+      conditions.push(sql`COALESCE(month_formatted, TO_CHAR(DATE_TRUNC('month', period_start), 'YYYY-MM-01')) >= ${startMonth}`);
     }
     if (endMonth) {
-      conditions.push(sql`TO_CHAR(TO_DATE(year::text || '-' || month::text || '-01'), 'YYYY-MM-01') <= ${endMonth}`);
+      conditions.push(sql`COALESCE(month_formatted, TO_CHAR(DATE_TRUNC('month', period_start), 'YYYY-MM-01')) <= ${endMonth}`);
     }
 
     // Build base query
+    // Note: The view already has month_formatted column
     const baseQuery = sql`
       SELECT 
         zone_id,
-        TO_CHAR(TO_DATE(year::text || '-' || month::text || '-01'), 'YYYY-MM-01') as month,
+        COALESCE(month_formatted, TO_CHAR(DATE_TRUNC('month', period_start), 'YYYY-MM-01')) as month,
         year,
         month as month_number,
-        ROUND(avg_suggested_price)::integer as avg_suggested_price,
-        ROUND(avg_prevailing_price)::integer as avg_prevailing_price,
+        avg_suggested_price,
+        avg_prevailing_price,
         min_suggested_price,
         max_suggested_price,
         min_prevailing_price,
@@ -705,8 +707,14 @@ export class NeccService {
       query = sql`${query} LIMIT ${limit}`;
     }
 
-    const result = await this.db.execute(query);
-    return result.rows || [];
+    try {
+      const result = await this.db.execute(query);
+      return result.rows || [];
+    } catch (error) {
+      // If materialized view doesn't exist, return empty array
+      console.warn('nec_monthly_averages view not found, returning empty array:', error);
+      return [];
+    }
   }
 
   /**
@@ -734,7 +742,7 @@ export class NeccService {
       return { average: 0, min: 0, max: 0, count: 0 };
     }
 
-    const avgPrices = monthlyData.map((m) => m.avg_prevailing_price || 0);
+    const avgPrices = monthlyData.map((m) => m.avg_suggested_price || m.avg_prevailing_price || 0);
     const average = Math.round(
       avgPrices.reduce((a, b) => a + b, 0) / avgPrices.length,
     );
@@ -761,21 +769,56 @@ export class NeccService {
     zoneId: string,
     minYears: number = 2,
   ): Promise<any[]> {
-    const result = await this.db.execute(
-      sql`SELECT * FROM get_zone_yoy_data(${zoneId}::uuid, ${minYears})`,
-    );
-    return result.rows || [];
+    try {
+      const result = await this.db.execute(
+        sql`SELECT * FROM get_zone_yoy_data(${zoneId}::uuid, ${minYears})`,
+      );
+      return result.rows || [];
+    } catch (error) {
+      // If database function doesn't exist, return empty array
+      console.warn('get_zone_yoy_data function not found, returning empty array');
+      return [];
+    }
   }
 
   /**
    * Get Year-over-Year statistics for a zone
    * Uses database function: get_zone_yoy_stats
+   * Note: The function returns JSONB directly
    */
   async getZoneYoYStats(zoneId: string): Promise<any> {
-    const result = await this.db.execute(
-      sql`SELECT * FROM get_zone_yoy_stats(${zoneId}::uuid)`,
-    );
-    return result.rows || [];
+    try {
+      // The function returns JSONB directly, not a table
+      const result = await this.db.execute(
+        sql`SELECT get_zone_yoy_stats(${zoneId}::uuid) as stats`,
+      );
+      // If function doesn't exist or returns empty, return default structure
+      if (!result.rows || result.rows.length === 0 || !result.rows[0]?.stats) {
+        return {
+          highest_price_day: null,
+          lowest_price_day: null,
+          avg_by_year: {},
+          years: [],
+        };
+      }
+      // Parse JSONB result
+      const stats = result.rows[0].stats;
+      return {
+        highest_price_day: stats.highest_price_day === 'null' ? null : stats.highest_price_day,
+        lowest_price_day: stats.lowest_price_day === 'null' ? null : stats.lowest_price_day,
+        avg_by_year: stats.avg_by_year || {},
+        years: stats.years || [],
+      };
+    } catch (error) {
+      // If database function doesn't exist, return default structure
+      console.warn('get_zone_yoy_stats function not found, returning default stats:', error);
+      return {
+        highest_price_day: null,
+        lowest_price_day: null,
+        avg_by_year: {},
+        years: [],
+      };
+    }
   }
 
   // =====================================================

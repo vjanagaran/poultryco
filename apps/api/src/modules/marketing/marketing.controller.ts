@@ -298,4 +298,70 @@ export class MarketingController {
   async createPlatformKpi(@Body() data: any) {
     return this.marketingService.createPlatformKpi(data);
   }
+
+  // =====================================================
+  // CONTENT TAGS
+  // =====================================================
+
+  @Get('tags')
+  @ApiOperation({ summary: 'Get all content tags' })
+  async getContentTags() {
+    return this.marketingService.getContentTags();
+  }
+
+  @Get('tags/popular')
+  @ApiOperation({ summary: 'Get popular content tags' })
+  async getPopularContentTags(@Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.marketingService.getPopularContentTags(limitNum);
+  }
+
+  @Get('tags/:id')
+  @ApiOperation({ summary: 'Get content tag by ID' })
+  async getContentTagById(@Param('id') id: string) {
+    return this.marketingService.getContentTagById(id);
+  }
+
+  @Post('tags')
+  @ApiOperation({ summary: 'Create content tag' })
+  async createContentTag(@Body() data: any) {
+    return this.marketingService.createContentTag(data);
+  }
+
+  @Patch('tags/:id')
+  @ApiOperation({ summary: 'Update content tag' })
+  async updateContentTag(@Param('id') id: string, @Body() data: any) {
+    return this.marketingService.updateContentTag(id, data);
+  }
+
+  @Delete('tags/:id')
+  @ApiOperation({ summary: 'Delete content tag' })
+  async deleteContentTag(@Param('id') id: string) {
+    await this.marketingService.deleteContentTag(id);
+    return { success: true };
+  }
+
+  // =====================================================
+  // PILLAR-TAG RELATIONSHIPS
+  // =====================================================
+
+  @Get('pillars/:id/tags')
+  @ApiOperation({ summary: 'Get tags for a content pillar' })
+  async getPillarTags(@Param('id') id: string) {
+    return this.marketingService.getPillarTags(id);
+  }
+
+  @Post('pillars/:id/tags')
+  @ApiOperation({ summary: 'Set tags for a content pillar' })
+  async setPillarTags(@Param('id') id: string, @Body() data: { tagIds: string[] }) {
+    await this.marketingService.setPillarTags(id, data.tagIds);
+    return { success: true };
+  }
+
+  @Delete('pillars/:id/tags/:tagId')
+  @ApiOperation({ summary: 'Remove a tag from a content pillar' })
+  async removePillarTag(@Param('id') id: string, @Param('tagId') tagId: string) {
+    await this.marketingService.removePillarTag(id, tagId);
+    return { success: true };
+  }
 }

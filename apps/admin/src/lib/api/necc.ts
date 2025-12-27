@@ -92,6 +92,14 @@ export async function getZoneBySlug(slug: string): Promise<NECCZone | null> {
 }
 
 /**
+ * Get zones count
+ */
+export async function getZonesCount(): Promise<number> {
+  const result = await apiClient.get<{ count: number }>('/necc/zones/count');
+  return result.count;
+}
+
+/**
  * Create a new zone
  */
 export async function createZone(data: Partial<NECCZone>): Promise<NECCZone> {
@@ -198,6 +206,45 @@ export async function updatePrice(priceId: string, data: Partial<NECCPrice>): Pr
  */
 export async function deletePrice(priceId: string): Promise<void> {
   return apiClient.delete<void>(`/necc/prices/${priceId}`);
+}
+
+/**
+ * Get prices count
+ */
+export async function getPricesCount(): Promise<number> {
+  // Use the stats endpoint with a wide date range to get count
+  const today = new Date().toISOString().split('T')[0];
+  const startDate = '2009-01-01'; // Earliest NECC data
+  try {
+    const stats = await apiClient.get<{ count: number; average: number; min: number; max: number }>(
+      `/necc/prices/stats?startDate=${startDate}&endDate=${today}`
+    );
+    return stats.count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Get latest price date
+ */
+export async function getLatestPriceDate(): Promise<string | null> {
+  try {
+    // Get today's prices, which will include the latest date
+    const today = new Date().toISOString().split('T')[0];
+    const prices = await getPricesByDate(today);
+    if (prices && prices.length > 0) {
+      return prices[0].date;
+    }
+    // If no prices today, get recent prices
+    const recentPrices = await getPrices({ limit: 1 });
+    if (recentPrices && recentPrices.length > 0) {
+      return recentPrices[0].date;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 // =====================================================

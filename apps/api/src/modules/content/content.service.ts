@@ -1,23 +1,44 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '@/database/database.module';
-import { eq, and, or, like, desc, count, sql } from 'drizzle-orm';
-
-// TODO: Create blog_posts and blog_categories tables in database schema
-// For now, these are placeholder implementations
+import { eq, and, or, like, desc, asc, inArray, sql, count } from 'drizzle-orm';
+import { 
+  blogPosts, 
+  blogCategories, 
+  blogTags, 
+  blogPostTags 
+} from '@/database/schema';
 
 export interface BlogPost {
   id: string;
   title: string;
   slug: string;
-  excerpt: string;
+  excerpt: string | null;
   content: string;
+  metaTitle: string | null;
+  metaDescription: string | null;
+  metaKeywords: string[] | null;
+  ogImage: string | null;
+  featuredImage: string | null;
+  featuredImageAlt: string | null;
+  categoryId: string | null;
+  authorId: string | null;
+  authorName: string | null;
   status: 'draft' | 'published' | 'scheduled' | 'archived';
   publishedAt: string | null;
+  scheduledFor: string | null;
   viewCount: number;
-  authorName: string | null;
-  categoryId: string | null;
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  readingTimeMinutes: number | null;
+  wordCount: number | null;
+  isFeatured: boolean;
+  isPinned: boolean;
+  featuredOrder: number | null;
   createdAt: string;
   updatedAt: string;
+  tags?: BlogTag[];
+  category?: BlogCategory;
 }
 
 export interface BlogCategory {
@@ -25,88 +46,517 @@ export interface BlogCategory {
   name: string;
   slug: string;
   description: string | null;
+  color: string | null;
+  icon: string | null;
+  postCount: number;
   isActive: boolean;
   createdAt: string;
+  updatedAt: string;
+}
+
+export interface BlogTag {
+  id: string;
+  name: string;
+  slug: string;
+  postCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 @Injectable()
 export class ContentService {
   constructor(@Inject(DATABASE_CONNECTION) private db: any) {}
 
-  /**
-   * Get all blog posts
-   */
+  // =====================================================
+  // BLOG POSTS
+  // =====================================================
+
   async getBlogPosts(filters?: {
     status?: string;
     search?: string;
     categoryId?: string;
   }): Promise<BlogPost[]> {
-    // TODO: Implement when blog_posts table exists
-    // For now, return empty array
-    return [];
+    let query = this.db.select().from(blogPosts);
+
+    const conditions = [];
+
+    if (filters?.status) {
+      conditions.push(eq(blogPosts.status, filters.status as any));
+    }
+
+    if (filters?.categoryId) {
+      conditions.push(eq(blogPosts.categoryId, filters.categoryId));
+    }
+
+    if (filters?.search) {
+      conditions.push(
+        or(
+          like(blogPosts.title, `%${filters.search}%`),
+          like(blogPosts.excerpt, `%${filters.search}%`),
+          like(blogPosts.content, `%${filters.search}%`)
+        )
+      );
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const posts = await query.orderBy(desc(blogPosts.createdAt));
+
+    // Load tags and category for each post
+    const postsWithRelations = await Promise.all(
+      posts.map(async (post: any) => {
+        const [tags, category] = await Promise.all([
+          this.getPostTags(post.id),
+          post.categoryId ? this.getBlogCategoryById(post.categoryId) : null,
+        ]);
+
+        return {
+          ...post,
+          tags,
+          category: category || undefined,
+        };
+      })
+    );
+
+    return postsWithRelations;
   }
 
-  /**
-   * Get blog post by ID
-   */
   async getBlogPostById(id: string): Promise<BlogPost | null> {
-    // TODO: Implement when blog_posts table exists
-    return null;
+    const [post] = await this.db
+      .select()
+      .from(blogPosts)
+      .where(eq(blogPosts.id, id))
+      .limit(1);
+
+    if (!post) {
+      return null;
+    }
+
+    const [tags, category] = await Promise.all([
+      this.getPostTags(id),
+      post.categoryId ? this.getBlogCategoryById(post.categoryId) : null,
+    ]);
+
+    return {
+      ...post,
+      tags,
+      category: category || undefined,
+    };
   }
 
-  /**
-   * Create blog post
-   */
   async createBlogPost(data: Partial<BlogPost>): Promise<BlogPost> {
-    // TODO: Implement when blog_posts table exists
-    throw new Error('Blog posts table not yet created. Please create blog_posts table in database schema.');
+    // Generate slug if not provided
+    if (!data.slug && data.title) {
+      data.slug = this.generateSlug(data.title);
+    }
+
+    // Check for duplicate slug
+    if (data.slug) {
+      const existing = await this.db
+        .select()
+        .from(blogPosts)
+        .where(eq(blogPosts.slug, data.slug))
+        .limit(1);
+
+      if (existing.length > 0) {
+        throw new BadRequestException('A post with this slug already exists');
+      }
+    }
+
+    // Set published_at if status is published
+    if (data.status === 'published' && !data.publishedAt) {
+      data.publishedAt = new Date().toISOString();
+    }
+
+    const [post] = await this.db
+      .insert(blogPosts)
+      .values({
+        title: data.title,
+        slug: data.slug,
+        excerpt: data.excerpt || null,
+        content: data.content,
+        metaTitle: data.metaTitle || null,
+        metaDescription: data.metaDescription || null,
+        metaKeywords: data.metaKeywords || null,
+        ogImage: data.ogImage || null,
+        featuredImage: data.featuredImage || null,
+        featuredImageAlt: data.featuredImageAlt || null,
+        categoryId: data.categoryId || null,
+        authorId: data.authorId || null,
+        authorName: data.authorName || null,
+        status: (data.status || 'draft') as any,
+        publishedAt: data.publishedAt || null,
+        scheduledFor: data.scheduledFor || null,
+        isFeatured: data.isFeatured || false,
+        isPinned: data.isPinned || false,
+        featuredOrder: data.featuredOrder || null,
+      })
+      .returning();
+
+    // Add tags if provided
+    if (data.tags && Array.isArray(data.tags) && data.tags.length > 0) {
+      await this.setPostTags(post.id, data.tags.map((t: any) => t.id || t));
+    }
+
+    return this.getBlogPostById(post.id) as Promise<BlogPost>;
   }
 
-  /**
-   * Update blog post
-   */
   async updateBlogPost(id: string, data: Partial<BlogPost>): Promise<BlogPost> {
-    // TODO: Implement when blog_posts table exists
-    throw new Error('Blog posts table not yet created. Please create blog_posts table in database schema.');
+    const existing = await this.getBlogPostById(id);
+    if (!existing) {
+      throw new NotFoundException('Blog post not found');
+    }
+
+    // Generate slug if title changed and slug not provided
+    if (data.title && !data.slug && data.title !== existing.title) {
+      data.slug = this.generateSlug(data.title);
+    }
+
+    // Check for duplicate slug
+    if (data.slug && data.slug !== existing.slug) {
+      const duplicate = await this.db
+        .select()
+        .from(blogPosts)
+        .where(eq(blogPosts.slug, data.slug))
+        .limit(1);
+
+      if (duplicate.length > 0) {
+        throw new BadRequestException('A post with this slug already exists');
+      }
+    }
+
+    // Set published_at if status changed to published
+    if (data.status === 'published' && existing.status !== 'published' && !data.publishedAt) {
+      data.publishedAt = new Date().toISOString();
+    }
+
+    await this.db
+      .update(blogPosts)
+      .set({
+        ...(data.title && { title: data.title }),
+        ...(data.slug && { slug: data.slug }),
+        ...(data.excerpt !== undefined && { excerpt: data.excerpt }),
+        ...(data.content && { content: data.content }),
+        ...(data.metaTitle !== undefined && { metaTitle: data.metaTitle }),
+        ...(data.metaDescription !== undefined && { metaDescription: data.metaDescription }),
+        ...(data.metaKeywords !== undefined && { metaKeywords: data.metaKeywords }),
+        ...(data.ogImage !== undefined && { ogImage: data.ogImage }),
+        ...(data.featuredImage !== undefined && { featuredImage: data.featuredImage }),
+        ...(data.featuredImageAlt !== undefined && { featuredImageAlt: data.featuredImageAlt }),
+        ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
+        ...(data.authorName !== undefined && { authorName: data.authorName }),
+        ...(data.status && { status: data.status as any }),
+        ...(data.publishedAt !== undefined && { publishedAt: data.publishedAt }),
+        ...(data.scheduledFor !== undefined && { scheduledFor: data.scheduledFor }),
+        ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
+        ...(data.isPinned !== undefined && { isPinned: data.isPinned }),
+        ...(data.featuredOrder !== undefined && { featuredOrder: data.featuredOrder }),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(blogPosts.id, id));
+
+    // Update tags if provided
+    if (data.tags !== undefined) {
+      await this.setPostTags(id, Array.isArray(data.tags) ? data.tags.map((t: any) => t.id || t) : []);
+    }
+
+    return this.getBlogPostById(id) as Promise<BlogPost>;
   }
 
-  /**
-   * Delete blog post
-   */
   async deleteBlogPost(id: string): Promise<boolean> {
-    // TODO: Implement when blog_posts table exists
-    throw new Error('Blog posts table not yet created. Please create blog_posts table in database schema.');
+    const existing = await this.getBlogPostById(id);
+    if (!existing) {
+      throw new NotFoundException('Blog post not found');
+    }
+
+    await this.db.delete(blogPosts).where(eq(blogPosts.id, id));
+    return true;
   }
 
-  /**
-   * Get all blog categories
-   */
+  // =====================================================
+  // BLOG CATEGORIES
+  // =====================================================
+
   async getBlogCategories(): Promise<BlogCategory[]> {
-    // TODO: Implement when blog_categories table exists
-    return [];
+    return this.db
+      .select()
+      .from(blogCategories)
+      .where(eq(blogCategories.isActive, true))
+      .orderBy(asc(blogCategories.name));
   }
 
-  /**
-   * Create blog category
-   */
+  async getBlogCategoryById(id: string): Promise<BlogCategory | null> {
+    const [category] = await this.db
+      .select()
+      .from(blogCategories)
+      .where(eq(blogCategories.id, id))
+      .limit(1);
+
+    return category || null;
+  }
+
   async createBlogCategory(data: Partial<BlogCategory>): Promise<BlogCategory> {
-    // TODO: Implement when blog_categories table exists
-    throw new Error('Blog categories table not yet created. Please create blog_categories table in database schema.');
+    if (!data.name) {
+      throw new BadRequestException('Category name is required');
+    }
+
+    // Generate slug if not provided
+    if (!data.slug) {
+      data.slug = this.generateSlug(data.name);
+    }
+
+    // Check for duplicate slug
+    const existing = await this.db
+      .select()
+      .from(blogCategories)
+      .where(eq(blogCategories.slug, data.slug!))
+      .limit(1);
+
+    if (existing.length > 0) {
+      throw new BadRequestException('A category with this slug already exists');
+    }
+
+    const [category] = await this.db
+      .insert(blogCategories)
+      .values({
+        name: data.name,
+        slug: data.slug,
+        description: data.description || null,
+        color: data.color || null,
+        icon: data.icon || null,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+      })
+      .returning();
+
+    return category;
   }
 
-  /**
-   * Update blog category
-   */
   async updateBlogCategory(id: string, data: Partial<BlogCategory>): Promise<BlogCategory> {
-    // TODO: Implement when blog_categories table exists
-    throw new Error('Blog categories table not yet created. Please create blog_categories table in database schema.');
+    const existing = await this.getBlogCategoryById(id);
+    if (!existing) {
+      throw new NotFoundException('Blog category not found');
+    }
+
+    // Generate slug if name changed and slug not provided
+    if (data.name && !data.slug && data.name !== existing.name) {
+      data.slug = this.generateSlug(data.name);
+    }
+
+    // Check for duplicate slug
+    if (data.slug && data.slug !== existing.slug) {
+      const duplicate = await this.db
+        .select()
+        .from(blogCategories)
+        .where(eq(blogCategories.slug, data.slug!))
+        .limit(1);
+
+      if (duplicate.length > 0) {
+        throw new BadRequestException('A category with this slug already exists');
+      }
+    }
+
+    const [category] = await this.db
+      .update(blogCategories)
+      .set({
+        ...(data.name && { name: data.name }),
+        ...(data.slug && { slug: data.slug }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.color !== undefined && { color: data.color }),
+        ...(data.icon !== undefined && { icon: data.icon }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(blogCategories.id, id))
+      .returning();
+
+    return category;
   }
 
-  /**
-   * Delete blog category
-   */
   async deleteBlogCategory(id: string): Promise<boolean> {
-    // TODO: Implement when blog_categories table exists
-    throw new Error('Blog categories table not yet created. Please create blog_categories table in database schema.');
+    const existing = await this.getBlogCategoryById(id);
+    if (!existing) {
+      throw new NotFoundException('Blog category not found');
+    }
+
+    await this.db.delete(blogCategories).where(eq(blogCategories.id, id));
+    return true;
+  }
+
+  // =====================================================
+  // BLOG TAGS
+  // =====================================================
+
+  async getBlogTags(): Promise<BlogTag[]> {
+    return this.db
+      .select()
+      .from(blogTags)
+      .orderBy(asc(blogTags.name));
+  }
+
+  async getBlogTagById(id: string): Promise<BlogTag | null> {
+    const [tag] = await this.db
+      .select()
+      .from(blogTags)
+      .where(eq(blogTags.id, id))
+      .limit(1);
+
+    return tag || null;
+  }
+
+  async getPopularBlogTags(limit: number = 10): Promise<BlogTag[]> {
+    return this.db
+      .select()
+      .from(blogTags)
+      .orderBy(desc(blogTags.postCount))
+      .limit(limit);
+  }
+
+  async createBlogTag(data: Partial<BlogTag>): Promise<BlogTag> {
+    if (!data.name) {
+      throw new BadRequestException('Tag name is required');
+    }
+
+    // Generate slug if not provided
+    if (!data.slug) {
+      data.slug = this.generateSlug(data.name);
+    }
+
+    // Check for duplicate slug
+    const existing = await this.db
+      .select()
+      .from(blogTags)
+      .where(eq(blogTags.slug, data.slug!))
+      .limit(1);
+
+    if (existing.length > 0) {
+      throw new BadRequestException('A tag with this slug already exists');
+    }
+
+    const [tag] = await this.db
+      .insert(blogTags)
+      .values({
+        name: data.name,
+        slug: data.slug,
+      })
+      .returning();
+
+    return tag;
+  }
+
+  async updateBlogTag(id: string, data: Partial<BlogTag>): Promise<BlogTag> {
+    const existing = await this.getBlogTagById(id);
+    if (!existing) {
+      throw new NotFoundException('Blog tag not found');
+    }
+
+    // Generate slug if name changed and slug not provided
+    if (data.name && !data.slug && data.name !== existing.name) {
+      data.slug = this.generateSlug(data.name);
+    }
+
+    // Check for duplicate slug
+    if (data.slug && data.slug !== existing.slug) {
+      const duplicate = await this.db
+        .select()
+        .from(blogTags)
+        .where(eq(blogTags.slug, data.slug!))
+        .limit(1);
+
+      if (duplicate.length > 0) {
+        throw new BadRequestException('A tag with this slug already exists');
+      }
+    }
+
+    const [tag] = await this.db
+      .update(blogTags)
+      .set({
+        ...(data.name && { name: data.name }),
+        ...(data.slug && { slug: data.slug }),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(blogTags.id, id))
+      .returning();
+
+    return tag;
+  }
+
+  async deleteBlogTag(id: string): Promise<boolean> {
+    const existing = await this.getBlogTagById(id);
+    if (!existing) {
+      throw new NotFoundException('Blog tag not found');
+    }
+
+    await this.db.delete(blogTags).where(eq(blogTags.id, id));
+    return true;
+  }
+
+  // =====================================================
+  // POST-TAG RELATIONSHIPS
+  // =====================================================
+
+  async getPostTags(postId: string): Promise<BlogTag[]> {
+    const tags = await this.db
+      .select({
+        id: blogTags.id,
+        name: blogTags.name,
+        slug: blogTags.slug,
+        postCount: blogTags.postCount,
+        createdAt: blogTags.createdAt,
+        updatedAt: blogTags.updatedAt,
+      })
+      .from(blogPostTags)
+      .innerJoin(blogTags, eq(blogPostTags.tagId, blogTags.id))
+      .where(eq(blogPostTags.postId, postId));
+
+    return tags;
+  }
+
+  async setPostTags(postId: string, tagIds: string[]): Promise<void> {
+    // Remove existing tags
+    await this.db.delete(blogPostTags).where(eq(blogPostTags.postId, postId));
+
+    // Add new tags
+    if (tagIds.length > 0) {
+      await this.db.insert(blogPostTags).values(
+        tagIds.map((tagId) => ({
+          postId,
+          tagId,
+        }))
+      );
+    }
+  }
+
+  async addPostTag(postId: string, tagId: string): Promise<void> {
+    // Check if already exists
+    const existing = await this.db
+      .select()
+      .from(blogPostTags)
+      .where(and(eq(blogPostTags.postId, postId), eq(blogPostTags.tagId, tagId)))
+      .limit(1);
+
+    if (existing.length === 0) {
+      await this.db.insert(blogPostTags).values({ postId, tagId });
+    }
+  }
+
+  async removePostTag(postId: string, tagId: string): Promise<void> {
+    await this.db
+      .delete(blogPostTags)
+      .where(and(eq(blogPostTags.postId, postId), eq(blogPostTags.tagId, tagId)));
+  }
+
+  // =====================================================
+  // UTILITIES
+  // =====================================================
+
+  private generateSlug(text: string): string {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 }

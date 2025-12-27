@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBlogPost, getBlogCategories, type BlogCategory } from '@/lib/api/content'
+import { 
+  createBlogPost, 
+  getBlogCategories, 
+  getBlogTags,
+  createBlogTag,
+  setPostTags,
+  type BlogCategory,
+  type BlogTag 
+} from '@/lib/api/content'
+import { apiClient } from '@/lib/api/client'
+import { uploadFile } from '@/lib/api/upload'
 import RichTextEditor from '@/components/RichTextEditor'
 import TagInput from '@/components/TagInput'
 import ImageUpload from '@/components/ImageUpload'
@@ -21,7 +31,6 @@ interface Tag {
 
 export default function NewBlogPostPageEnhanced() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
@@ -62,14 +71,12 @@ export default function NewBlogPostPageEnhanced() {
 
   async function fetchCategories() {
     try {
-      const { data, error } = await supabase
-        .from('blog_categories')
-        .select('id, name, slug')
-        .eq('is_active', true)
-        .order('name')
-
-      if (error) throw error
-      setCategories(data || [])
+      const data = await getBlogCategories()
+      setCategories(data.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug
+      })))
     } catch (error) {
       console.error('Error fetching categories:', error)
     }
@@ -77,36 +84,28 @@ export default function NewBlogPostPageEnhanced() {
 
   async function fetchTags() {
     try {
-      const { data, error } = await supabase
-        .from('blog_tags')
-        .select('id, name, slug')
-        .order('name')
-
-      if (error) throw error
-      setTags(data || [])
+      const data = await getBlogTags()
+      setTags(data.map(tag => ({
+        id: tag.id,
+        name: tag.name,
+        slug: tag.slug
+      })))
     } catch (error) {
       console.error('Error fetching tags:', error)
     }
   }
 
   async function createTag(name: string): Promise<Tag> {
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-
-    const { data, error } = await supabase
-      .from('blog_tags')
-      .insert([{ name, slug }])
-      .select()
-      .single()
-
-    if (error) throw error
-
+    const tag = await createBlogTag({ name })
+    
     // Refresh tags list
     fetchTags()
 
-    return data
+    return {
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug
+    }
   }
 
   async function handleImageUploadForEditor(): Promise<string> {
@@ -125,17 +124,8 @@ export default function NewBlogPostPageEnhanced() {
           const fileExt = file.name.split('.').pop()
           const fileName = `content/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
-          const { data, error } = await supabase.storage
-            .from('blog-images')
-            .upload(fileName, file)
-
-          if (error) throw error
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('blog-images')
-            .getPublicUrl(data.path)
-
-          resolve(publicUrl)
+          const result = await uploadFile(file, 'post-media', 'content')
+          resolve(result.url)
         } catch (error) {
           console.error('Upload error:', error)
           resolve('')
@@ -161,7 +151,15 @@ export default function NewBlogPostPageEnhanced() {
     setLoading(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      // Get current user from API
+      let user: any = null
+      try {
+        user = await apiClient.get('/auth/me')
+      } catch (error) {
+        console.error('Error fetching user:', error)
+        alert('You must be logged in to create a post')
+        return
+      }
 
       const now = new Date().toISOString()
       let status = 'draft'
@@ -175,37 +173,21 @@ export default function NewBlogPostPageEnhanced() {
         published_at = null
       }
 
-      const postData = {
+      // Create post via API
+      const post = await createBlogPost({
         ...formData,
-        status,
-        published_at,
-        scheduled_for: action === 'schedule' ? formData.scheduled_for : null,
-        author_id: user?.id,
-        author_name: user?.email?.split('@')[0] || 'Admin',
-        word_count: formData.content.split(/\s+/).length,
-        reading_time_minutes: Math.ceil(formData.content.split(/\s+/).length / 200),
-      }
+        status: status as any,
+        publishedAt: published_at,
+        scheduledFor: action === 'schedule' ? formData.scheduled_for : null,
+        authorId: user?.id,
+        authorName: user?.email?.split('@')[0] || 'Admin',
+        wordCount: formData.content.split(/\s+/).length,
+        readingTimeMinutes: Math.ceil(formData.content.split(/\s+/).length / 200),
+      })
 
-      const { data: post, error: postError } = await supabase
-        .from('blog_posts')
-        .insert([postData])
-        .select()
-        .single()
-
-      if (postError) throw postError
-
-      // Insert tags
+      // Set tags via API
       if (selectedTags.length > 0 && post) {
-        const tagLinks = selectedTags.map(tagId => ({
-          post_id: post.id,
-          tag_id: tagId,
-        }))
-
-        const { error: tagsError } = await supabase
-          .from('blog_post_tags')
-          .insert(tagLinks)
-
-        if (tagsError) throw tagsError
+        await setPostTags(post.id, selectedTags)
       }
 
       alert(`Post ${action === 'publish' ? 'published' : action === 'schedule' ? 'scheduled' : 'saved'} successfully!`)

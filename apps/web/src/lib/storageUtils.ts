@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/client';
+import { uploadDocument } from '@/lib/api/upload';
 
 interface UploadResult {
   success: boolean;
@@ -12,31 +12,13 @@ export async function uploadToStorage(
   userId: string
 ): Promise<UploadResult> {
   try {
-    const supabase = createClient();
-
-    // Get file extension
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}-${Date.now()}.${fileExt}`;
-    const filePath = `${folder}/${fileName}`;
-
-    // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from('cdn.poultryco.net')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (uploadError) {
-      return { success: false, error: uploadError.message };
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('cdn.poultryco.net')
-      .getPublicUrl(filePath);
-
-    return { success: true, url: publicUrl };
+    // Upload via API
+    const result = await uploadDocument(file);
+    
+    return { 
+      success: true, 
+      url: result.cdnUrl || result.url 
+    };
   } catch (error) {
     return {
       success: false,

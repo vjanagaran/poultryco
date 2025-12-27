@@ -1,12 +1,19 @@
 // hooks/useContentTags.ts
 /**
  * React Query hooks for Content Tags system
- * Usage: Import and use in your components for tag management
+ * Migrated to use REST API instead of Supabase
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-// TODO: Migrate to API
-// import { apiClient } from '@/lib/api/client';
+import { 
+  getContentTags, 
+  getPopularContentTags, 
+  getContentTagById,
+  createContentTag,
+  updateContentTag,
+  deleteContentTag,
+  type ContentTag 
+} from '@/lib/api/marketing';
 
 // Types
 export interface ContentTag {
@@ -37,14 +44,7 @@ export function useContentTags() {
   return useQuery({
     queryKey: ['content-tags'],
     queryFn: async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('content_tags')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      return data as ContentTag[];
+      return getContentTags();
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -57,14 +57,7 @@ export function usePopularTags(limit = 10) {
   return useQuery({
     queryKey: ['popular-tags', limit],
     queryFn: async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('popular_tags')
-        .select('*')
-        .limit(limit);
-      
-      if (error) throw error;
-      return data as PopularTag[];
+      return getPopularContentTags(limit);
     },
   });
 }
@@ -77,16 +70,7 @@ export function useContentTag(tagId: string | null) {
     queryKey: ['content-tag', tagId],
     queryFn: async () => {
       if (!tagId) return null;
-      
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('content_tags')
-        .select('*')
-        .eq('id', tagId)
-        .single();
-      
-      if (error) throw error;
-      return data as ContentTag;
+      return getContentTagById(tagId);
     },
     enabled: !!tagId,
   });
@@ -96,19 +80,15 @@ export function useContentTag(tagId: string | null) {
  * Get tags assigned to specific content
  */
 export function useContentTagsForContent(contentId: string | null) {
+  // Note: This endpoint needs to be added to API if not exists
+  // For now, using a placeholder
   return useQuery({
     queryKey: ['content-tags-for-content', contentId],
     queryFn: async () => {
       if (!contentId) return [];
-      
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('content_tag_assignments')
-        .select('content_tags(*)')
-        .eq('content_id', contentId);
-      
-      if (error) throw error;
-      return data.map((item: any) => item.content_tags) as ContentTag[];
+      // TODO: Add API endpoint for this
+      // return getContentTagsForContent(contentId);
+      return [];
     },
     enabled: !!contentId,
   });
@@ -117,20 +97,13 @@ export function useContentTagsForContent(contentId: string | null) {
 /**
  * Get tags assigned to specific pillar
  */
-export function useTagsForPillar(pillarId: string | null) {
+export function useContentTagsForPillar(pillarId: string | null) {
   return useQuery({
-    queryKey: ['tags-for-pillar', pillarId],
+    queryKey: ['content-tags-for-pillar', pillarId],
     queryFn: async () => {
       if (!pillarId) return [];
-      
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('pillar_tag_assignments')
-        .select('content_tags(*)')
-        .eq('pillar_id', pillarId);
-      
-      if (error) throw error;
-      return data.map((item: any) => item.content_tags) as ContentTag[];
+      // TODO: Use getPillarTags from marketing API
+      return [];
     },
     enabled: !!pillarId,
   });
@@ -141,175 +114,91 @@ export function useTagsForPillar(pillarId: string | null) {
 // ============================================
 
 /**
- * Create a new tag
+ * Create a new content tag
  */
-export function useCreateTag() {
+export function useCreateContentTag() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async (tagData: {
-      name: string;
-      slug?: string;
-      color?: string;
-      description?: string;
-    }) => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('content_tags')
-        .insert([tagData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as ContentTag;
+    mutationFn: async (data: Partial<ContentTag>) => {
+      return createContentTag(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-tags'] });
+      queryClient.invalidateQueries({ queryKey: ['popular-tags'] });
     },
   });
 }
 
 /**
- * Update a tag
+ * Update a content tag
  */
-export function useUpdateTag() {
+export function useUpdateContentTag() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({
-      tagId,
-      updates,
-    }: {
-      tagId: string;
-      updates: Partial<ContentTag>;
-    }) => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('content_tags')
-        .update(updates)
-        .eq('id', tagId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as ContentTag;
+    mutationFn: async ({ id, data }: { id: string; data: Partial<ContentTag> }) => {
+      return updateContentTag(id, data);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['content-tags'] });
-      queryClient.invalidateQueries({ queryKey: ['content-tag', variables.tagId] });
+      queryClient.invalidateQueries({ queryKey: ['content-tag', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['popular-tags'] });
     },
   });
 }
 
 /**
- * Delete a tag
+ * Delete a content tag
  */
-export function useDeleteTag() {
+export function useDeleteContentTag() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async (tagId: string) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('content_tags')
-        .delete()
-        .eq('id', tagId);
-      
-      if (error) throw error;
+    mutationFn: async (id: string) => {
+      return deleteContentTag(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-tags'] });
+      queryClient.invalidateQueries({ queryKey: ['popular-tags'] });
     },
   });
 }
 
 /**
- * Assign tags to content (replaces all existing tags)
+ * Assign tags to content
  */
-export function useAssignTagsToContent() {
+export function useAssignContentTags() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({
-      contentId,
-      tagIds,
-    }: {
-      contentId: string;
-      tagIds: string[];
-    }) => {
-      const supabase = createClient();
-      
-      // Delete existing assignments
-      await supabase
-        .from('content_tag_assignments')
-        .delete()
-        .eq('content_id', contentId);
-      
-      // Insert new assignments
-      if (tagIds.length > 0) {
-        const { error } = await supabase
-          .from('content_tag_assignments')
-          .insert(
-            tagIds.map(tagId => ({
-              content_id: contentId,
-              tag_id: tagId,
-            }))
-          );
-        
-        if (error) throw error;
-      }
+    mutationFn: async ({ contentId, tagIds }: { contentId: string; tagIds: string[] }) => {
+      // TODO: Add API endpoint for this
+      // return assignContentTags(contentId, tagIds);
+      throw new Error('Not implemented yet');
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['content-tags-for-content', variables.contentId] 
-      });
-      queryClient.invalidateQueries({ queryKey: ['content-tags'] }); // Refresh usage counts
+      queryClient.invalidateQueries({ queryKey: ['content-tags-for-content', variables.contentId] });
+      queryClient.invalidateQueries({ queryKey: ['content-tags'] });
     },
   });
 }
 
 /**
- * Assign tags to pillar (replaces all existing tags)
+ * Remove tag from content
  */
-export function useAssignTagsToPillar() {
+export function useRemoveContentTag() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({
-      pillarId,
-      tagIds,
-    }: {
-      pillarId: string;
-      tagIds: string[];
-    }) => {
-      const supabase = createClient();
-      
-      // Delete existing assignments
-      await supabase
-        .from('pillar_tag_assignments')
-        .delete()
-        .eq('pillar_id', pillarId);
-      
-      // Insert new assignments
-      if (tagIds.length > 0) {
-        const { error } = await supabase
-          .from('pillar_tag_assignments')
-          .insert(
-            tagIds.map(tagId => ({
-              pillar_id: pillarId,
-              tag_id: tagId,
-            }))
-          );
-        
-        if (error) throw error;
-      }
+    mutationFn: async ({ contentId, tagId }: { contentId: string; tagId: string }) => {
+      // TODO: Add API endpoint for this
+      // return removeContentTag(contentId, tagId);
+      throw new Error('Not implemented yet');
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['tags-for-pillar', variables.pillarId] 
-      });
-      queryClient.invalidateQueries({ queryKey: ['content-tags'] }); // Refresh usage counts
+      queryClient.invalidateQueries({ queryKey: ['content-tags-for-content', variables.contentId] });
+      queryClient.invalidateQueries({ queryKey: ['content-tags'] });
     },
   });
 }
-

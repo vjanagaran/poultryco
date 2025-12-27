@@ -71,3 +71,60 @@ export async function updateBlogCategory(id: string, data: Partial<BlogCategory>
 export async function deleteBlogCategory(id: string): Promise<void> {
   await apiClient.delete(`/content/blog/categories/${id}`);
 }
+
+// =====================================================
+// BLOG TAGS
+// =====================================================
+
+export interface BlogTag {
+  id: string;
+  name: string;
+  slug: string;
+  postCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getBlogTags(): Promise<BlogTag[]> {
+  return apiClient.get<BlogTag[]>('/content/blog/tags');
+}
+
+export async function getPopularBlogTags(limit: number = 10): Promise<BlogTag[]> {
+  return apiClient.get<BlogTag[]>(`/content/blog/tags/popular?limit=${limit}`);
+}
+
+export async function getBlogTagById(id: string): Promise<BlogTag> {
+  return apiClient.get<BlogTag>(`/content/blog/tags/${id}`);
+}
+
+export async function createBlogTag(data: Partial<BlogTag>): Promise<BlogTag> {
+  return apiClient.post<BlogTag>('/content/blog/tags', data);
+}
+
+export async function updateBlogTag(id: string, data: Partial<BlogTag>): Promise<BlogTag> {
+  return apiClient.patch<BlogTag>(`/content/blog/tags/${id}`, data);
+}
+
+export async function deleteBlogTag(id: string): Promise<void> {
+  await apiClient.delete(`/content/blog/tags/${id}`);
+}
+
+// =====================================================
+// POST-TAG RELATIONSHIPS
+// =====================================================
+
+export async function getPostTags(postId: string): Promise<BlogTag[]> {
+  return apiClient.get<BlogTag[]>(`/content/blog/posts/${postId}/tags`);
+}
+
+export async function setPostTags(postId: string, tagIds: string[]): Promise<void> {
+  await apiClient.post(`/content/blog/posts/${postId}/tags`, { tagIds });
+}
+
+export async function addPostTag(postId: string, tagId: string): Promise<void> {
+  await apiClient.post(`/content/blog/posts/${postId}/tags/${tagId}`);
+}
+
+export async function removePostTag(postId: string, tagId: string): Promise<void> {
+  await apiClient.delete(`/content/blog/posts/${postId}/tags/${tagId}`);
+}

@@ -300,13 +300,30 @@ export class NeccController {
   @Post('scraper/run-month')
   @ApiOperation({ summary: 'Run scraper for a specific month/year' })
   @ApiResponse({ status: 200, description: 'Scraper result' })
-  @ApiBody({ description: 'Scraper parameters' })
+  @ApiResponse({ status: 400, description: 'Invalid parameters' })
+  @ApiBody({ 
+    description: 'Scraper parameters',
+    schema: {
+      type: 'object',
+      required: ['month', 'year'],
+      properties: {
+        month: { type: 'number', minimum: 1, maximum: 12, description: 'Month (1-12)' },
+        year: { type: 'number', minimum: 2000, maximum: 2100, description: 'Year (4 digits)' },
+      },
+    },
+  })
   async runScraper(@Body() body: { month: number; year: number }) {
     if (!body.month || !body.year) {
       throw new BadRequestException('Month and year are required');
     }
     if (body.month < 1 || body.month > 12) {
       throw new BadRequestException('Month must be between 1 and 12');
+    }
+    if (body.year < 2000 || body.year > 2100) {
+      throw new BadRequestException('Year must be between 2000 and 2100');
+    }
+    if (!Number.isInteger(body.month) || !Number.isInteger(body.year)) {
+      throw new BadRequestException('Month and year must be integers');
     }
     return this.neccService.runScraper(body.month, body.year);
   }

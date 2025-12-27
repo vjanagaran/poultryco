@@ -20,7 +20,8 @@ const MONTHS = [
 ];
 
 const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 6 }, (_, i) => currentYear - i);
+// Years from 2009 to 2026
+const YEARS = Array.from({ length: 2026 - 2009 + 1 }, (_, i) => 2009 + i).reverse();
 
 interface ScrapeResult {
   success: boolean;

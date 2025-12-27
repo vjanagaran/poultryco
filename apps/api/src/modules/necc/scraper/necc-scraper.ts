@@ -56,29 +56,11 @@ export async function scrapeNECCMonth(
     const { zones, prices } = await parseNECCTable(html, month, year);
     stats.zonesFound = zones.length;
 
-    // 3. Validate zones exist
+    // 3. Validate zones exist and create missing ones
     const missingZones: string[] = [];
-    for (const zoneData of zones) {
-      const [existingZone] = await db
-        .select()
-        .from(necZones)
-        .where(eq(necZones.name, zoneData.name))
-        .limit(1);
+    const zoneMap = new Map<string, string>();
 
-      if (!existingZone) {
-        missingZones.push(zoneData.name);
-      }
-    }
-
-    stats.zonesValidated = zones.length - missingZones.length;
-    stats.zonesMissing = missingZones.length;
-    
-    if (missingZones.length > 0) {
-      const warningMsg = `Found ${missingZones.length} new zones in NECC data. Please add manually: ${missingZones.join(', ')}`;
-      stats.errors.push(warningMsg);
-    }
-
-    // 4. Get all zones with IDs
+    // Get all existing zones first
     const allZones = await db
       .select({
         id: necZones.id,
@@ -86,9 +68,51 @@ export async function scrapeNECCMonth(
       })
       .from(necZones);
 
-    const zoneMap = new Map(allZones.map((z: any) => [z.name, z.id]));
+    allZones.forEach((z: any) => {
+      zoneMap.set(z.name, z.id);
+    });
 
-    // 5. Insert missing prices
+    // Check each zone from scraped data
+    for (const zoneData of zones) {
+      if (!zoneMap.has(zoneData.name)) {
+        missingZones.push(zoneData.name);
+        
+        // Automatically create missing zone
+        try {
+          const [newZone] = await db
+            .insert(necZones)
+            .values({
+              name: zoneData.name,
+              slug: zoneData.slug,
+              zoneType: zoneData.zone_type,
+              isActive: true,
+              sortOrder: 0,
+            })
+            .returning();
+
+          if (newZone) {
+            zoneMap.set(zoneData.name, newZone.id);
+            stats.zonesValidated++;
+          }
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          const errorMsg = `Failed to create zone "${zoneData.name}": ${message}`;
+          stats.errors.push(errorMsg);
+        }
+      } else {
+        stats.zonesValidated++;
+      }
+    }
+
+    stats.zonesMissing = missingZones.length;
+    
+    if (missingZones.length > 0) {
+      const infoMsg = `Automatically created ${missingZones.length} new zone(s): ${missingZones.join(', ')}`;
+      // Don't add as error, just log it
+      console.log(`[Scraper] ${infoMsg}`);
+    }
+
+    // 4. Insert missing prices
     for (const priceData of prices) {
       try {
         const zone_id = zoneMap.get(priceData.zone_name);
@@ -140,17 +164,34 @@ export async function scrapeNECCMonth(
       }
     }
 
+    // Build success message
+    const parts: string[] = [];
+    if (stats.pricesInserted > 0) {
+      parts.push(`${stats.pricesInserted} price(s) inserted`);
+    }
+    if (stats.pricesSkipped > 0) {
+      parts.push(`${stats.pricesSkipped} price(s) skipped (already exist)`);
+    }
+    if (stats.zonesMissing > 0) {
+      parts.push(`${stats.zonesMissing} zone(s) created`);
+    }
+
+    const message = parts.length > 0
+      ? `Successfully scraped ${month}/${year}. ${parts.join(', ')}.`
+      : `Successfully scraped ${month}/${year}`;
+
     return {
       success: true,
-      message: `Successfully scraped ${month}/${year}`,
+      message,
       stats,
     };
   } catch (error: unknown) {
     console.error('[Scraper] Error:', error);
     const message = error instanceof Error ? error.message : 'Scraping failed';
+    stats.errors.push(message);
     return {
       success: false,
-      message,
+      message: `Failed to scrape ${month}/${year}: ${message}`,
       stats,
     };
   }

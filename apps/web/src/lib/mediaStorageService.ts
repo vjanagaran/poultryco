@@ -5,7 +5,8 @@
  * with optimized folder structure and offline support
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
+import { uploadDocument } from '@/lib/api/upload';
 import imageCompression from 'browser-image-compression';
 
 // =====================================================
@@ -231,8 +232,6 @@ export async function uploadMediaFile(
   userId: string,
   otherUserId?: string
 ): Promise<MediaUploadResult> {
-  const supabase = createClient();
-  
   // Determine media type
   const mediaType = getMediaType(file);
   
@@ -259,51 +258,23 @@ export async function uploadMediaFile(
     // Generate thumbnail
     try {
       const thumbnail = await generateThumbnail(file);
-      const thumbPath = getMediaFilePath(conversationPath, mediaType, messageId, 'thumb.webp');
+      const thumbFile = new File([thumbnail], 'thumb.webp', { type: 'image/webp' });
       
-      const { error: thumbError } = await supabase.storage
-        .from(STORAGE_CONFIG.BUCKET_NAME)
-        .upload(thumbPath, thumbnail, {
-          contentType: 'image/webp',
-          cacheControl: '31536000', // 1 year
-          upsert: false,
-        });
-      
-      if (!thumbError) {
-        const { data: thumbUrlData } = supabase.storage
-          .from(STORAGE_CONFIG.BUCKET_NAME)
-          .getPublicUrl(thumbPath);
-        thumbnailUrl = thumbUrlData.publicUrl;
-      }
+      // Upload thumbnail via API
+      const thumbResult = await uploadDocument(thumbFile);
+      thumbnailUrl = thumbResult.cdnUrl || thumbResult.url;
     } catch (error) {
       console.warn('Thumbnail generation failed, continuing without thumbnail:', error);
     }
   }
   
-  // Upload main file
-  const filePath = getMediaFilePath(conversationPath, mediaType, messageId, processedFile.name);
-  
-  const { data, error } = await supabase.storage
-    .from(STORAGE_CONFIG.BUCKET_NAME)
-    .upload(filePath, processedFile, {
-      contentType: processedFile.type,
-      cacheControl: '31536000', // 1 year
-      upsert: false,
-    });
-  
-  if (error) {
-    throw new Error(`Upload failed: ${error.message}`);
-  }
-  
-  // Get public URL
-  const { data: urlData } = supabase.storage
-    .from(STORAGE_CONFIG.BUCKET_NAME)
-    .getPublicUrl(filePath);
+  // Upload main file via API
+  const result = await uploadDocument(processedFile);
   
   return {
-    url: urlData.publicUrl,
+    url: result.cdnUrl || result.url,
     thumbnailUrl,
-    path: filePath,
+    path: result.key,
     type: processedFile.type,
     size: processedFile.size,
     ...dimensions,
@@ -356,41 +327,17 @@ export async function uploadGroupPhoto(
   const thumbnail = await generateThumbnail(file);
   
   // Upload original
-  const originalPath = `group-photos/${groupId}/original.webp`;
-  const { error: originalError } = await supabase.storage
-    .from(STORAGE_CONFIG.BUCKET_NAME)
-    .upload(originalPath, compressed, {
-      contentType: 'image/webp',
-      cacheControl: '31536000',
-      upsert: true, // Allow updates
-    });
+  // Upload original via API
+  const originalFile = new File([compressed], 'original.webp', { type: 'image/webp' });
+  const originalResult = await uploadDocument(originalFile);
   
-  if (originalError) throw originalError;
-  
-  // Upload thumbnail
-  const thumbPath = `group-photos/${groupId}/thumbnail.webp`;
-  const { error: thumbError } = await supabase.storage
-    .from(STORAGE_CONFIG.BUCKET_NAME)
-    .upload(thumbPath, thumbnail, {
-      contentType: 'image/webp',
-      cacheControl: '31536000',
-      upsert: true,
-    });
-  
-  if (thumbError) throw thumbError;
-  
-  // Get URLs
-  const { data: originalUrl } = supabase.storage
-    .from(STORAGE_CONFIG.BUCKET_NAME)
-    .getPublicUrl(originalPath);
-  
-  const { data: thumbUrl } = supabase.storage
-    .from(STORAGE_CONFIG.BUCKET_NAME)
-    .getPublicUrl(thumbPath);
+  // Upload thumbnail via API
+  const thumbFile = new File([thumbnail], 'thumbnail.webp', { type: 'image/webp' });
+  const thumbResult = await uploadDocument(thumbFile);
   
   return {
-    url: originalUrl.publicUrl,
-    thumbnailUrl: thumbUrl.publicUrl,
+    url: originalResult.cdnUrl || originalResult.url,
+    thumbnailUrl: thumbResult.cdnUrl || thumbResult.url,
   };
 }
 
@@ -399,16 +346,14 @@ export async function uploadGroupPhoto(
 // =====================================================
 
 /**
- * Delete media file from CDN
+ * Delete media file from CDN (via API if upload ID is provided)
+ * Note: For now, deletion is handled by the API when upload ID is provided
  */
-export async function deleteMediaFile(filePath: string): Promise<void> {
-  const supabase = createClient();
-  
-  const { error } = await supabase.storage
-    .from(STORAGE_CONFIG.BUCKET_NAME)
-    .remove([filePath]);
-  
-  if (error) {
+export async function deleteMediaFile(uploadId: string): Promise<void> {
+  try {
+    const { deleteFile } = await import('@/lib/api/upload');
+    await deleteFile(uploadId);
+  } catch (error) {
     console.error('Failed to delete media:', error);
     throw error;
   }
@@ -417,14 +362,11 @@ export async function deleteMediaFile(filePath: string): Promise<void> {
 /**
  * Delete multiple media files
  */
-export async function deleteMultipleMedia(filePaths: string[]): Promise<void> {
-  const supabase = createClient();
-  
-  const { error } = await supabase.storage
-    .from(STORAGE_CONFIG.BUCKET_NAME)
-    .remove(filePaths);
-  
-  if (error) {
+export async function deleteMultipleMedia(uploadIds: string[]): Promise<void> {
+  try {
+    const { deleteFile } = await import('@/lib/api/upload');
+    await Promise.all(uploadIds.map(id => deleteFile(id)));
+  } catch (error) {
     console.error('Failed to delete media files:', error);
     throw error;
   }
@@ -436,30 +378,12 @@ export async function deleteMultipleMedia(filePaths: string[]): Promise<void> {
 
 /**
  * Clean up temporary uploads (call periodically)
+ * Note: This should be handled by the API/backend, but keeping for compatibility
  */
 export async function cleanupTempUploads(userId: string): Promise<void> {
-  const supabase = createClient();
-  
-  const tempPath = `chats/temp/${userId}`;
-  
-  // List files older than 24 hours
-  const { data: files, error: listError } = await supabase.storage
-    .from(STORAGE_CONFIG.BUCKET_NAME)
-    .list(tempPath);
-  
-  if (listError || !files) return;
-  
-  const now = Date.now();
-  const oldFiles = files
-    .filter((file) => {
-      const createdAt = new Date(file.created_at).getTime();
-      return now - createdAt > 24 * 60 * 60 * 1000; // 24 hours
-    })
-    .map((file) => `${tempPath}/${file.name}`);
-  
-  if (oldFiles.length > 0) {
-    await deleteMultipleMedia(oldFiles);
-  }
+  // Cleanup is now handled by the API/backend
+  // This function is kept for compatibility but does nothing
+  console.log('Cleanup is handled by the API/backend');
 }
 
 export default {

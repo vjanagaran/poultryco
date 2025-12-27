@@ -69,4 +69,77 @@ export class ContentController {
     await this.contentService.deleteBlogCategory(id);
     return { success: true };
   }
+
+  // =====================================================
+  // BLOG TAGS
+  // =====================================================
+
+  @Get('blog/tags')
+  @ApiOperation({ summary: 'Get all blog tags' })
+  async getBlogTags() {
+    return this.contentService.getBlogTags();
+  }
+
+  @Get('blog/tags/popular')
+  @ApiOperation({ summary: 'Get popular blog tags' })
+  async getPopularBlogTags(@Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.contentService.getPopularBlogTags(limitNum);
+  }
+
+  @Get('blog/tags/:id')
+  @ApiOperation({ summary: 'Get blog tag by ID' })
+  async getBlogTagById(@Param('id') id: string) {
+    return this.contentService.getBlogTagById(id);
+  }
+
+  @Post('blog/tags')
+  @ApiOperation({ summary: 'Create blog tag' })
+  async createBlogTag(@Body() data: any) {
+    return this.contentService.createBlogTag(data);
+  }
+
+  @Patch('blog/tags/:id')
+  @ApiOperation({ summary: 'Update blog tag' })
+  async updateBlogTag(@Param('id') id: string, @Body() data: any) {
+    return this.contentService.updateBlogTag(id, data);
+  }
+
+  @Delete('blog/tags/:id')
+  @ApiOperation({ summary: 'Delete blog tag' })
+  async deleteBlogTag(@Param('id') id: string) {
+    await this.contentService.deleteBlogTag(id);
+    return { success: true };
+  }
+
+  // =====================================================
+  // POST-TAG RELATIONSHIPS
+  // =====================================================
+
+  @Get('blog/posts/:id/tags')
+  @ApiOperation({ summary: 'Get tags for a blog post' })
+  async getPostTags(@Param('id') id: string) {
+    return this.contentService.getPostTags(id);
+  }
+
+  @Post('blog/posts/:id/tags')
+  @ApiOperation({ summary: 'Set tags for a blog post' })
+  async setPostTags(@Param('id') id: string, @Body() data: { tagIds: string[] }) {
+    await this.contentService.setPostTags(id, data.tagIds);
+    return { success: true };
+  }
+
+  @Post('blog/posts/:id/tags/:tagId')
+  @ApiOperation({ summary: 'Add a tag to a blog post' })
+  async addPostTag(@Param('id') id: string, @Param('tagId') tagId: string) {
+    await this.contentService.addPostTag(id, tagId);
+    return { success: true };
+  }
+
+  @Delete('blog/posts/:id/tags/:tagId')
+  @ApiOperation({ summary: 'Remove a tag from a blog post' })
+  async removePostTag(@Param('id') id: string, @Param('tagId') tagId: string) {
+    await this.contentService.removePostTag(id, tagId);
+    return { success: true };
+  }
 }

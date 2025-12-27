@@ -29,7 +29,7 @@ export async function parseNECCTable(
   const dayColumnMap: Map<number, number> = new Map();
   let headerParsed = false;
 
-  rows.each((rowIndex, row) => {
+  rows.each((rowIndex: number, row: cheerio.Element) => {
     const cells = $(row).find('td');
     if (cells.length < 2) return;
 

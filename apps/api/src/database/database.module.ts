@@ -22,7 +22,8 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
           max: 10,
           idle_timeout: 20,
           connect_timeout: 10,
-          ssl: 'require',
+          // Use 'prefer' for local development, 'require' for production
+          ssl: databaseUrl.includes('localhost') ? 'prefer' : 'require',
         });
 
         return drizzle(client, { schema });

@@ -185,14 +185,16 @@ export interface MonthlyAverage {
   year: number;
   month_number: number;
   avg_suggested_price: number;
-  avg_prevailing_price: number;
+  avg_prevailing_price: number | null;
   min_suggested_price: number;
   max_suggested_price: number;
-  min_prevailing_price: number;
-  max_prevailing_price: number;
+  min_prevailing_price: number | null;
+  max_prevailing_price: number | null;
   days_count: number;
   period_start: string;
   period_end: string;
+  // For compatibility with API response
+  avg_price?: number;
 }
 
 /**

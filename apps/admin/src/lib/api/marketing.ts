@@ -302,3 +302,59 @@ export async function createSocialMediaKpi(data: any): Promise<any> {
 export async function createPlatformKpi(data: any): Promise<any> {
   return apiClient.post('/marketing/kpis/platform', data);
 }
+
+// =====================================================
+// CONTENT TAGS
+// =====================================================
+
+export interface ContentTag {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+  description: string | null;
+  usageCount: number;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getContentTags(): Promise<ContentTag[]> {
+  return apiClient.get<ContentTag[]>('/marketing/tags');
+}
+
+export async function getPopularContentTags(limit: number = 10): Promise<ContentTag[]> {
+  return apiClient.get<ContentTag[]>(`/marketing/tags/popular?limit=${limit}`);
+}
+
+export async function getContentTagById(id: string): Promise<ContentTag> {
+  return apiClient.get<ContentTag>(`/marketing/tags/${id}`);
+}
+
+export async function createContentTag(data: Partial<ContentTag>): Promise<ContentTag> {
+  return apiClient.post<ContentTag>('/marketing/tags', data);
+}
+
+export async function updateContentTag(id: string, data: Partial<ContentTag>): Promise<ContentTag> {
+  return apiClient.patch<ContentTag>(`/marketing/tags/${id}`, data);
+}
+
+export async function deleteContentTag(id: string): Promise<void> {
+  await apiClient.delete(`/marketing/tags/${id}`);
+}
+
+// =====================================================
+// PILLAR-TAG RELATIONSHIPS
+// =====================================================
+
+export async function getPillarTags(pillarId: string): Promise<ContentTag[]> {
+  return apiClient.get<ContentTag[]>(`/marketing/pillars/${pillarId}/tags`);
+}
+
+export async function setPillarTags(pillarId: string, tagIds: string[]): Promise<void> {
+  await apiClient.post(`/marketing/pillars/${pillarId}/tags`, { tagIds });
+}
+
+export async function removePillarTag(pillarId: string, tagId: string): Promise<void> {
+  await apiClient.delete(`/marketing/pillars/${pillarId}/tags/${tagId}`);
+}
