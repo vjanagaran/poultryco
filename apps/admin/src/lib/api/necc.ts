@@ -258,3 +258,43 @@ export async function runScraper(month: number, year: number): Promise<ScrapeRes
   return apiClient.post<ScrapeResult>('/necc/scraper/run-month', { month, year });
 }
 
+/**
+ * Year scraper result with monthly breakdown
+ */
+export interface YearScrapeResult {
+  success: boolean;
+  message: string;
+  year: number;
+  monthsCompleted: number;
+  monthsFailed: number;
+  totalStats: {
+    zonesFound: number;
+    zonesValidated: number;
+    zonesMissing: number;
+    pricesInserted: number;
+    pricesSkipped: number;
+    errors: string[];
+  };
+  monthlyResults: Array<{
+    month: number;
+    success: boolean;
+    message: string;
+    stats: {
+      zonesFound: number;
+      zonesValidated: number;
+      zonesMissing: number;
+      pricesInserted: number;
+      pricesSkipped: number;
+      errors: string[];
+    };
+  }>;
+}
+
+/**
+ * Run scraper for an entire year (all 12 months)
+ * This will loop through months 1-12 in the backend
+ */
+export async function runYearScraper(year: number): Promise<YearScrapeResult> {
+  return apiClient.post<YearScrapeResult>('/necc/scraper/run-year', { year });
+}
+

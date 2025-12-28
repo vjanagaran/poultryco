@@ -327,4 +327,58 @@ export class NeccController {
     }
     return this.neccService.runScraper(body.month, body.year);
   }
+
+  @Post('scraper/run-year')
+  @ApiOperation({ summary: 'Run scraper for an entire year (all 12 months)' })
+  @ApiResponse({ status: 200, description: 'Year scraper result with monthly breakdown' })
+  @ApiResponse({ status: 400, description: 'Invalid parameters' })
+  @ApiBody({ 
+    description: 'Year parameter',
+    schema: {
+      type: 'object',
+      required: ['year'],
+      properties: {
+        year: { type: 'number', minimum: 2000, maximum: 2100, description: 'Year (4 digits)' },
+      },
+    },
+  })
+  async runYearScraper(@Body() body: { year: number }) {
+    if (!body.year) {
+      throw new BadRequestException('Year is required');
+    }
+    if (body.year < 2000 || body.year > 2100) {
+      throw new BadRequestException('Year must be between 2000 and 2100');
+    }
+    if (!Number.isInteger(body.year)) {
+      throw new BadRequestException('Year must be an integer');
+    }
+    return this.neccService.runYearScraper(body.year);
+  }
+
+  // =====================================================
+  // ADMIN: MATERIALIZED VIEWS REFRESH
+  // =====================================================
+
+  @Post('views/refresh')
+  @ApiOperation({ summary: 'Refresh materialized views (monthly averages and YoY)' })
+  @ApiResponse({ status: 200, description: 'Views refreshed successfully' })
+  async refreshViews() {
+    return this.neccService.refreshMaterializedViews();
+  }
+
+  // =====================================================
+  // DEBUG: HTML FETCH AND ANALYSIS
+  // =====================================================
+
+  @Get('debug/fetch-html')
+  @ApiOperation({ summary: 'Fetch and analyze HTML structure for debugging' })
+  @ApiQuery({ name: 'month', required: true, description: 'Month (1-12)' })
+  @ApiQuery({ name: 'year', required: true, description: 'Year (4 digits)' })
+  @ApiResponse({ status: 200, description: 'HTML analysis result' })
+  async fetchAndAnalyzeHtml(
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    return this.neccService.fetchAndAnalyzeHtml(parseInt(month, 10), parseInt(year, 10));
+  }
 }

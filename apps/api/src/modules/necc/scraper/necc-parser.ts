@@ -22,12 +22,50 @@ export async function parseNECCTable(
   const zones: ZoneData[] = [];
   const priceMap = new Map<string, PriceData>();
 
-  // Find all table rows
-  const rows = $('table tr');
+
+  // Find all table rows - try multiple table selectors in case structure changed
+  let rows = $('table tr');
+  
+  // If no rows found, try alternative table structures
+  if (rows.length === 0) {
+    rows = $('tbody tr');
+    if (rows.length === 0) {
+      rows = $('tr');
+    }
+  }
+  
   
   // Parse day number header to map column index to actual day
   const dayColumnMap: Map<number, number> = new Map();
   let headerParsed = false;
+  let headerRowIndex = -1;
+
+  // First pass: Check for <th> header row which contains day numbers
+  rows.each((rowIndex: number, row: cheerio.Element) => {
+    const thCells = $(row).find('th');
+    if (thCells.length > 5 && !headerParsed) {
+      // Check if this looks like a day header row (first cell contains "zone" or "day")
+      const firstThText = $(thCells[0]).text().trim().toLowerCase();
+      if (firstThText.includes('zone') || firstThText.includes('day') || firstThText.includes('name')) {
+        // Parse day numbers from <th> cells (skip first cell which is "Name Of Zone / Day")
+        dayColumnMap.clear();
+        for (let cellIdx = 1; cellIdx < thCells.length; cellIdx++) {
+          const cellText = $(thCells[cellIdx]).text().trim();
+          const dayNum = parseInt(cellText);
+          if (!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31) {
+            // Map column index to day number (accounting for zone name column at index 0)
+            dayColumnMap.set(cellIdx, dayNum);
+          } else if (cellText.toLowerCase().includes('average')) {
+            break;
+          }
+        }
+        if (dayColumnMap.size > 0) {
+          headerRowIndex = rowIndex;
+          headerParsed = true;
+        }
+      }
+    }
+  });
 
   rows.each((rowIndex: number, row: cheerio.Element) => {
     const cells = $(row).find('td');
@@ -44,6 +82,8 @@ export async function parseNECCTable(
     // Skip section headers
     if (firstCellText.includes('NECC SUGGESTED EGG PRICES') || 
         firstCellText.includes('Prevailing Prices')) {
+      // After this header, the next rows should be zone data rows
+      // Reset header parsing state to look for zone rows
       return;
     }
 
@@ -61,12 +101,39 @@ export async function parseNECCTable(
     }
 
     // Parse day number header row ONCE (contains numbers like "1 2 3 4 5...")
+    // Try multiple strategies to detect the header row
     if (!headerParsed) {
-      if (/^(\d+\s*)+$/.test(firstCellText) || lowerText.includes('day')) {
+      // Strategy 1: First cell is empty or very short, and other cells contain day numbers
+      const firstCellEmpty = !firstCellText || firstCellText.length < 3;
+      let dayCountInRow = 0;
+      
+      if (firstCellEmpty && cells.length > 5) {
+        // Check if other cells contain day numbers
+        for (let cellIdx = 1; cellIdx < Math.min(cells.length, 32); cellIdx++) {
+          const cellText = $(cells[cellIdx]).text().trim();
+          const dayNum = parseInt(cellText);
+          if (!isNaN(dayNum) && dayNum >= 1 && dayNum <= 31) {
+            dayCountInRow++;
+          }
+        }
+      }
+      
+      // Strategy 2: Pattern matching (original)
+      const isDayHeaderPattern = /^(\d+\s*)+$/.test(firstCellText) || 
+                                 lowerText.includes('day') ||
+                                 /^\s*(\d+\s+){2,}/.test(firstCellText);
+      
+      // Strategy 3: Row with many numeric cells (likely day header)
+      const isDayHeaderByCount = firstCellEmpty && dayCountInRow >= 5;
+      
+      if (isDayHeaderPattern || isDayHeaderByCount) {
         dayColumnMap.clear();
         
         // Parse each cell to get the day number
-        for (let cellIdx = 1; cellIdx < cells.length; cellIdx++) {
+        // Start from cell 0 if first cell is empty, otherwise from cell 1
+        const startIdx = firstCellEmpty ? 0 : 1;
+        
+        for (let cellIdx = startIdx; cellIdx < cells.length; cellIdx++) {
           const cellText = $(cells[cellIdx]).text().trim();
           const dayNum = parseInt(cellText);
           
@@ -77,18 +144,31 @@ export async function parseNECCTable(
           }
         }
         
-        headerParsed = true;
-        return;
+        if (dayColumnMap.size > 0) {
+          headerRowIndex = rowIndex;
+          headerParsed = true;
+          return;
+        }
       }
+      
     }
 
     // Skip if it's just numbers or contains multiple numbers (header rows we might have missed)
-    if (/^\d+$/.test(firstCellText) || /^(\d+\s+){2,}/.test(firstCellText)) {
+    // BUT only if we've already parsed the header (to avoid skipping the actual header)
+    if (headerParsed && (/^\d+$/.test(firstCellText) || /^(\d+\s+){2,}/.test(firstCellText))) {
       return;
     }
 
-    // Skip if it's very short (< 3 chars)
-    if (firstCellText.length < 3) {
+    // Skip if it's very short (< 3 chars) AND we've parsed the header
+    // This allows us to catch header rows that have empty first cells
+    if (headerParsed && firstCellText.length < 3 && rowIndex > headerRowIndex + 2) {
+      // Only skip if we're well past the header row
+      return;
+    }
+    
+    // Skip rows that are clearly not zone rows (but only after header is found)
+    if (headerParsed && firstCellText.length < 3 && rowIndex <= headerRowIndex + 1) {
+      // This might be a sub-header or separator, skip it
       return;
     }
 
@@ -97,8 +177,24 @@ export async function parseNECCTable(
       return;
     }
 
+    // Skip if first cell is a day number header row (contains pattern like "01 02 03..." or "1 2 3...")
+    const dayNumberPattern = /^(\d{1,2}\s+){3,}/.test(firstCellText);
+    if (dayNumberPattern) {
+      return;
+    }
+
+    // Skip if first cell contains only numbers separated by spaces (another header pattern)
+    const onlyNumbersPattern = /^[\d\s]+$/.test(firstCellText) && firstCellText.trim().split(/\s+/).length >= 3;
+    if (onlyNumbersPattern) {
+      return;
+    }
+
     // This should be a zone row
-    const zoneName = firstCellText;
+    // Normalize zone name: remove extra spaces, normalize case variations
+    let zoneName = firstCellText
+      .replace(/\s+/g, ' ') // Normalize multiple spaces
+      .trim();
+    
     let zone_type: 'production_center' | 'consumption_center' = 'production_center';
 
     // Determine zone type based on (CC) suffix
@@ -116,23 +212,30 @@ export async function parseNECCTable(
     }
 
     // Parse prices for each day using the day column map
+    let pricesFoundForZone = 0;
+    
     if (dayColumnMap.size > 0) {
-      // Use the mapped columns
+      // Use the mapped columns (explicit day header found)
       for (const [cellIdx, day] of dayColumnMap.entries()) {
         if (cellIdx >= cells.length) continue;
         
         const cellText = $(cells[cellIdx]).text().trim();
 
         // Skip if empty or just a dash
-        if (!cellText || cellText === '-') continue;
+        if (!cellText || cellText === '-' || cellText === '') continue;
 
         // Create date string
         const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const mapKey = `${zoneName}|${date}`;
 
-        // Parse price
+        // Parse price - be more flexible with price formats
         const priceValue = parseInt(cellText.replace(/[^\d]/g, ''));
         if (isNaN(priceValue) || priceValue === 0) continue;
+        
+        // Validate price is reasonable (between 100 and 1000 rupees per 100 eggs)
+        if (priceValue < 100 || priceValue > 1000) {
+          continue;
+        }
 
         // Create price entry (only suggested_price, prevailing_price stays null)
         if (!priceMap.has(mapKey)) {
@@ -142,10 +245,12 @@ export async function parseNECCTable(
             suggested_price: priceValue,
             prevailing_price: null, // Not captured by scraper
           });
+          pricesFoundForZone++;
         }
       }
     } else {
-      // Fallback: assume columns 1 onwards are days 1 onwards until we hit "Average" or end
+      // No explicit day header found - assume columns 1+ are days 1+ (sequential)
+      // This handles the case where HTML doesn't have a day header row
       const totalCells = cells.length;
       const daysInMonth = new Date(year, month, 0).getDate();
       
@@ -155,19 +260,25 @@ export async function parseNECCTable(
         // Stop if we hit "Average" column
         if (cellText.toLowerCase().includes('average')) break;
         
+        // Day is the column index (cell 1 = day 1, cell 2 = day 2, etc.)
         const day = cellIdx;
         
         // Skip if day exceeds days in month
         if (day > daysInMonth) continue;
 
         // Skip if empty or just a dash
-        if (!cellText || cellText === '-') continue;
+        if (!cellText || cellText === '-' || cellText === '') continue;
 
         const date = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const mapKey = `${zoneName}|${date}`;
 
         const priceValue = parseInt(cellText.replace(/[^\d]/g, ''));
         if (isNaN(priceValue) || priceValue === 0) continue;
+        
+        // Validate price is reasonable
+        if (priceValue < 100 || priceValue > 1000) {
+          continue;
+        }
 
         if (!priceMap.has(mapKey)) {
           priceMap.set(mapKey, {
@@ -176,15 +287,16 @@ export async function parseNECCTable(
             suggested_price: priceValue,
             prevailing_price: null, // Not captured by scraper
           });
+          pricesFoundForZone++;
         }
       }
     }
+    
   });
 
   // Convert Map to Array
   const prices = Array.from(priceMap.values());
 
-  console.log(`[Parser] Parsed ${zones.length} zones and ${prices.length} price entries`);
 
   return { zones, prices };
 }

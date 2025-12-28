@@ -95,6 +95,10 @@ GROUP BY zone_id, day_of_year, year
 ORDER BY zone_id, day_of_year, year;
 
 -- Create indexes for fast lookups
+-- UNIQUE index required for CONCURRENT refresh
+CREATE UNIQUE INDEX IF NOT EXISTS idx_yoy_daily_unique 
+    ON nec_yoy_daily_averages(zone_id, day_of_year, year);
+
 CREATE INDEX IF NOT EXISTS idx_yoy_daily_zone_doy 
     ON nec_yoy_daily_averages(zone_id, day_of_year);
 
@@ -135,11 +139,11 @@ BEGIN
     RETURN QUERY
     WITH year_data AS (
         SELECT 
-            day_of_year,
-            year,
-            avg_price
-        FROM nec_yoy_daily_averages
-        WHERE zone_id = p_zone_id
+            yoy.day_of_year,
+            yoy.year,
+            yoy.avg_price
+        FROM nec_yoy_daily_averages yoy
+        WHERE yoy.zone_id = p_zone_id
     ),
     aggregated AS (
         SELECT 
