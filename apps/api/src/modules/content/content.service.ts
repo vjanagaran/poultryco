@@ -1,6 +1,6 @@
 import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '@/database/database.module';
-import { eq, and, or, like, desc, asc, inArray, sql, count } from 'drizzle-orm';
+import { eq, and, or, like, desc, asc, inArray, sql, count, lte, ne } from 'drizzle-orm';
 import { 
   blogPosts, 
   blogCategories, 
@@ -545,6 +545,212 @@ export class ContentService {
     await this.db
       .delete(blogPostTags)
       .where(and(eq(blogPostTags.postId, postId), eq(blogPostTags.tagId, tagId)));
+  }
+
+  // =====================================================
+  // PUBLIC BLOG METHODS (No Authentication Required)
+  // =====================================================
+
+  /**
+   * Get published blog posts for public access
+   */
+  async getPublicBlogPosts(filters?: {
+    limit?: number;
+    offset?: number;
+    categoryId?: string;
+    tagId?: string;
+    search?: string;
+    isFeatured?: boolean;
+    excludeId?: string;
+    publishedAt?: string; // For adjacent posts
+  }): Promise<{ posts: BlogPost[]; total: number }> {
+    const limit = filters?.limit || 12;
+    const offset = filters?.offset || 0;
+    const now = new Date();
+
+    const conditions = [
+      eq(blogPosts.status, 'published'),
+      lte(blogPosts.publishedAt, now),
+    ];
+
+    if (filters?.categoryId) {
+      conditions.push(eq(blogPosts.categoryId, filters.categoryId));
+    }
+
+    if (filters?.excludeId) {
+      conditions.push(ne(blogPosts.id, filters.excludeId));
+    }
+
+    if (filters?.isFeatured) {
+      conditions.push(eq(blogPosts.isFeatured, true));
+    }
+
+    if (filters?.search) {
+      conditions.push(
+        or(
+          like(blogPosts.title, `%${filters.search}%`),
+          like(blogPosts.excerpt, `%${filters.search}%`)
+        )
+      );
+    }
+
+    if (filters?.publishedAt) {
+      // For adjacent posts - exclude the current post
+      conditions.push(ne(blogPosts.publishedAt, filters.publishedAt));
+    }
+
+    // Handle tag filter separately (requires join)
+    let postsQuery;
+    let total = 0;
+
+    if (filters?.tagId) {
+      // Count query with tag join
+      const countResult = await this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(blogPosts)
+        .innerJoin(blogPostTags, eq(blogPosts.id, blogPostTags.postId))
+        .where(
+          and(
+            ...conditions,
+            eq(blogPostTags.tagId, filters.tagId)
+          )
+        );
+
+      total = countResult[0]?.count || 0;
+
+      // Posts query with tag join
+      postsQuery = this.db
+        .select()
+        .from(blogPosts)
+        .innerJoin(blogPostTags, eq(blogPosts.id, blogPostTags.postId))
+        .where(
+          and(
+            ...conditions,
+            eq(blogPostTags.tagId, filters.tagId)
+          )
+        );
+    } else {
+      // Get total count
+      const countResult = await this.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(blogPosts)
+        .where(and(...conditions));
+
+      total = countResult[0]?.count || 0;
+
+      // Get posts
+      postsQuery = this.db
+        .select()
+        .from(blogPosts)
+        .where(and(...conditions));
+    }
+
+    // Order and paginate
+    if (filters?.isFeatured) {
+      postsQuery = postsQuery
+        .orderBy(asc(blogPosts.featuredOrder), desc(blogPosts.publishedAt));
+    } else {
+      postsQuery = postsQuery.orderBy(desc(blogPosts.publishedAt));
+    }
+
+    const posts = await postsQuery.limit(limit).offset(offset);
+
+    // Load tags and category for each post
+    const postsWithRelations = await Promise.all(
+      posts.map(async (post: any) => {
+        const [tags, category] = await Promise.all([
+          this.getPostTags(post.id),
+          post.categoryId ? this.getBlogCategoryById(post.categoryId) : null,
+        ]);
+
+        return {
+          ...post,
+          tags,
+          category: category || undefined,
+        };
+      })
+    );
+
+    return {
+      posts: postsWithRelations,
+      total,
+    };
+  }
+
+  /**
+   * Get blog post by slug (public, only published)
+   */
+  async getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+    const now = new Date();
+    const [post] = await this.db
+      .select()
+      .from(blogPosts)
+      .where(
+        and(
+          eq(blogPosts.slug, slug),
+          eq(blogPosts.status, 'published'),
+          lte(blogPosts.publishedAt, now)
+        )
+      )
+      .limit(1);
+
+    if (!post) {
+      return null;
+    }
+
+    const [tags, category] = await Promise.all([
+      this.getPostTags(post.id),
+      post.categoryId ? this.getBlogCategoryById(post.categoryId) : null,
+    ]);
+
+    return {
+      ...post,
+      tags,
+      category: category || undefined,
+    };
+  }
+
+  /**
+   * Increment view count for a blog post
+   */
+  async incrementBlogPostViewCount(postId: string): Promise<void> {
+    await this.db
+      .update(blogPosts)
+      .set({
+        viewCount: sql`${blogPosts.viewCount} + 1`,
+      })
+      .where(eq(blogPosts.id, postId));
+  }
+
+  /**
+   * Get blog category by slug (public)
+   */
+  async getBlogCategoryBySlug(slug: string): Promise<BlogCategory | null> {
+    const [category] = await this.db
+      .select()
+      .from(blogCategories)
+      .where(
+        and(
+          eq(blogCategories.slug, slug),
+          eq(blogCategories.isActive, true)
+        )
+      )
+      .limit(1);
+
+    return category || null;
+  }
+
+  /**
+   * Get blog tag by slug (public)
+   */
+  async getBlogTagBySlug(slug: string): Promise<BlogTag | null> {
+    const [tag] = await this.db
+      .select()
+      .from(blogTags)
+      .where(eq(blogTags.slug, slug))
+      .limit(1);
+
+    return tag || null;
   }
 
   // =====================================================
