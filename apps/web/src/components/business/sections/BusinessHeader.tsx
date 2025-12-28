@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { BusinessProfile } from '../BusinessProfileView';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { uploadToStorage } from '@/lib/storageUtils';
 
 interface BusinessHeaderProps {
@@ -26,11 +26,9 @@ export function BusinessHeader({ business, isOwner }: BusinessHeaderProps) {
       const result = await uploadToStorage(file, 'business-covers', business.id);
       
       if (result.success && result.url) {
-        const supabase = createClient();
-        await supabase
-          .from('business_profiles')
-          .update({ cover_photo_url: result.url })
-          .eq('id', business.id);
+        await apiClient.put(`/businesses/${business.id}`, {
+          coverPhotoUrl: result.url,
+        });
         
         router.refresh();
       }
@@ -51,11 +49,9 @@ export function BusinessHeader({ business, isOwner }: BusinessHeaderProps) {
       const result = await uploadToStorage(file, 'business-logos', business.id);
       
       if (result.success && result.url) {
-        const supabase = createClient();
-        await supabase
-          .from('business_profiles')
-          .update({ logo_url: result.url })
-          .eq('id', business.id);
+        await apiClient.put(`/businesses/${business.id}`, {
+          logoUrl: result.url,
+        });
         
         router.refresh();
       }

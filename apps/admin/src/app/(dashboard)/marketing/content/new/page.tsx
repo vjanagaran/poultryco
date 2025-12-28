@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { TagSelector } from '@/components/marketing/TagSelector';
 import { CampaignSelector } from '@/components/marketing/CampaignSelector';
 
@@ -11,7 +11,7 @@ export default function NewContentPage() {
   const searchParams = useSearchParams();
   const pillarIdFromQuery = searchParams.get('pillar');
 
-  const supabase = createClient();
+  // Using API client
   const [loading, setLoading] = useState(false);
   const [pillars, setPillars] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
@@ -59,21 +59,18 @@ export default function NewContentPage() {
 
   async function fetchLookupData() {
     try {
-      const [pillarsRes, topicsRes, typesRes, masterRes] = await Promise.all([
-        supabase.from('content_pillars').select('*').order('title'),
-        supabase.from('content_topics').select('id, title').order('title'),
-        supabase.from('content_types').select('*').order('name'),
-        supabase
-          .from('content')
-          .select('id, title')
-          .eq('content_mode', 'master')
-          .order('title'),
+      // TODO: Implement API endpoints for these lookups
+      const [pillars, topics, types, master] = await Promise.all([
+        apiClient.get('/admin/content-pillars'),
+        apiClient.get('/admin/content-topics'),
+        apiClient.get('/admin/content-types'),
+        apiClient.get('/admin/content?mode=master'),
       ]);
 
-      if (pillarsRes.data) setPillars(pillarsRes.data);
-      if (topicsRes.data) setTopics(topicsRes.data);
-      if (typesRes.data) setContentTypes(typesRes.data);
-      if (masterRes.data) setMasterContent(masterRes.data);
+      setPillars(pillars || []);
+      setTopics(topics || []);
+      setContentTypes(types || []);
+      setMasterContent(master || []);
     } catch (error) {
       console.error('Error fetching lookup data:', error);
     }
@@ -126,56 +123,29 @@ export default function NewContentPage() {
     setLoading(true);
 
     try {
-      // 1. Create the content
-      const { data: content, error: contentError } = await supabase
-        .from('content')
-        .insert({
-          title,
-          slug: slug || null,
-          content_mode: contentMode,
-          master_content_id: contentMode === 'repurposed' ? masterContentId || null : null,
-          pillar_id: pillarId || null,
-          topic_id: topicId || null,
-          content_type_id: contentTypeId,
-          content_body: contentBody || null,
-          excerpt: excerpt || null,
-          meta_title: metaTitle || null,
-          meta_description: metaDescription || null,
-          focus_keywords: focusKeywords.length > 0 ? focusKeywords : null,
-          target_url: targetUrl || null,
-          featured_image_url: featuredImageUrl || null,
-          hashtags: hashtags.length > 0 ? hashtags : null,
-          cta_text: ctaText || null,
-          cta_url: ctaUrl || null,
-          status,
-        })
-        .select()
-        .single();
-
-      if (contentError) throw contentError;
-
-      // 2. Assign tags
-      if (selectedTags.length > 0) {
-        const tagAssignments = selectedTags.map((tagId) => ({
-          content_id: content.id,
-          tag_id: tagId,
-        }));
-        const { error: tagsError } = await supabase
-          .from('content_tag_assignments')
-          .insert(tagAssignments);
-        if (tagsError) throw tagsError;
-      }
-
-      // 3. Assign campaign
-      if (selectedCampaign) {
-        const { error: campaignError } = await supabase
-          .from('content_campaign_assignments')
-          .insert({
-            content_id: content.id,
-            campaign_id: selectedCampaign,
-          });
-        if (campaignError) throw campaignError;
-      }
+      // Create content via API
+      const content = await apiClient.post('/admin/content', {
+        title,
+        slug: slug || null,
+        contentMode,
+        masterContentId: contentMode === 'repurposed' ? masterContentId || null : null,
+        pillarId: pillarId || null,
+        topicId: topicId || null,
+        contentTypeId,
+        contentBody: contentBody || null,
+        excerpt: excerpt || null,
+        metaTitle: metaTitle || null,
+        metaDescription: metaDescription || null,
+        focusKeywords: focusKeywords.length > 0 ? focusKeywords : null,
+        targetUrl: targetUrl || null,
+        featuredImageUrl: featuredImageUrl || null,
+        hashtags: hashtags.length > 0 ? hashtags : null,
+        ctaText: ctaText || null,
+        ctaUrl: ctaUrl || null,
+        status,
+        tagIds: selectedTags,
+        campaignId: selectedCampaign || null,
+      });
 
       router.push(`/marketing/content/${content.id}`);
     } catch (error) {

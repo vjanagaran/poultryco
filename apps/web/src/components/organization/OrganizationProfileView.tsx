@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { getOrganizationBySlug } from '@/lib/api/organizations';
+import { useAuth } from '@/contexts/AuthContext';
 import { OrganizationHeader } from './sections/OrganizationHeader';
 import { OrganizationAboutSection } from './sections/OrganizationAboutSection';
 import { OrganizationLeadershipSection } from './sections/OrganizationLeadershipSection';
@@ -52,47 +53,36 @@ interface OrganizationProfileViewProps {
 
 export function OrganizationProfileView({ slug }: OrganizationProfileViewProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [organization, setOrganization] = useState<OrganizationProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchOrganization() {
       try {
-        const supabase = createClient();
+        // Fetch organization via API
+        const orgData = await getOrganizationBySlug(slug);
         
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        setCurrentUserId(user?.id || null);
+        // Transform API response to match expected format
+        const transformed = {
+          ...orgData,
+          organization_name: orgData.name,
+          organization_slug: orgData.slug,
+          logo_url: orgData.logoUrl,
+          cover_photo_url: orgData.coverPhotoUrl,
+          organization_type: orgData.organizationTypeId || '',
+          // TODO: Fetch related data (contact, leadership, etc.) from API
+          contact: null,
+          leadership: [],
+          offices: [],
+          members: [],
+          resources: [],
+          announcements: [],
+        };
 
-        // Fetch organization with all related data
-        const { data: orgData, error: orgError } = await supabase
-          .from('organizations')
-          .select(`
-            *,
-            contact:organizations_contact(*),
-            leadership:organization_leadership(
-              *,
-              profile:profiles(
-                id,
-                full_name,
-                headline,
-                profile_photo_url,
-                profile_slug
-              )
-            ),
-            offices:organization_offices(*),
-            resources:organization_resources(*),
-            announcements:organization_announcements(*)
-          `)
-          .eq('organization_slug', slug)
-          .single();
-
-        if (orgError) throw orgError;
-
-        setOrganization(orgData);
-        setIsOwner(user?.id === orgData.owner_id);
+        setOrganization(transformed as OrganizationProfile);
+        setIsOwner(user?.id === orgData.ownerId);
       } catch (error) {
         console.error('Error fetching organization:', error);
         router.push('/directory');
@@ -102,7 +92,7 @@ export function OrganizationProfileView({ slug }: OrganizationProfileViewProps) 
     }
 
     fetchOrganization();
-  }, [slug, router]);
+  }, [slug, router, user]);
 
   if (loading) {
     return (
@@ -150,7 +140,7 @@ export function OrganizationProfileView({ slug }: OrganizationProfileViewProps) 
           {/* Right Column */}
           <div className="space-y-6">
             <OrganizationLeadershipSection organization={organization} isOwner={isOwner} />
-            <OrganizationMembershipSection organization={organization} isOwner={isOwner} currentUserId={currentUserId} />
+            <OrganizationMembershipSection organization={organization} isOwner={isOwner} currentUserId={user?.id || null} />
           </div>
         </div>
       </div>

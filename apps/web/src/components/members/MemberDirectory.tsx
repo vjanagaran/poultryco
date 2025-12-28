@@ -2,22 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { searchMembers } from '@/lib/api/discovery';
 import Link from 'next/link';
 
 interface Member {
   id: string;
-  full_name: string;
-  profile_slug: string;
+  firstName: string;
+  lastName: string;
+  slug: string;
   headline: string | null;
   bio: string | null;
-  profile_photo_url: string | null;
-  location_state: string;
-  location_city: string | null;
-  verification_level: string;
-  created_at: string;
-  connections_count?: number;
-  roles?: Array<{ role_type: string }>;
+  profilePhoto: string | null;
+  state: string | null;
+  city: string | null;
+  verificationLevel: string;
+  connectionsCount?: number;
 }
 
 export default function MemberDirectory() {
@@ -37,48 +36,32 @@ export default function MemberDirectory() {
 
   const fetchMembers = async () => {
     try {
-      const supabase = createClient();
+      setLoading(true);
       
-      let query = supabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name,
-          profile_slug,
-          headline,
-          bio,
-          profile_photo_url,
-          location_state,
-          location_city,
-          verification_level,
-          created_at,
-          profile_roles!inner(role_type)
-        `)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false })
-        .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
+      const result = await searchMembers({
+        query: searchQuery || undefined,
+        filters: {
+          state: selectedState || undefined,
+          role: selectedRole || undefined,
+        },
+        page: page - 1,
+        limit: PAGE_SIZE,
+      });
 
-      // Apply filters
-      if (searchQuery) {
-        query = query.ilike('full_name', `%${searchQuery}%`);
-      }
-
-      if (selectedState) {
-        query = query.eq('location_state', selectedState);
-      }
-
-      if (selectedRole) {
-        query = query.eq('profile_roles.role_type', selectedRole);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      const transformedData = data?.map((member: any) => ({
-        ...member,
-        roles: member.profile_roles,
-      })) || [];
+      const transformedData = result.data.map((member: any) => ({
+        id: member.id,
+        firstName: member.firstName,
+        lastName: member.lastName,
+        full_name: `${member.firstName} ${member.lastName}`,
+        slug: member.slug,
+        headline: member.headline,
+        bio: null, // TODO: Add bio to API response
+        profilePhoto: member.profilePhoto,
+        state: member.state,
+        city: member.city,
+        verificationLevel: member.verificationLevel,
+        connectionsCount: member.connectionsCount,
+      }));
 
       if (page === 1) {
         setMembers(transformedData);
@@ -153,37 +136,27 @@ export default function MemberDirectory() {
             </form>
 
             <select
-              value={selectedRole}
-              onChange={(e) => {
-                setSelectedRole(e.target.value);
-                setPage(1);
-                setMembers([]);
-              }}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            >
-              <option value="">All Roles</option>
-              <option value="farmer">Farmers</option>
-              <option value="veterinarian">Veterinarians</option>
-              <option value="supplier">Suppliers</option>
-              <option value="consultant">Consultants</option>
-              <option value="researcher">Researchers</option>
-            </select>
-
-            <select
               value={selectedState}
               onChange={(e) => {
                 setSelectedState(e.target.value);
                 setPage(1);
-                setMembers([]);
               }}
               className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             >
               <option value="">All States</option>
-              <option value="Tamil Nadu">Tamil Nadu</option>
-              <option value="Andhra Pradesh">Andhra Pradesh</option>
-              <option value="Telangana">Telangana</option>
-              <option value="Karnataka">Karnataka</option>
-              <option value="Maharashtra">Maharashtra</option>
+              {/* TODO: Populate from API */}
+            </select>
+
+            <select
+              value={selectedRole}
+              onChange={(e) => {
+                setSelectedRole(e.target.value);
+                setPage(1);
+              }}
+              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            >
+              <option value="">All Roles</option>
+              {/* TODO: Populate from API */}
             </select>
           </div>
         </div>
@@ -192,44 +165,74 @@ export default function MemberDirectory() {
       {/* Members Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading && page === 1 ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : members.length === 0 ? (
           <div className="text-center py-12">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-              />
-            </svg>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No members found</h3>
-            <p className="mt-2 text-gray-600">Try adjusting your search or filters</p>
+            <p className="text-gray-500">No members found</p>
           </div>
         ) : (
           <>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {members.map((member) => (
-                <MemberCard key={member.id} member={member} />
+                <Link
+                  key={member.id}
+                  href={`/me/${member.slug}`}
+                  className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex-shrink-0 overflow-hidden">
+                      {member.profilePhoto ? (
+                        <img
+                          src={member.profilePhoto}
+                          alt={`${member.firstName} ${member.lastName}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white font-bold text-xl">
+                          {member.firstName.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 truncate">
+                        {member.firstName} {member.lastName}
+                      </h3>
+                      {member.headline && (
+                        <p className="text-sm text-gray-600 truncate mt-1">
+                          {member.headline}
+                        </p>
+                      )}
+                      {(member.city || member.state) && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          📍 {[member.city, member.state].filter(Boolean).join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
               ))}
             </div>
 
-            {/* Load More */}
             {hasMore && (
               <div className="text-center mt-8">
                 <button
                   onClick={handleLoadMore}
                   disabled={loading}
-                  className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
-                  {loading ? 'Loading...' : 'Load More Members'}
+                  {loading ? 'Loading...' : 'Load More'}
                 </button>
               </div>
             )}
@@ -239,93 +242,3 @@ export default function MemberDirectory() {
     </div>
   );
 }
-
-function MemberCard({ member }: { member: Member }) {
-  const primaryRole = member.roles?.[0]?.role_type || 'member';
-  
-  return (
-    <Link
-      href={`/me/${member.profile_slug}`}
-      className="block bg-white rounded-xl shadow-sm hover:shadow-lg transition-shadow p-6 border border-gray-200"
-    >
-      <div className="flex items-start gap-4">
-        {/* Avatar */}
-        <div className="relative flex-shrink-0">
-          {member.profile_photo_url ? (
-            <img
-              src={member.profile_photo_url}
-              alt={member.full_name}
-              className="w-16 h-16 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">
-                {member.full_name[0]}
-              </span>
-            </div>
-          )}
-          {member.verification_level === 'verified' && (
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-white">
-              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-gray-900 truncate">{member.full_name}</h3>
-          
-          {member.headline && (
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{member.headline}</p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-            <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded capitalize">
-              {primaryRole.replace('_', ' ')}
-            </span>
-            
-            {(member.location_city || member.location_state) && (
-              <span className="inline-flex items-center text-xs text-gray-500">
-                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                {member.location_city || member.location_state}
-              </span>
-            )}
-            
-            {/* Connection count */}
-            <span className="inline-flex items-center text-xs text-gray-500">
-              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
-              {member.connections_count || 0} connections
-            </span>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-

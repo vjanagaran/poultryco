@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 
 export default function ScheduleDetailPage() {
   const router = useRouter();
   const params = useParams();
   const scheduleId = params.id as string;
-  const supabase = createClient();
+  // Using API client
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,30 +28,14 @@ export default function ScheduleDetailPage() {
     try {
       setLoading(true);
 
-      // Fetch schedule with related data
-      const { data: scheduleData, error: scheduleError } = await supabase
-        .from('content_schedule')
-        .select(`
-          *,
-          content(id, title, content_types(name)),
-          marketing_channels(id, name, platform)
-        `)
-        .eq('id', scheduleId)
-        .single();
-
-      if (scheduleError) throw scheduleError;
+      // Fetch schedule via API
+      const scheduleData = await apiClient.get(`/admin/content-schedule/${scheduleId}`);
       setSchedule(scheduleData);
       setFormData(scheduleData);
 
       // Fetch channels for editing
-      const { data: channelsData } = await supabase
-        .from('marketing_channels')
-        .select('*')
-        .eq('is_active', true)
-        .order('platform')
-        .order('name');
-
-      if (channelsData) setChannels(channelsData);
+      const channelsData = await apiClient.get('/admin/marketing-channels?active=true');
+      setChannels(channelsData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -66,34 +50,23 @@ export default function ScheduleDetailPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('content_schedule')
-        .update({
-          channel_id: formData.channel_id,
-          scheduled_date: formData.scheduled_date,
-          scheduled_time: formData.scheduled_time,
-          status: formData.status,
-          published_url: formData.published_url,
-          views: formData.views,
-          likes: formData.likes,
-          comments: formData.comments,
-          shares: formData.shares,
-          clicks: formData.clicks,
-          notes: formData.notes,
-        })
-        .eq('id', scheduleId);
-
-      if (error) throw error;
-
-      // If marking as published, update published_at
-      if (formData.status === 'published' && schedule.status !== 'published') {
-        await supabase
-          .from('content_schedule')
-          .update({
-            published_at: new Date().toISOString(),
-          })
-          .eq('id', scheduleId);
-      }
+      // Update schedule via API
+      await apiClient.put(`/admin/content-schedule/${scheduleId}`, {
+        channelId: formData.channel_id,
+        scheduledDate: formData.scheduled_date,
+        scheduledTime: formData.scheduled_time,
+        status: formData.status,
+        publishedUrl: formData.published_url,
+        views: formData.views,
+        likes: formData.likes,
+        comments: formData.comments,
+        shares: formData.shares,
+        clicks: formData.clicks,
+        notes: formData.notes,
+        publishedAt: formData.status === 'published' && schedule.status !== 'published' 
+          ? new Date().toISOString() 
+          : undefined,
+      });
 
       setEditing(false);
       fetchData();
@@ -115,9 +88,7 @@ export default function ScheduleDetailPage() {
     }
 
     try {
-      const { error } = await supabase.from('content_schedule').delete().eq('id', scheduleId);
-
-      if (error) throw error;
+      await apiClient.delete(`/admin/content-schedule/${scheduleId}`);
       router.push('/marketing/calendar');
     } catch (error) {
       console.error('Error deleting schedule:', error);

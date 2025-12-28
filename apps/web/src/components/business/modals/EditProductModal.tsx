@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { uploadToStorage } from '@/lib/storageUtils';
 
 interface EditProductModalProps {
@@ -88,8 +88,7 @@ export function EditProductModal({ isOpen, onClose, product, businessId, onProdu
     if (!confirm('Remove this image?')) return;
 
     try {
-      const supabase = createClient();
-      await supabase.from('product_images').delete().eq('id', imageId);
+      await apiClient.delete(`/businesses/${businessId}/products/${product.id}/images/${imageId}`);
       setExistingImages(existingImages.filter((img) => img.id !== imageId));
     } catch (error) {
       console.error('Error removing image:', error);
@@ -104,19 +103,8 @@ export function EditProductModal({ isOpen, onClose, product, businessId, onProdu
 
   const handleSetPrimary = async (imageId: string) => {
     try {
-      const supabase = createClient();
-      
-      // Set all images to non-primary
-      await supabase
-        .from('product_images')
-        .update({ is_primary: false })
-        .eq('product_id', product.id);
-      
-      // Set selected image as primary
-      await supabase
-        .from('product_images')
-        .update({ is_primary: true })
-        .eq('id', imageId);
+      // Set primary image via API
+      await apiClient.put(`/businesses/${businessId}/products/${product.id}/images/${imageId}/set-primary`);
       
       setExistingImages(
         existingImages.map((img) => ({
@@ -137,15 +125,8 @@ export function EditProductModal({ isOpen, onClose, product, businessId, onProdu
 
     setDeleting(true);
     try {
-      const supabase = createClient();
-
-      // Delete product (images will cascade delete)
-      const { error } = await supabase
-        .from('business_products')
-        .delete()
-        .eq('id', product.id);
-
-      if (error) throw error;
+      // Delete product via API
+      await apiClient.delete(`/businesses/${businessId}/products/${product.id}`);
 
       onProductUpdated();
       onClose();
@@ -163,31 +144,21 @@ export function EditProductModal({ isOpen, onClose, product, businessId, onProdu
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // Update product
-      const { error: productError } = await supabase
-        .from('business_products')
-        .update({
-          product_name: formData.product_name,
-          description: formData.description || null,
-          category: formData.category || null,
-          sub_category: formData.sub_category || null,
-          price_range: formData.price_range || null,
-          unit: formData.unit || null,
-          min_order_quantity: formData.min_order_quantity || null,
-          availability_status: formData.availability_status,
-          is_featured: formData.is_featured,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', product.id);
-
-      if (productError) throw productError;
+      // Update product via API
+      await apiClient.put(`/businesses/${businessId}/products/${product.id}`, {
+        name: formData.product_name,
+        description: formData.description || null,
+        category: formData.category || null,
+        subCategory: formData.sub_category || null,
+        priceRange: formData.price_range || null,
+        unit: formData.unit || null,
+        minOrderQuantity: formData.min_order_quantity || null,
+        availabilityStatus: formData.availability_status,
+        isFeatured: formData.is_featured,
+      });
 
       // Upload new images
       if (newImages.length > 0) {
-        const currentMaxOrder = Math.max(...existingImages.map((img) => img.sort_order || 0), -1);
-        
         for (let i = 0; i < newImages.length; i++) {
           const file = newImages[i];
           const result = await uploadToStorage(file, `products/${businessId}`, product.id);
@@ -195,11 +166,11 @@ export function EditProductModal({ isOpen, onClose, product, businessId, onProdu
           if (result.success && result.url) {
             const isFirstImage = existingImages.length === 0 && i === 0;
             
-            await supabase.from('product_images').insert({
-              product_id: product.id,
-              image_url: result.url,
-              is_primary: isFirstImage,
-              sort_order: currentMaxOrder + i + 1,
+            // Add image via API
+            await apiClient.post(`/businesses/${businessId}/products/${product.id}/images`, {
+              imageUrl: result.url,
+              isPrimary: isFirstImage,
+              sortOrder: existingImages.length + i,
             });
           }
         }

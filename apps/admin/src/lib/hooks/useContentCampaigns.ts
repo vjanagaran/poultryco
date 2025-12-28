@@ -5,8 +5,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-// TODO: Migrate to API
-// import { apiClient } from '@/lib/api/client';
+import { apiClient } from '@/lib/api/client';
 
 // Types
 export type CampaignStatus = 'planning' | 'active' | 'completed' | 'archived';
@@ -82,20 +81,13 @@ export function useContentCampaigns(filters?: {
   return useQuery({
     queryKey: ['content-campaigns', filters],
     queryFn: async () => {
-      const supabase = createClient();
-      let query = supabase
-        .from('content_campaigns')
-        .select('*')
-        .order('start_date', { ascending: false });
-      
+      const params = new URLSearchParams();
       if (filters?.status) {
         const statuses = Array.isArray(filters.status) ? filters.status : [filters.status];
-        query = query.in('status', statuses);
+        params.append('status', statuses.join(','));
       }
       
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as ContentCampaign[];
+      return apiClient.get<ContentCampaign[]>(`/admin/content-campaigns?${params.toString()}`);
     },
   });
 }
@@ -107,13 +99,7 @@ export function useActiveCampaigns() {
   return useQuery({
     queryKey: ['active-campaigns'],
     queryFn: async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('active_campaigns')
-        .select('*');
-      
-      if (error) throw error;
-      return data as CampaignPerformance[];
+      return apiClient.get<CampaignPerformance[]>('/admin/content-campaigns/active');
     },
   });
 }
@@ -126,16 +112,7 @@ export function useContentCampaign(campaignId: string | null) {
     queryKey: ['content-campaign', campaignId],
     queryFn: async () => {
       if (!campaignId) return null;
-      
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('content_campaigns')
-        .select('*')
-        .eq('id', campaignId)
-        .single();
-      
-      if (error) throw error;
-      return data as ContentCampaign;
+      return apiClient.get<ContentCampaign>(`/admin/content-campaigns/${campaignId}`);
     },
     enabled: !!campaignId,
   });
@@ -149,16 +126,7 @@ export function useCampaignPerformance(campaignId: string | null) {
     queryKey: ['campaign-performance', campaignId],
     queryFn: async () => {
       if (!campaignId) return null;
-      
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('campaign_performance')
-        .select('*')
-        .eq('id', campaignId)
-        .single();
-      
-      if (error) throw error;
-      return data as CampaignPerformance;
+      return apiClient.get<CampaignPerformance>(`/admin/content-campaigns/${campaignId}/performance`);
     },
     enabled: !!campaignId,
     refetchInterval: 30000, // Refresh every 30 seconds for live metrics
@@ -172,14 +140,7 @@ export function useAllCampaignsPerformance() {
   return useQuery({
     queryKey: ['all-campaigns-performance'],
     queryFn: async () => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('campaign_performance')
-        .select('*')
-        .order('start_date', { ascending: false });
-      
-      if (error) throw error;
-      return data as CampaignPerformance[];
+      return apiClient.get<CampaignPerformance[]>('/admin/content-campaigns/performance');
     },
     refetchInterval: 60000, // Refresh every minute
   });
@@ -193,13 +154,7 @@ export function useCampaignHealth(campaignId: string | null) {
     queryKey: ['campaign-health', campaignId],
     queryFn: async () => {
       if (!campaignId) return null;
-      
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .rpc('get_campaign_health', { campaign_uuid: campaignId });
-      
-      if (error) throw error;
-      return data as 'excellent' | 'good' | 'fair' | 'needs_attention' | 'critical';
+      return apiClient.get<'excellent' | 'good' | 'fair' | 'needs_attention' | 'critical'>(`/admin/content-campaigns/${campaignId}/health`);
     },
     enabled: !!campaignId,
   });
@@ -213,16 +168,7 @@ export function useCampaignContent(campaignId: string | null) {
     queryKey: ['campaign-content', campaignId],
     queryFn: async () => {
       if (!campaignId) return [];
-      
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('campaign_content_summary')
-        .select('*')
-        .eq('campaign_id', campaignId)
-        .order('scheduled_date');
-      
-      if (error) throw error;
-      return data as CampaignContentSummary[];
+      return apiClient.get<CampaignContentSummary[]>(`/admin/content-campaigns/${campaignId}/content`);
     },
     enabled: !!campaignId,
   });
@@ -236,15 +182,7 @@ export function useCampaignsForContent(contentId: string | null) {
     queryKey: ['campaigns-for-content', contentId],
     queryFn: async () => {
       if (!contentId) return [];
-      
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('content_campaign_assignments')
-        .select('content_campaigns(*)')
-        .eq('content_id', contentId);
-      
-      if (error) throw error;
-      return data.map((item: any) => item.content_campaigns) as ContentCampaign[];
+      return apiClient.get<ContentCampaign[]>(`/admin/content/${contentId}/campaigns`);
     },
     enabled: !!contentId,
   });
@@ -258,15 +196,7 @@ export function useCampaignsForPillar(pillarId: string | null) {
     queryKey: ['campaigns-for-pillar', pillarId],
     queryFn: async () => {
       if (!pillarId) return [];
-      
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('pillar_campaign_assignments')
-        .select('content_campaigns(*)')
-        .eq('pillar_id', pillarId);
-      
-      if (error) throw error;
-      return data.map((item: any) => item.content_campaigns) as ContentCampaign[];
+      return apiClient.get<ContentCampaign[]>(`/admin/pillars/${pillarId}/campaigns`);
     },
     enabled: !!pillarId,
   });
@@ -296,15 +226,7 @@ export function useCreateCampaign() {
       icon?: string;
       status?: CampaignStatus;
     }) => {
-      const supabase = createClient();
-      const { data, error} = await supabase
-        .from('content_campaigns')
-        .insert([campaignData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as ContentCampaign;
+      return apiClient.post<ContentCampaign>('/admin/content-campaigns', campaignData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-campaigns'] });
@@ -327,16 +249,7 @@ export function useUpdateCampaign() {
       campaignId: string;
       updates: Partial<ContentCampaign>;
     }) => {
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('content_campaigns')
-        .update(updates)
-        .eq('id', campaignId)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data as ContentCampaign;
+      return apiClient.put<ContentCampaign>(`/admin/content-campaigns/${campaignId}`, updates);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['content-campaigns'] });
@@ -355,13 +268,7 @@ export function useDeleteCampaign() {
   
   return useMutation({
     mutationFn: async (campaignId: string) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('content_campaigns')
-        .delete()
-        .eq('id', campaignId);
-      
-      if (error) throw error;
+      await apiClient.delete(`/admin/content-campaigns/${campaignId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-campaigns'] });
@@ -386,16 +293,10 @@ export function useAssignContentToCampaign() {
       campaignId: string;
       contentRole?: ContentRole;
     }) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('content_campaign_assignments')
-        .insert([{
-          content_id: contentId,
-          campaign_id: campaignId,
-          content_role: contentRole,
-        }]);
-      
-      if (error) throw error;
+      await apiClient.post(`/admin/content-campaigns/${campaignId}/content`, {
+        contentId,
+        contentRole,
+      });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ 
@@ -425,17 +326,9 @@ export function useAssignMultipleContentToCampaign() {
       contentIds: string[];
       campaignId: string;
     }) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('content_campaign_assignments')
-        .insert(
-          contentIds.map(contentId => ({
-            content_id: contentId,
-            campaign_id: campaignId,
-          }))
-        );
-      
-      if (error) throw error;
+      await apiClient.post(`/admin/content-campaigns/${campaignId}/content/batch`, {
+        contentIds,
+      });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ 
@@ -462,14 +355,7 @@ export function useRemoveContentFromCampaign() {
       contentId: string;
       campaignId: string;
     }) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('content_campaign_assignments')
-        .delete()
-        .eq('content_id', contentId)
-        .eq('campaign_id', campaignId);
-      
-      if (error) throw error;
+      await apiClient.delete(`/admin/content-campaigns/${campaignId}/content/${contentId}`);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ 
@@ -499,15 +385,9 @@ export function useAssignPillarToCampaign() {
       pillarId: string;
       campaignId: string;
     }) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('pillar_campaign_assignments')
-        .insert([{
-          pillar_id: pillarId,
-          campaign_id: campaignId,
-        }]);
-      
-      if (error) throw error;
+      await apiClient.post(`/admin/content-campaigns/${campaignId}/pillars`, {
+        pillarId,
+      });
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ 
@@ -534,14 +414,7 @@ export function useRemovePillarFromCampaign() {
       pillarId: string;
       campaignId: string;
     }) => {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('pillar_campaign_assignments')
-        .delete()
-        .eq('pillar_id', pillarId)
-        .eq('campaign_id', campaignId);
-      
-      if (error) throw error;
+      await apiClient.delete(`/admin/content-campaigns/${campaignId}/pillars/${pillarId}`);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ 

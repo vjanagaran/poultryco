@@ -1,25 +1,19 @@
 import { MetadataRoute } from 'next'
-import { createClient } from '@supabase/supabase-js'
+import { getNECCZones } from '@/lib/api/necc'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.poultryco.net'
   const lastModified = new Date()
   
-  // Fetch NECC zones for dynamic sitemap entries (using direct Supabase client for static generation)
+  // Fetch NECC zones for dynamic sitemap entries
   let zones: Array<{ slug: string }> = []
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-    const { data: zonesData } = await supabase
-      .from('necc_zones')
-      .select('slug')
-      .eq('status', true)
-      .order('sorting', { ascending: true })
-    
+    const zonesData = await getNECCZones()
     if (zonesData) {
-      zones = zonesData.map(z => ({ slug: z.slug }))
+      zones = zonesData
+        .filter(z => z.is_active)
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map(z => ({ slug: z.slug }))
     }
   } catch (error) {
     console.error('Error fetching zones for sitemap:', error)

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+// Removed Supabase import - using API
 
 interface Props {
   data: any;
@@ -11,6 +11,7 @@ interface Props {
 }
 
 export default function PhotoHeadlineStep({ data, onNext, onBack, loading }: Props) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     headline: data.headline || '',
     bio: data.bio || '',
@@ -43,31 +44,16 @@ export default function PhotoHeadlineStep({ data, onNext, onBack, loading }: Pro
     setUploadError(null);
 
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) throw new Error('Not authenticated');
 
-      // Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('cdn.poultryco.net')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('cdn.poultryco.net')
-        .getPublicUrl(filePath);
-
-      setFormData({ ...formData, profile_photo_url: publicUrl });
+      // Upload via API
+      const result = await uploadPostImage(file, user.id);
+      
+      if (result.success && result.url) {
+        setFormData({ ...formData, profile_photo_url: result.url });
+      } else {
+        throw new Error(result.error || 'Failed to upload image');
+      }
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : 'Failed to upload image');
     } finally {

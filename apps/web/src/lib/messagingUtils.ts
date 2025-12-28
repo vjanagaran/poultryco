@@ -145,3 +145,114 @@ export async function uploadMessageMediaFile(
     return null;
   }
 }
+
+// Format conversation time
+export function formatConversationTime(timestamp: string | null | undefined): string {
+  if (!timestamp) return '';
+  
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  
+  // Today - show time
+  if (diffInSeconds < 86400 && date.getDate() === now.getDate()) {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+  
+  // Yesterday
+  if (diffInSeconds < 172800 && date.getDate() === now.getDate() - 1) {
+    return 'Yesterday';
+  }
+  
+  // This week
+  if (diffInSeconds < 604800) {
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  }
+  
+  // Older
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+  });
+}
+
+// Group messages by date
+export function groupMessagesByDate(messages: Message[]): Record<string, Message[]> {
+  const grouped: Record<string, Message[]> = {};
+  
+  messages.forEach((message) => {
+    const date = new Date(message.createdAt);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    let dateKey: string;
+    
+    if (date.toDateString() === today.toDateString()) {
+      dateKey = 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      dateKey = 'Yesterday';
+    } else if (date.getTime() > today.getTime() - 7 * 24 * 60 * 60 * 1000) {
+      dateKey = date.toLocaleDateString('en-US', { weekday: 'long' });
+    } else {
+      dateKey = date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined,
+      });
+    }
+    
+    if (!grouped[dateKey]) {
+      grouped[dateKey] = [];
+    }
+    grouped[dateKey].push(message);
+  });
+  
+  return grouped;
+}
+
+// Check if user is online
+export function isUserOnline(lastSeenAt: string | null | undefined): boolean {
+  if (!lastSeenAt) return false;
+  
+  const lastSeen = new Date(lastSeenAt);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - lastSeen.getTime()) / (1000 * 60));
+  
+  // Consider online if last seen within last 5 minutes
+  return diffInMinutes < 5;
+}
+
+// Format last seen time
+export function formatLastSeen(lastSeenAt: string | null | undefined): string {
+  if (!lastSeenAt) return 'offline';
+  
+  if (isUserOnline(lastSeenAt)) {
+    return 'online';
+  }
+  
+  const lastSeen = new Date(lastSeenAt);
+  const now = new Date();
+  const diffInMinutes = Math.floor((now.getTime() - lastSeen.getTime()) / (1000 * 60));
+  
+  if (diffInMinutes < 60) {
+    return `last seen ${diffInMinutes}m ago`;
+  }
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `last seen ${diffInHours}h ago`;
+  }
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) {
+    return `last seen ${diffInDays}d ago`;
+  }
+  
+  return `last seen ${lastSeen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+}

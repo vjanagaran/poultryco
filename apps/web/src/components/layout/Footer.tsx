@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
 import { Button } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
+import { apiClient } from "@/lib/api/client";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -24,13 +24,16 @@ export function Footer() {
         source: 'footer_form',
       });
 
-      // For now, just show success message
-      // TODO: Create public newsletter subscription endpoint in API
       setMessage({type: "success", text: "Thank you for subscribing!"});
       setEmail("");
-    } catch (error) {
+    } catch (error: any) {
       console.error('Newsletter subscription error:', error);
-      setMessage({type: "error", text: "Something went wrong. Please try again."});
+      // Check for duplicate email error from API
+      if (error.statusCode === 409) {
+        setMessage({type: "success", text: "You're already subscribed!"});
+      } else {
+        setMessage({type: "error", text: error.message || "Something went wrong. Please try again."});
+      }
     } finally {
       setIsSubmitting(false);
     }

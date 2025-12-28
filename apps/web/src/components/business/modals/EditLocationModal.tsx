@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 
 interface EditLocationModalProps {
   isOpen: boolean;
@@ -79,13 +79,7 @@ export function EditLocationModal({
 
     setDeleting(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('business_locations')
-        .delete()
-        .eq('id', location.id);
-
-      if (error) throw error;
+      await apiClient.delete(`/businesses/${businessId}/locations/${location.id}`);
 
       onLocationUpdated();
       onClose();
@@ -103,39 +97,23 @@ export function EditLocationModal({
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // If setting as primary, unset all other primary locations
-      if (formData.is_primary && !location.is_primary) {
-        await supabase
-          .from('business_locations')
-          .update({ is_primary: false })
-          .eq('business_profile_id', businessId);
-      }
-
-      // Update location
-      const { error } = await supabase
-        .from('business_locations')
-        .update({
-          location_name: formData.location_name,
-          location_type: formData.location_type,
-          address_line1: formData.address_line1,
-          address_line2: formData.address_line2 || null,
-          city: formData.city,
-          state: formData.state,
-          postal_code: formData.postal_code || null,
-          country: formData.country,
-          phone: formData.phone || null,
-          email: formData.email || null,
-          latitude: formData.latitude ? parseFloat(formData.latitude) : null,
-          longitude: formData.longitude ? parseFloat(formData.longitude) : null,
-          is_primary: formData.is_primary,
-          operational_hours: formData.operational_hours || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', location.id);
-
-      if (error) throw error;
+      // Update location via API
+      await apiClient.put(`/businesses/${businessId}/locations/${location.id}`, {
+        name: formData.location_name,
+        locationType: formData.location_type,
+        addressLine1: formData.address_line1,
+        addressLine2: formData.address_line2 || null,
+        city: formData.city,
+        state: formData.state,
+        postalCode: formData.postal_code || null,
+        country: formData.country,
+        phone: formData.phone || null,
+        email: formData.email || null,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+        isPrimary: formData.is_primary,
+        operationalHours: formData.operational_hours || null,
+      });
 
       onLocationUpdated();
       onClose();

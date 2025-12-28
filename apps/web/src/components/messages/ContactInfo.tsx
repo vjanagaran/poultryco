@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Conversation } from '@/lib/messagingUtils';
-import { createClient } from '@/lib/supabase/client';
+// Removed Supabase import - using API
 import { useAuth } from '@/contexts/AuthContext';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,7 +18,6 @@ export function ContactInfo({ conversationId, onClose }: ContactInfoProps) {
   const [mediaFiles, setMediaFiles] = useState<any[]>([]);
   const [loadingMedia, setLoadingMedia] = useState(true);
   const [activeTab, setActiveTab] = useState<'media' | 'docs' | 'links'>('media');
-  const supabase = createClient();
 
   useEffect(() => {
     if (conversationId && user) {
@@ -31,57 +30,26 @@ export function ContactInfo({ conversationId, onClose }: ContactInfoProps) {
     if (!user) return;
 
     try {
-      const { data: conv } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('id', conversationId)
-        .single();
+      // Get conversation via API
+      const conv = await getConversation(conversationId);
+      
+      // Transform to match expected format
+      const otherParticipant = conv.participants?.find(
+        (p: any) => p.profileId !== user.id
+      );
 
-      if (!conv) return;
-
-      // Get other participant for one-on-one chats
-      if (!conv.is_group) {
-        const { data: otherParticipant } = await supabase
-          .from('conversation_participants')
-          .select(`
-            *,
-            user:profiles!user_id(
-              id,
-              full_name,
-              profile_slug,
-              profile_photo_url,
-              headline
-            )
-          `)
-          .eq('conversation_id', conversationId)
-          .neq('user_id', user.id)
-          .single();
-
-        setConversation({
-          ...conv,
-          other_participant: otherParticipant?.user,
-        } as Conversation);
-      } else {
-        // Get all participants for group
-        const { data: participants } = await supabase
-          .from('conversation_participants')
-          .select(`
-            *,
-            user:profiles!user_id(
-              id,
-              full_name,
-              profile_slug,
-              profile_photo_url,
-              headline
-            )
-          `)
-          .eq('conversation_id', conversationId);
-
-        setConversation({
-          ...conv,
-          participants: participants?.map((p) => p.user),
-        } as Conversation);
-      }
+      setConversation({
+        ...conv,
+        is_group: conv.conversationType !== 'direct',
+        other_participant: otherParticipant?.profile ? {
+          id: otherParticipant.profile.id,
+          full_name: `${otherParticipant.profile.firstName} ${otherParticipant.profile.lastName}`,
+          profile_slug: otherParticipant.profile.slug,
+          profile_photo_url: otherParticipant.profile.profilePhoto,
+          headline: otherParticipant.profile.headline,
+        } : undefined,
+        participants: conv.participants?.map((p: any) => p.profile),
+      } as any);
     } catch (error) {
       console.error('Error fetching conversation:', error);
     }
@@ -92,12 +60,13 @@ export function ContactInfo({ conversationId, onClose }: ContactInfoProps) {
 
     setLoadingMedia(true);
     try {
-      const { data: messages, error } = await supabase
-        .from('messages')
-        .select('id, media_urls, message_type, created_at')
-        .eq('conversation_id', conversationId)
-        .not('media_urls', 'is', null)
-        .order('created_at', { ascending: false })
+      // Get messages with media via API
+      const result = await getMessages(conversationId, { 
+        limit: 100,
+        // Filter for messages with media
+      });
+      
+      const messages = result.data?.filter((msg: any) => msg.mediaUrl) || [];
         .limit(50);
 
       if (error) throw error;

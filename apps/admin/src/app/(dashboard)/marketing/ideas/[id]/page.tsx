@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 
 export default function IdeaDetailPage() {
   const router = useRouter();
   const params = useParams();
   const ideaId = params.id as string;
-  const supabase = createClient();
+  // Using API client
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,27 +31,21 @@ export default function IdeaDetailPage() {
     try {
       setLoading(true);
 
-      // Fetch idea
-      const { data: ideaData, error: ideaError } = await supabase
-        .from('content_ideas')
-        .select('*, content_topics(title), stakeholder_segments(name), content_pillars(title)')
-        .eq('id', ideaId)
-        .single();
-
-      if (ideaError) throw ideaError;
+      // Fetch idea via API
+      const ideaData = await apiClient.get(`/admin/content-ideas/${ideaId}`);
       setIdea(ideaData);
       setFormData(ideaData);
 
       // Fetch lookup data
-      const [topicsRes, pillarsRes, segmentsRes] = await Promise.all([
-        supabase.from('content_topics').select('id, title').order('title'),
-        supabase.from('content_pillars').select('id, title').order('title'),
-        supabase.from('stakeholder_segments').select('id, name').order('name'),
+      const [topics, pillars, segments] = await Promise.all([
+        apiClient.get('/admin/content-topics'),
+        apiClient.get('/admin/content-pillars'),
+        apiClient.get('/admin/stakeholder-segments'),
       ]);
 
-      if (topicsRes.data) setTopics(topicsRes.data);
-      if (pillarsRes.data) setPillars(pillarsRes.data);
-      if (segmentsRes.data) setSegments(segmentsRes.data);
+      setTopics(topics || []);
+      setPillars(pillars || []);
+      setSegments(segments || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -82,28 +76,24 @@ export default function IdeaDetailPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('content_ideas')
-        .update({
-          title: formData.title,
-          description: formData.description,
-          idea_source: formData.idea_source,
-          format: formData.format,
-          topic_id: formData.topic_id,
-          pillar_id: formData.pillar_id,
-          segment_id: formData.segment_id,
-          estimated_effort: formData.estimated_effort,
-          estimated_impact: formData.estimated_impact,
-          priority_score: formData.priority_score,
-          status: formData.status,
-          rejection_reason: formData.rejection_reason,
-          due_date: formData.due_date,
-          notes: formData.notes,
-          tags: formData.tags,
-        })
-        .eq('id', ideaId);
-
-      if (error) throw error;
+      // Update idea via API
+      await apiClient.put(`/admin/content-ideas/${ideaId}`, {
+        title: formData.title,
+        description: formData.description,
+        ideaSource: formData.idea_source,
+        format: formData.format,
+        topicId: formData.topic_id,
+        pillarId: formData.pillar_id,
+        segmentId: formData.segment_id,
+        estimatedEffort: formData.estimated_effort,
+        estimatedImpact: formData.estimated_impact,
+        priorityScore: formData.priority_score,
+        status: formData.status,
+        rejectionReason: formData.rejection_reason,
+        dueDate: formData.due_date,
+        notes: formData.notes,
+        tags: formData.tags,
+      });
 
       setEditing(false);
       fetchData();
@@ -121,9 +111,7 @@ export default function IdeaDetailPage() {
     }
 
     try {
-      const { error } = await supabase.from('content_ideas').delete().eq('id', ideaId);
-
-      if (error) throw error;
+      await apiClient.delete(`/admin/content-ideas/${ideaId}`);
       router.push('/marketing/ideas');
     } catch (error) {
       console.error('Error deleting idea:', error);

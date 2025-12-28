@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { TagSelector } from '@/components/marketing/TagSelector';
 import { CampaignSelector } from '@/components/marketing/CampaignSelector';
 
@@ -32,7 +32,6 @@ interface ContentType {
 
 export default function NewPillarPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [pillarTypes, setPillarTypes] = useState<PillarType[]>([]);
   const [topics, setTopics] = useState<ContentTopic[]>([]);
@@ -66,17 +65,18 @@ export default function NewPillarPage() {
 
   async function fetchLookupData() {
     try {
-      const [typesRes, topicsRes, segmentsRes, contentTypesRes] = await Promise.all([
-        supabase.from('pillar_types').select('*').order('name'),
-        supabase.from('content_topics').select('id, title, ndp_category_id').order('title'),
-        supabase.from('stakeholder_segments').select('id, name, description').order('name'),
-        supabase.from('content_types').select('*').order('name'),
+      // TODO: Implement API endpoints for these lookups
+      const [types, topics, segments, contentTypes] = await Promise.all([
+        apiClient.get('/admin/pillar-types'),
+        apiClient.get('/admin/content-topics'),
+        apiClient.get('/admin/stakeholder-segments'),
+        apiClient.get('/admin/content-types'),
       ]);
 
-      if (typesRes.data) setPillarTypes(typesRes.data);
-      if (topicsRes.data) setTopics(topicsRes.data);
-      if (segmentsRes.data) setSegments(segmentsRes.data);
-      if (contentTypesRes.data) setContentTypes(contentTypesRes.data);
+      setPillarTypes(types || []);
+      setTopics(topics || []);
+      setSegments(segments || []);
+      setContentTypes(contentTypes || []);
     } catch (error) {
       console.error('Error fetching lookup data:', error);
     }

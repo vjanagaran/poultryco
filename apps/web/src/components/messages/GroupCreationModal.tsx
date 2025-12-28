@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { getConnections, createConversation } from '@/lib/api/messaging';
+import { uploadPostImage } from '@/lib/streamUtils';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -34,7 +35,6 @@ export function GroupCreationModal({ isOpen, onClose }: GroupCreationModalProps)
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     if (isOpen && user) {
@@ -60,24 +60,21 @@ export function GroupCreationModal({ isOpen, onClose }: GroupCreationModalProps)
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('connections')
-        .select(`
-          connected_user:profiles!connections_connected_user_id_fkey(
-            id,
-            full_name,
-            profile_slug,
-            profile_photo_url,
-            headline
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'accepted')
-        .order('created_at', { ascending: false });
+      // Get connections via API
+      const allConnections = await getConnections({ status: 'accepted' });
+      
+      // Transform to match expected format
+      const connList = allConnections.map((conn: any) => {
+        const otherUser = conn.otherUser || (conn.requesterId === user.id ? conn.addressee : conn.requester);
+        return {
+          id: otherUser?.id || conn.addresseeId || conn.requesterId,
+          full_name: `${otherUser?.firstName || ''} ${otherUser?.lastName || ''}`.trim(),
+          profile_slug: otherUser?.slug || '',
+          profile_photo_url: otherUser?.profilePhoto,
+          headline: otherUser?.headline,
+        };
+      }).filter((conn: any) => conn.id && conn.id !== user.id);
 
-      if (error) throw error;
-
-      const connList = data?.map((item: any) => item.connected_user) || [];
       setConnections(connList);
       setFilteredConnections(connList);
     } catch (error) {
@@ -118,68 +115,23 @@ export function GroupCreationModal({ isOpen, onClose }: GroupCreationModalProps)
 
       // Upload group photo if provided
       if (groupPhoto) {
-        const fileExt = groupPhoto.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `groups/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('cdn-poultryco')
-          .upload(filePath, groupPhoto);
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from('cdn-poultryco')
-          .getPublicUrl(filePath);
-
-        groupPhotoUrl = urlData.publicUrl;
+        const result = await uploadPostImage(groupPhoto, user.id);
+        if (result.success && result.url) {
+          groupPhotoUrl = result.url;
+        }
       }
 
-      // Create conversation
-      const { data: newConv, error: convError } = await supabase
-        .from('conversations')
-        .insert({
-          is_group: true,
-          group_name: groupName.trim(),
-          group_description: groupDescription.trim() || null,
-          group_photo_url: groupPhotoUrl,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-
-      if (convError) throw convError;
-
-      // Add participants (creator + selected)
-      const participantInserts = [
-        {
-          conversation_id: newConv.id,
-          user_id: user.id,
-          is_admin: true,
-        },
-        ...Array.from(selectedParticipants).map((participantId) => ({
-          conversation_id: newConv.id,
-          user_id: participantId,
-          is_admin: false,
-        })),
-      ];
-
-      const { error: participantsError } = await supabase
-        .from('conversation_participants')
-        .insert(participantInserts);
-
-      if (participantsError) throw participantsError;
-
-      // Send system message
-      await supabase.from('messages').insert({
-        conversation_id: newConv.id,
-        sender_id: user.id,
-        content: `${user.user_metadata?.full_name || 'Someone'} created the group`,
-        message_type: 'system',
+      // Create group conversation via API
+      const newConv = await createConversation({
+        name: groupName.trim(),
+        description: groupDescription.trim() || null,
+        avatarUrl: groupPhotoUrl,
+        conversationType: 'group',
+        participantIds: [user.id, ...Array.from(selectedParticipants)],
       });
 
       // Navigate to new group
-      router.push(`/messages?conversation=${newConv.id}`);
+      router.push(`/messages?conversation=${newConv.conversationId || newConv.id}`);
       onClose();
       resetForm();
     } catch (error) {

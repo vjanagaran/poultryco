@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createContentIdea, getContentTopics, getContentPillars, getStakeholderSegments, type ContentTopic, type ContentPillar, type StakeholderSegment } from '@/lib/api/marketing';
+import { apiClient } from '@/lib/api/client';
 
 export default function NewIdeaPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [topics, setTopics] = useState<any[]>([]);
   const [pillars, setPillars] = useState<any[]>([]);
@@ -35,15 +35,15 @@ export default function NewIdeaPage() {
 
   async function fetchLookupData() {
     try {
-      const [topicsRes, pillarsRes, segmentsRes] = await Promise.all([
-        supabase.from('content_topics').select('id, title').order('title'),
-        supabase.from('content_pillars').select('id, title').order('title'),
-        supabase.from('stakeholder_segments').select('id, name').order('name'),
+      const [topics, pillars, segments] = await Promise.all([
+        getContentTopics(),
+        getContentPillars(),
+        getStakeholderSegments(),
       ]);
 
-      if (topicsRes.data) setTopics(topicsRes.data);
-      if (pillarsRes.data) setPillars(pillarsRes.data);
-      if (segmentsRes.data) setSegments(segmentsRes.data);
+      setTopics(topics || []);
+      setPillars(pillars || []);
+      setSegments(segments || []);
     } catch (error) {
       console.error('Error fetching lookup data:', error);
     }
@@ -65,29 +65,24 @@ export default function NewIdeaPage() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('content_ideas')
-        .insert({
-          title,
-          description: description || null,
-          idea_source: ideaSource || null,
-          format: format || null,
-          topic_id: topicId || null,
-          pillar_id: pillarId || null,
-          segment_id: segmentId || null,
-          estimated_effort: estimatedEffort || null,
-          estimated_impact: estimatedImpact || null,
-          priority_score: priorityScore,
-          status,
-          due_date: dueDate || null,
-          notes: notes || null,
-          tags: tags.length > 0 ? tags : null,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      router.push(`/marketing/ideas/${data.id}`);
+      const idea = await createContentIdea({
+        title,
+        description: description || null,
+        ideaSource: ideaSource || null,
+        format: format || null,
+        topicId: topicId || null,
+        pillarId: pillarId || null,
+        segmentId: segmentId || null,
+        estimatedEffort: estimatedEffort || null,
+        estimatedImpact: estimatedImpact || null,
+        priorityScore: priorityScore,
+        status,
+        dueDate: dueDate || null,
+        notes: notes || null,
+        tags: tags.length > 0 ? tags : null,
+      });
+      
+      router.push(`/marketing/ideas/${idea.id}`);
     } catch (error) {
       console.error('Error creating idea:', error);
       alert('Failed to create idea. Please try again.');
