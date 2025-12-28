@@ -32,7 +32,7 @@ export class JobsService {
         or(
           like(jobPostings.title, `%${search}%`),
           like(jobPostings.description, `%${search}%`),
-        ),
+        )!
       );
     }
 
@@ -60,7 +60,7 @@ export class JobsService {
       where: and(...whereConditions),
       limit,
       offset,
-      orderBy: [desc(jobPostings.postedAt || jobPostings.createdAt)],
+      orderBy: [desc(jobPostings.createdAt)],
       with: {
         category: true,
         employer: {

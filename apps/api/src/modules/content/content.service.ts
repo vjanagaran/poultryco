@@ -590,13 +590,14 @@ export class ContentService {
         or(
           like(blogPosts.title, `%${filters.search}%`),
           like(blogPosts.excerpt, `%${filters.search}%`)
-        )
+        )!
       );
     }
 
     if (filters?.publishedAt) {
       // For adjacent posts - exclude the current post
-      conditions.push(ne(blogPosts.publishedAt, filters.publishedAt));
+      const publishedDate = new Date(filters.publishedAt);
+      conditions.push(ne(blogPosts.publishedAt, publishedDate));
     }
 
     // Handle tag filter separately (requires join)

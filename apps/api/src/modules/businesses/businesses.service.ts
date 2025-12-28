@@ -29,7 +29,7 @@ export class BusinessesService {
           like(bizProfiles.name, `%${search}%`),
           like(bizProfiles.tagline, `%${search}%`),
           like(bizProfiles.about, `%${search}%`),
-        ),
+        )!
       );
     }
 

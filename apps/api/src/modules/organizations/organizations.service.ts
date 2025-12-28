@@ -28,7 +28,7 @@ export class OrganizationsService {
           like(orgProfiles.name, `%${search}%`),
           like(orgProfiles.tagline, `%${search}%`),
           like(orgProfiles.about, `%${search}%`),
-        ),
+        )!
       );
     }
 

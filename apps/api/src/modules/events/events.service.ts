@@ -23,7 +23,7 @@ export class EventsService {
     let whereConditions = [
       eq(evtEvents.isPublished, true),
       eq(evtEvents.status, 'published'),
-      gte(evtEvents.startDate, new Date().toISOString()),
+      gte(evtEvents.startDate, new Date()),
     ];
 
     if (search) {
@@ -31,7 +31,7 @@ export class EventsService {
         or(
           like(evtEvents.title, `%${search}%`),
           like(evtEvents.description, `%${search}%`),
-        ),
+        )!
       );
     }
 

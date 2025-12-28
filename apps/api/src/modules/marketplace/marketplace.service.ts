@@ -28,7 +28,7 @@ export class MarketplaceService {
         or(
           like(mktProducts.name, `%${search}%`),
           like(mktProducts.description, `%${search}%`),
-        ),
+        )!
       );
     }
 
