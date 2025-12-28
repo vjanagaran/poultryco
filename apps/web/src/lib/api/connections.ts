@@ -1,52 +1,77 @@
 /**
- * Connections API - Updated to use API client
- * Replaces Supabase connection queries
+ * Connections API - Replaces Supabase connection queries
  */
 
 import { apiClient } from './client';
-import * as socialApi from './social';
+import { getConnections, sendConnectionRequest, acceptConnectionRequest } from './social';
 
-// Re-export social API functions for backward compatibility
-export const sendConnectionRequest = socialApi.sendConnectionRequest;
-export const acceptConnectionRequest = socialApi.acceptConnectionRequest;
-export const rejectConnectionRequest = socialApi.rejectConnectionRequest;
-export const checkConnectionStatus = socialApi.checkConnectionStatus;
+export interface ConnectionRequest {
+  id: string;
+  requesterId: string;
+  addresseeId: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'blocked';
+  message?: string | null;
+  createdAt: string;
+  
+  requester?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    slug: string;
+    profilePhoto?: string | null;
+    headline?: string | null;
+  };
+  addressee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    slug: string;
+    profilePhoto?: string | null;
+    headline?: string | null;
+  };
+}
 
 /**
- * Get pending connection requests for the current user
+ * Get pending connection requests (received)
  */
-export async function getPendingConnectionRequests(): Promise<{
-  success: boolean;
-  data?: any[];
-  error?: string;
-}> {
+export async function getPendingConnectionRequests(): Promise<{ success: boolean; data?: ConnectionRequest[] }> {
   try {
-    const result = await socialApi.getConnections({ status: 'pending' });
-    return { success: true, data: result.data };
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to fetch connection requests' };
+    const connections = await getConnections({ status: 'pending' });
+    
+    // Filter to only received requests (where current user is addressee)
+    const currentUser = await apiClient.get<{ user: { profile: { id: string } } }>('/auth/me');
+    const currentProfileId = currentUser.user?.profile?.id;
+    
+    if (!currentProfileId) {
+      return { success: false };
+    }
+    
+    const received = connections.filter((conn: any) => conn.addresseeId === currentProfileId);
+    
+    return { success: true, data: received };
+  } catch (error) {
+    console.error('Error fetching pending connection requests:', error);
+    return { success: false };
   }
 }
 
 /**
- * Get all connections (connected status)
+ * Accept connection request
  */
-export async function getConnections(): Promise<{
-  success: boolean;
-  data?: any[];
-  error?: string;
-}> {
+export async function acceptConnectionRequestById(connectionId: string): Promise<{ success: boolean }> {
   try {
-    const result = await socialApi.getConnections({ status: 'connected' });
-    return { success: true, data: result.data };
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to fetch connections' };
+    await acceptConnectionRequest(connectionId);
+    return { success: true };
+  } catch (error) {
+    console.error('Error accepting connection request:', error);
+    return { success: false };
   }
 }
 
 /**
- * Remove connection
+ * Reject connection request
  */
-export async function removeConnection(connectionId: string): Promise<{ success: boolean; error?: string }> {
-  return socialApi.removeConnection(connectionId);
+export async function rejectConnectionRequest(connectionId: string): Promise<{ success: boolean }> {
+  // TODO: Implement reject endpoint in API
+  return { success: false };
 }

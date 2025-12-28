@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import Confetti from 'react-confetti';
 
 export function WelcomeFlow() {
@@ -20,16 +20,20 @@ export function WelcomeFlow() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        router.push('/login');
-        return;
-      }
+      try {
+        const result = await apiClient.get<{ user: { id: string; email: string } }>('/auth/me');
+        
+        if (!result.user) {
+          router.push('/login');
+          return;
+        }
 
-      setUser(user);
-      setLoading(false);
+        setUser(result.user);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch user:', error);
+        router.push('/login');
+      }
     };
 
     fetchUser();
@@ -64,7 +68,7 @@ export function WelcomeFlow() {
   };
 
   const handleSubmitSurvey = async () => {
-    const supabase = createClient();
+    // TODO: Submit survey data to API when endpoint is available
     router.push('/dashboard');
   };
 

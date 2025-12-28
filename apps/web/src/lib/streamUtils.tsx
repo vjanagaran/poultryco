@@ -1,5 +1,10 @@
-// Utility functions for Stream features
-import { createClient } from './supabase/client';
+/**
+ * Utility functions for Stream features
+ * Migrated from Supabase to REST API
+ */
+
+import { uploadPostMedia } from './api/upload';
+import { apiClient } from './api/client';
 
 // Parse text for @mentions and #hashtags
 export interface ParsedContent {
@@ -37,14 +42,12 @@ export function parseContent(text: string): ParsedContent {
   return { text, mentions, hashtags };
 }
 
-// Upload image to Supabase Storage
+// Upload image to API Storage
 export async function uploadPostImage(
   file: File,
   userId: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    const supabase = createClient();
-    
     // Validate file
     if (!file.type.startsWith('image/')) {
       return { success: false, error: 'File must be an image' };
@@ -54,85 +57,43 @@ export async function uploadPostImage(
       return { success: false, error: 'Image must be less than 10MB' };
     }
 
-    // Generate unique filename
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `posts/${userId}/${fileName}`;
-
-    // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('cdn-poultryco')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (error) {
-      console.error('Upload error:', error);
-      return { success: false, error: error.message };
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('cdn-poultryco')
-      .getPublicUrl(filePath);
-
-    return { success: true, url: publicUrl };
-  } catch (error) {
+    // Upload to API
+    const result = await uploadPostMedia(file);
+    return { success: true, url: result.cdnUrl };
+  } catch (error: any) {
     console.error('Upload error:', error);
-    return { success: false, error: 'Failed to upload image' };
+    return { success: false, error: error.message || 'Failed to upload image' };
   }
 }
 
 // Search users for @mention autocomplete
 export async function searchUsers(query: string, limit: number = 5) {
-  const supabase = createClient();
-  
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, full_name, profile_slug, headline, profile_photo_url')
-    .or(`full_name.ilike.%${query}%,profile_slug.ilike.%${query}%`)
-    .limit(limit);
-
-  if (error) {
+  try {
+    const result = await apiClient.get<{ data: any[] }>(`/users/search?q=${encodeURIComponent(query)}&limit=${limit}`);
+    
+    return result.data.map((profile: any) => ({
+      id: profile.id,
+      full_name: `${profile.firstName} ${profile.lastName}`,
+      profile_slug: profile.slug,
+      headline: profile.headline,
+      profile_photo_url: profile.profilePhoto,
+    }));
+  } catch (error) {
     console.error('Error searching users:', error);
     return [];
   }
+}
 
-  return data || [];
+// Get trending hashtags
+export async function getTrendingHashtags(limit: number = 10): Promise<{ tag: string; count: number }[]> {
+  // TODO: Implement trending hashtags endpoint in API
+  return [];
 }
 
 // Create or get hashtag
 export async function ensureHashtag(tag: string): Promise<string | null> {
-  const supabase = createClient();
-  
-  // Check if hashtag exists
-  const { data: existing } = await supabase
-    .from('post_tags')
-    .select('id')
-    .eq('tag_name', tag.toLowerCase())
-    .single();
-
-  if (existing) {
-    return existing.id;
-  }
-
-  // Create new hashtag
-  const { data: newTag, error } = await supabase
-    .from('post_tags')
-    .insert({
-      tag_name: tag.toLowerCase(),
-      usage_count: 1,
-    })
-    .select('id')
-    .single();
-
-  if (error) {
-    console.error('Error creating hashtag:', error);
-    return null;
-  }
-
-  return newTag?.id || null;
+  // TODO: Implement hashtag creation endpoint in API
+  return null;
 }
 
 // Format timestamp for display
@@ -239,4 +200,3 @@ export function formatCount(count: number): string {
 
   return `${(count / 1000000).toFixed(1)}M`;
 }
-

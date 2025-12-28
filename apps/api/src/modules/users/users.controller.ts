@@ -144,5 +144,28 @@ export class UsersController {
   ) {
     return this.usersService.removeSkill(profileId, skillId);
   }
+
+  // ===== EMAIL PREFERENCES =====
+
+  @Get('me/email-preferences')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Get email preferences' })
+  @ApiResponse({ status: 200, description: 'Email preferences retrieved' })
+  async getEmailPreferences(@CurrentUser('profileId') profileId: string) {
+    return this.usersService.getEmailPreferences(profileId);
+  }
+
+  @Put('me/email-preferences')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Update email preferences' })
+  @ApiResponse({ status: 200, description: 'Email preferences updated' })
+  async updateEmailPreferences(
+    @CurrentUser('profileId') profileId: string,
+    @Body() preferences: Record<string, any>,
+  ) {
+    return this.usersService.updateEmailPreferences(profileId, preferences);
+  }
 }
 

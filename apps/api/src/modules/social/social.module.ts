@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { SocialController } from './social.controller';
 import { SocialService } from './social.service';
-import { AuthModule } from '../auth/auth.module';
+import { DatabaseModule } from '@/database/database.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [DatabaseModule],
   controllers: [SocialController],
   providers: [SocialService],
   exports: [SocialService],

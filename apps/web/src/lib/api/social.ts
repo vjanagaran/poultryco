@@ -1,5 +1,5 @@
 /**
- * Social API - Posts, Feed, Connections, Follows
+ * Social API - Posts, connections, feed
  * Replaces Supabase social queries
  */
 
@@ -7,249 +7,166 @@ import { apiClient } from './client';
 
 export interface Post {
   id: string;
-  author_id: string;
+  authorId: string;
+  postType: 'post' | 'problem' | 'question' | 'article';
   content: string;
-  visibility: 'public' | 'connections' | 'private';
-  media_urls?: string[];
-  created_at: string;
-  updated_at: string;
+  title?: string | null;
+  category?: string | null;
+  urgency?: string | null;
+  status?: string | null;
+  mediaUrls?: string[] | null;
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  viewsCount: number;
+  tags?: string[] | null;
+  mentions?: string[] | null;
+  location?: string | null;
+  isPinned: boolean;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+  
   author?: {
     id: string;
-    full_name: string;
-    profile_slug: string;
-    headline: string | null;
-    profile_photo_url: string | null;
+    firstName: string;
+    lastName: string;
+    slug: string;
+    profilePhoto?: string | null;
+    headline?: string | null;
   };
-  likes_count?: number;
-  comments_count?: number;
-  is_liked?: boolean;
-  is_saved?: boolean;
 }
 
 export interface Connection {
   id: string;
-  profile_id_1: string;
-  profile_id_2: string;
-  status: 'pending' | 'connected' | 'blocked';
-  requested_by: string;
-  requested_at: string;
-  responded_at?: string;
-  profile?: {
+  requesterId: string;
+  addresseeId: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'blocked';
+  message?: string | null;
+  respondedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  
+  requester?: {
     id: string;
-    full_name: string;
-    profile_slug: string;
-    headline: string | null;
-    profile_photo_url: string | null;
-    location_city?: string;
-    location_state?: string;
+    firstName: string;
+    lastName: string;
+    slug: string;
+    profilePhoto?: string | null;
+    headline?: string | null;
+  };
+  addressee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    slug: string;
+    profilePhoto?: string | null;
+    headline?: string | null;
+  };
+  otherUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    slug: string;
+    profilePhoto?: string | null;
+    headline?: string | null;
   };
 }
 
-/**
- * Get personalized feed
- */
-export async function getFeed(params?: {
-  page?: number;
-  limit?: number;
-  tag?: string;
-}): Promise<{ data: Post[]; count: number; hasMore: boolean }> {
-  const queryParams = new URLSearchParams();
-  if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.limit) queryParams.append('limit', params.limit.toString());
-  if (params?.tag) queryParams.append('tag', params.tag);
-
-  const result = await apiClient.get<{ data: Post[]; count: number; hasMore: boolean }>(
-    `/social/feed?${queryParams.toString()}`
-  );
-  return result;
+export interface ConnectionStats {
+  connections: number;
+  followers: number;
+  following: number;
 }
 
 /**
- * Create a new post
+ * Get social feed
+ */
+export async function getFeed(params?: { limit?: number; offset?: number }): Promise<Post[]> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  if (params?.offset) queryParams.append('offset', params.offset.toString());
+
+  return apiClient.get<Post[]>(`/social/feed?${queryParams.toString()}`);
+}
+
+/**
+ * Get post by ID
+ */
+export async function getPost(postId: string): Promise<Post> {
+  return apiClient.get<Post>(`/social/posts/${postId}`);
+}
+
+/**
+ * Create a post
  */
 export async function createPost(data: {
   content: string;
-  visibility?: 'public' | 'connections' | 'private';
-  media_urls?: string[];
+  title?: string;
+  postType?: 'post' | 'problem' | 'question' | 'article';
+  mediaUrls?: string[];
   tags?: string[];
 }): Promise<Post> {
   return apiClient.post<Post>('/social/posts', data);
 }
 
 /**
- * Get a post by ID
- */
-export async function getPost(id: string): Promise<Post> {
-  return apiClient.get<Post>(`/social/posts/${id}`);
-}
-
-/**
- * Update a post
- */
-export async function updatePost(id: string, data: Partial<Post>): Promise<Post> {
-  return apiClient.put<Post>(`/social/posts/${id}`, data);
-}
-
-/**
- * Delete a post
- */
-export async function deletePost(id: string): Promise<void> {
-  return apiClient.delete(`/social/posts/${id}`);
-}
-
-/**
  * Like a post
  */
-export async function likePost(id: string): Promise<{ success: boolean }> {
-  return apiClient.post(`/social/posts/${id}/like`);
+export async function likePost(postId: string): Promise<{ success: boolean; liked: boolean }> {
+  return apiClient.post<{ success: boolean; liked: boolean }>(`/social/posts/${postId}/like`);
 }
 
 /**
  * Unlike a post
  */
-export async function unlikePost(id: string): Promise<{ success: boolean }> {
-  return apiClient.delete(`/social/posts/${id}/like`);
+export async function unlikePost(postId: string): Promise<{ success: boolean; liked: boolean }> {
+  return apiClient.delete<{ success: boolean; liked: boolean }>(`/social/posts/${postId}/like`);
 }
 
 /**
- * Comment on a post
+ * Get connection stats
  */
-export async function commentOnPost(id: string, content: string, parentCommentId?: string): Promise<any> {
-  return apiClient.post(`/social/posts/${id}/comment`, { content, parentCommentId });
-}
-
-/**
- * Get comments for a post
- */
-export async function getPostComments(postId: string): Promise<any[]> {
-  return apiClient.get(`/social/posts/${postId}/comments`);
-}
-
-/**
- * Like a comment
- */
-export async function likeComment(commentId: string): Promise<{ success: boolean }> {
-  return apiClient.post(`/social/comments/${commentId}/like`);
-}
-
-/**
- * Unlike a comment
- */
-export async function unlikeComment(commentId: string): Promise<{ success: boolean }> {
-  return apiClient.delete(`/social/comments/${commentId}/like`);
-}
-
-/**
- * Delete a comment
- */
-export async function deleteComment(commentId: string): Promise<{ success: boolean }> {
-  return apiClient.delete(`/social/comments/${commentId}`);
+export async function getConnectionStats(): Promise<ConnectionStats> {
+  return apiClient.get<ConnectionStats>('/social/connections/stats');
 }
 
 /**
  * Get connections
  */
-export async function getConnections(params?: {
-  status?: 'pending' | 'connected';
-  limit?: number;
-  offset?: number;
-}): Promise<{ data: Connection[]; count: number }> {
+export async function getConnections(params?: { status?: string }): Promise<Connection[]> {
   const queryParams = new URLSearchParams();
   if (params?.status) queryParams.append('status', params.status);
-  if (params?.limit) queryParams.append('limit', params.limit.toString());
-  if (params?.offset) queryParams.append('offset', params.offset.toString());
 
-  return apiClient.get<{ data: Connection[]; count: number }>(
-    `/social/connections?${queryParams.toString()}`
-  );
+  return apiClient.get<Connection[]>(`/social/connections?${queryParams.toString()}`);
 }
 
 /**
  * Send connection request
  */
-export async function sendConnectionRequest(targetProfileId: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const result = await apiClient.post<{ success: boolean; error?: string }>('/social/connections', {
-      targetProfileId,
-    });
-    return result;
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to send connection request' };
-  }
+export async function sendConnectionRequest(addresseeId: string, message?: string): Promise<Connection> {
+  return apiClient.post<Connection>('/social/connections/request', { addresseeId, message });
 }
 
 /**
  * Accept connection request
  */
-export async function acceptConnectionRequest(connectionId: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const result = await apiClient.put<{ success: boolean; error?: string }>(
-      `/social/connections/${connectionId}`,
-      { status: 'connected' }
-    );
-    return result;
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to accept connection request' };
-  }
+export async function acceptConnectionRequest(connectionId: string): Promise<{ success: boolean }> {
+  return apiClient.put<{ success: boolean }>(`/social/connections/${connectionId}/accept`);
 }
 
 /**
  * Reject connection request
  */
-export async function rejectConnectionRequest(connectionId: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    await apiClient.delete(`/social/connections/${connectionId}`);
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to reject connection request' };
-  }
+export async function rejectConnectionRequest(connectionId: string): Promise<{ success: boolean }> {
+  // TODO: Implement reject endpoint in API
+  return apiClient.put<{ success: boolean }>(`/social/connections/${connectionId}/reject`);
 }
 
 /**
  * Remove connection
  */
-export async function removeConnection(connectionId: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    await apiClient.delete(`/social/connections/${connectionId}`);
-    return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message || 'Failed to remove connection' };
-  }
+export async function removeConnection(connectionId: string): Promise<{ success: boolean }> {
+  // TODO: Implement remove endpoint in API
+  return apiClient.delete<{ success: boolean }>(`/social/connections/${connectionId}`);
 }
-
-/**
- * Check connection status
- */
-export async function checkConnectionStatus(targetProfileId: string): Promise<{
-  exists: boolean;
-  status?: string;
-  isRequester?: boolean;
-  connectionId?: string;
-}> {
-  try {
-    const result = await apiClient.get<{
-      exists: boolean;
-      status?: string;
-      isRequester?: boolean;
-      connectionId?: string;
-    }>(`/social/connections/status/${targetProfileId}`);
-    return result;
-  } catch (error) {
-    return { exists: false };
-  }
-}
-
-/**
- * Follow a user
- */
-export async function followUser(profileId: string): Promise<{ success: boolean }> {
-  return apiClient.post('/social/follows', { profileId });
-}
-
-/**
- * Unfollow a user
- */
-export async function unfollowUser(profileId: string): Promise<{ success: boolean }> {
-  return apiClient.delete(`/social/follows/${profileId}`);
-}
-

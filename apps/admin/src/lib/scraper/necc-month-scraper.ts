@@ -1,7 +1,8 @@
-// TODO: This scraper has been migrated to the API
-// The API now handles NECC scraping at /api/v1/necc/scraper/run-month
-// This file is kept for reference but should not be used
-import { parseNECCTable } from './necc-parser';
+/**
+ * @deprecated This scraper has been migrated to the API
+ * The API now handles NECC scraping at /api/v1/necc/scraper/run-month
+ * This file should not be used - use the API endpoint instead
+ */
 
 export interface ScrapeResult {
   success: boolean;
@@ -16,11 +17,14 @@ export interface ScrapeResult {
   };
 }
 
+/**
+ * @deprecated Use API endpoint: POST /api/v1/necc/scraper/run-month
+ */
 export async function scrapeNECCMonth(
   month: number,
   year: number
 ): Promise<ScrapeResult> {
-  const supabase = await createClient();
+  throw new Error('This scraper has been deprecated. Please use the API endpoint: POST /api/v1/necc/scraper/run-month');
 
   const stats = {
     zonesFound: 0,

@@ -259,5 +259,86 @@ export class UsersService {
       verificationLevel: profile.verificationLevel,
     };
   }
+
+  /**
+   * Get email preferences
+   */
+  async getEmailPreferences(profileId: string) {
+    const { ntfPreferences, refNotificationTypes } = await import('@/database/schema');
+    
+    const preferences = await this.db.query.ntfPreferences.findMany({
+      where: eq(ntfPreferences.profileId, profileId),
+      with: {
+        notificationType: true,
+      },
+    });
+
+    // Transform to simpler format expected by frontend
+    const prefsMap: Record<string, any> = {};
+    preferences.forEach((pref: any) => {
+      const type = pref.notificationType?.name || pref.notificationType?.slug || 'unknown';
+      prefsMap[type] = {
+        email: pref.enableEmail,
+        inApp: pref.enableInApp,
+        push: pref.enablePush,
+        sms: pref.enableSms,
+        frequency: pref.frequency,
+      };
+    });
+
+    return prefsMap;
+  }
+
+  /**
+   * Update email preferences
+   */
+  async updateEmailPreferences(profileId: string, preferences: Record<string, any>) {
+    const { ntfPreferences, refNotificationTypes } = await import('@/database/schema');
+    
+    // Get all notification types
+    const notificationTypes = await this.db.query.refNotificationTypes.findMany({
+      where: eq(refNotificationTypes.isActive, true),
+    });
+
+    // Update or create preferences for each type
+    for (const [typeName, prefs] of Object.entries(preferences)) {
+      const type = notificationTypes.find((t: any) => t.name === typeName || t.slug === typeName);
+      if (!type) continue;
+
+      const existing = await this.db.query.ntfPreferences.findFirst({
+        where: and(
+          eq(ntfPreferences.profileId, profileId),
+          eq(ntfPreferences.notificationTypeId, type.id),
+        ),
+      });
+
+      const prefData = prefs as any;
+      if (existing) {
+        await this.db
+          .update(ntfPreferences)
+          .set({
+            enableEmail: prefData.email ?? existing.enableEmail,
+            enableInApp: prefData.inApp ?? existing.enableInApp,
+            enablePush: prefData.push ?? existing.enablePush,
+            enableSms: prefData.sms ?? existing.enableSms,
+            frequency: prefData.frequency || existing.frequency,
+            updatedAt: new Date(),
+          })
+          .where(eq(ntfPreferences.id, existing.id));
+      } else {
+        await this.db.insert(ntfPreferences).values({
+          profileId,
+          notificationTypeId: type.id,
+          enableEmail: prefData.email ?? true,
+          enableInApp: prefData.inApp ?? true,
+          enablePush: prefData.push ?? true,
+          enableSms: prefData.sms ?? false,
+          frequency: prefData.frequency || 'instant',
+        });
+      }
+    }
+
+    return this.getEmailPreferences(profileId);
+  }
 }
 

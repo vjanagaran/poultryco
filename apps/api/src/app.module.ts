@@ -21,6 +21,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ContentModule } from './modules/content/content.module';
 import { FormsModule } from './modules/forms/forms.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
+import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { MarketingModule } from './modules/marketing/marketing.module';
     ContentModule,
     FormsModule,
     MarketingModule,
+    MarketplaceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
