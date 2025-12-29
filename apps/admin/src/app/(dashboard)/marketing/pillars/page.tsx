@@ -44,45 +44,29 @@ export default function ContentPillarsPage() {
     try {
       setLoading(true);
       const data = await getContentPillars();
-        .from('content_pillars')
-        .select('*')
-        .order('priority_score', { ascending: false });
+      
+      // Sort by priority_score descending
+      const sortedData = (data || []).sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0));
+      setPillars(sortedData);
 
-      if (error) throw error;
-      setPillars(data || []);
+      // Extract tag and campaign assignments from pillar data
+      if (sortedData && sortedData.length > 0) {
+        const tagMap: Record<string, string[]> = {};
+        const campaignMap: Record<string, string> = {};
 
-      // Fetch tag and campaign assignments
-      if (data && data.length > 0) {
-        const pillarIds = data.map((p) => p.id);
+        sortedData.forEach((pillar) => {
+          // If API returns tagIds array, use it
+          if (pillar.tagIds && Array.isArray(pillar.tagIds)) {
+            tagMap[pillar.id] = pillar.tagIds;
+          }
+          // If API returns campaignId, use it
+          if (pillar.campaignId) {
+            campaignMap[pillar.id] = pillar.campaignId;
+          }
+        });
 
-        // Fetch tags
-        const { data: tagData } = await supabase
-          .from('pillar_tag_assignments')
-          .select('pillar_id, tag_id')
-          .in('pillar_id', pillarIds);
-
-        if (tagData) {
-          const tagMap: Record<string, string[]> = {};
-          tagData.forEach((item) => {
-            if (!tagMap[item.pillar_id]) tagMap[item.pillar_id] = [];
-            tagMap[item.pillar_id].push(item.tag_id);
-          });
-          setPillarTags(tagMap);
-        }
-
-        // Fetch campaigns
-        const { data: campaignData } = await supabase
-          .from('pillar_campaign_assignments')
-          .select('pillar_id, campaign_id')
-          .in('pillar_id', pillarIds);
-
-        if (campaignData) {
-          const campaignMap: Record<string, string> = {};
-          campaignData.forEach((item) => {
-            campaignMap[item.pillar_id] = item.campaign_id;
-          });
-          setPillarCampaigns(campaignMap);
-        }
+        setPillarTags(tagMap);
+        setPillarCampaigns(campaignMap);
       }
     } catch (error) {
       console.error('Error fetching pillars:', error);
@@ -103,7 +87,7 @@ export default function ContentPillarsPage() {
 
   const filteredPillars = pillars.filter((pillar) => {
     if (filterStatus !== 'all' && pillar.status !== filterStatus) return false;
-    if (filterType !== 'all' && pillar.pillar_type !== filterType) return false;
+    if (filterType !== 'all' && (pillar.pillar_type || pillar.pillar_type_id) !== filterType) return false;
     if (filterTag !== 'all') {
       const tags = pillarTags[pillar.id] || [];
       if (!tags.includes(filterTag)) return false;
@@ -286,7 +270,7 @@ export default function ContentPillarsPage() {
                   {/* Header */}
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-3xl">
-                      {TYPE_ICONS[pillar.pillar_type] || '📄'}
+                      {TYPE_ICONS[pillar.pillar_type || ''] || '📄'}
                     </span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -298,7 +282,7 @@ export default function ContentPillarsPage() {
                           {pillar.status.replace('_', ' ')}
                         </span>
                         <span className="text-xs text-gray-500 capitalize">
-                          {pillar.pillar_type.replace('_', ' ')}
+                          {(pillar.pillar_type || '').replace('_', ' ')}
                         </span>
                         <div className="flex items-center gap-1">
                           {[...Array(10)].map((_, i) => (

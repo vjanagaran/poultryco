@@ -31,9 +31,17 @@ export interface ContentPillar {
   slug: string;
   description: string | null;
   pillar_type_id: string | null;
+  pillar_type?: string; // For display
   topic_id: string | null;
   segment_id: string | null;
   status: string;
+  priority_score?: number;
+  content_pieces_created?: number;
+  estimated_pieces?: number;
+  key_insights?: string[];
+  research_question?: string | null;
+  tagIds?: string[]; // Tag assignments from API
+  campaignId?: string; // Campaign assignment from API
   created_at: string;
 }
 

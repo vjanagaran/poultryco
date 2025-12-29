@@ -1,0 +1,105 @@
+{
+  "family": "poultryco-api",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::511358949452:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::511358949452:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "poultryco-api",
+      "image": "511358949452.dkr.ecr.ap-south-1.amazonaws.com/poultryco/api:latest",
+      "portMappings": [
+        {
+          "containerPort": 3002,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "NODE_ENV",
+          "value": "production"
+        },
+        {
+          "name": "PORT",
+          "value": "3002"
+        },
+        {
+          "name": "API_PREFIX",
+          "value": "v1"
+        },
+        {
+          "name": "CORS_ORIGIN",
+          "value": "https://poultryco.net,https://www.poultryco.net,https://admin.poultryco.net,http://localhost:3000,http://localhost:3001"
+        }
+      ],
+      "secrets": [
+        {
+          "name": "DATABASE_URL",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/database-url-J9Fpoz"
+        },
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/jwt-secret-z4lnQt"
+        },
+        {
+          "name": "ADMIN_JWT_SECRET",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/admin-jwt-secret-X1SnmD"
+        },
+        {
+          "name": "SES_SMTP_HOST",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/ses-smtp-host-lm38de"
+        },
+        {
+          "name": "SES_SMTP_USERNAME",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/ses-smtp-username-arYiAM"
+        },
+        {
+          "name": "SES_SMTP_PASSWORD",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/ses-smtp-password-rg1yaO"
+        },
+        {
+          "name": "SES_SENDER_EMAIL",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/ses-sender-email-9GwEGs"
+        },
+        {
+          "name": "AWS_REGION",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/aws-region-zqUee8"
+        },
+        {
+          "name": "S3_BUCKET_NAME",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/s3-bucket-name-6Je5YM"
+        },
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/aws-access-key-id-QcYtRb"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "valueFrom": "arn:aws:secretsmanager:ap-south-1:511358949452:secret:poultryco/aws-secret-access-key-nDJVcP"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/poultryco-api",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "healthCheck": {
+        "command": [
+          "CMD-SHELL",
+          "curl -f http://localhost:3002/v1/health || exit 1"
+        ],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 60
+      }
+    }
+  ]
+}
+

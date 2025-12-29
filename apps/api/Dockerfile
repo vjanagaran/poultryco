@@ -1,43 +1,56 @@
-# Build stage
-FROM node:20-alpine AS builder
+# apps/api/Dockerfile
+FROM node:20-alpine AS base
 
+# Install dependencies only when needed
+FROM base AS deps
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY nest-cli.json ./
+COPY package.json ./
+COPY apps/api/package.json ./apps/api/
+COPY package-lock.json* ./
 
-# Install dependencies
+# Install dependencies using npm (as specified in package.json)
 RUN npm ci
 
-# Copy source code
-COPY src ./src
-
-# Build application
-RUN npm run build
-
-# Production stage
-FROM node:20-alpine
-
+# Build the application
+FROM base AS builder
 WORKDIR /app
 
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the API
+RUN npm run build --workspace=apps/api
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+
 # Copy package files
-COPY package*.json ./
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=builder /app/package-lock.json* ./
 
-# Install production dependencies only
-RUN npm ci --only=production
+# Copy all node_modules from builder (includes all dependencies)
+COPY --from=builder /app/node_modules ./node_modules
 
-# Copy built application from builder
-COPY --from=builder /app/dist ./dist
+# Ensure uuid and other API dependencies are available at root level
+# (npm workspaces may not hoist all dependencies)
+RUN npm install uuid@^9.0.1 --no-save --legacy-peer-deps || true
 
-# Expose port
+# Copy built application
+COPY --from=builder /app/apps/api/dist ./dist
+
+USER nestjs
+
 EXPOSE 3002
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s \
-  CMD node -e "require('http').get('http://localhost:3002/api/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
-
-# Start application
-CMD ["node", "dist/main"]
-
+# Use production start command
+CMD ["node", "dist/main.js"]

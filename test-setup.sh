@@ -4,7 +4,7 @@ echo ""
 
 # Test 1: API Server Running
 echo "1. Testing API Server..."
-if curl -s http://localhost:3002/api/v1/health > /dev/null 2>&1; then
+if curl -s http://localhost:3002/v1/health > /dev/null 2>&1; then
   echo "   ✅ API server is running"
 else
   echo "   ❌ API server is NOT running"
@@ -14,7 +14,7 @@ fi
 
 # Test 2: API OTP Endpoint
 echo "2. Testing OTP Endpoint..."
-RESPONSE=$(curl -s -X POST http://localhost:3002/api/v1/auth/otp/request \
+RESPONSE=$(curl -s -X POST http://localhost:3002/v1/auth/otp/request \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","channel":"email"}')
 
