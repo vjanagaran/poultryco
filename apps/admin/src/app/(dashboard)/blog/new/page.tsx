@@ -138,7 +138,7 @@ export default function NewBlogPostPageEnhanced() {
 
     try {
       const now = new Date().toISOString()
-      let status = 'draft'
+      let status: 'draft' | 'published' | 'scheduled' | 'archived' = 'draft'
       let publishedAt = null
 
       if (action === 'publish') {

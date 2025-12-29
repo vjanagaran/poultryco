@@ -1,13 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone', // Enable standalone output for Docker
   images: {
     remotePatterns: [
-      // Add your image hostnames here
-      // {
-      //   protocol: 'https',
-      //   hostname: 'example.com',
-      // },
+      {
+        protocol: 'https',
+        hostname: 'cdn.poultryco.net',
+        pathname: '/**',
+      },
     ],
   },
   experimental: {

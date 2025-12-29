@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
+import { updateContentSchedule } from '@/lib/api/marketing';
 
 export default function ScheduleDetailPage() {
   const router = useRouter();
@@ -34,10 +35,10 @@ export default function ScheduleDetailPage() {
       setFormData(scheduleData);
 
       // Fetch channels for editing
-      const channelsData = await apiClient.get('/admin/marketing-channels?active=true');
-      setChannels(channelsData || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+      const channelsData = await apiClient.get<any[]>('/admin/marketing-channels?active=true');
+      setChannels(Array.isArray(channelsData) ? channelsData : []);
+    } catch (_error) {
+      console.error('Error fetching data:', _error);
     } finally {
       setLoading(false);
     }
@@ -506,16 +507,13 @@ export default function ScheduleDetailPage() {
                 <button
                   onClick={async () => {
                     try {
-                      await supabase
-                        .from('content_schedule')
-                        .update({
-                          status: 'published',
-                          published_at: new Date().toISOString(),
-                        })
-                        .eq('id', scheduleId);
+                      await updateContentSchedule(scheduleId, {
+                        status: 'published',
+                        published_at: new Date().toISOString(),
+                      });
                       fetchData();
-                    } catch (error) {
-                      console.error('Error:', error);
+                    } catch (_error) {
+                      console.error('Error:', _error);
                     }
                   }}
                   className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -528,13 +526,12 @@ export default function ScheduleDetailPage() {
                 <button
                   onClick={async () => {
                     try {
-                      await supabase
-                        .from('content_schedule')
-                        .update({ status: 'cancelled' })
-                        .eq('id', scheduleId);
+                      await updateContentSchedule(scheduleId, {
+                        status: 'cancelled',
+                      });
                       fetchData();
-                    } catch (error) {
-                      console.error('Error:', error);
+                    } catch (_error) {
+                      console.error('Error:', _error);
                     }
                   }}
                   className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"

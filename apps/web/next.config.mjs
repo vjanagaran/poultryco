@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
+  output: 'standalone', // Enable standalone output for Docker
   typescript: {
     // Allow build to succeed even with type errors (not recommended for production)
     ignoreBuildErrors: true,
@@ -23,6 +24,11 @@ const nextConfig = {
         protocol: 'https',
         hostname: '**.supabase.co',
         pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.poultryco.net',
+        pathname: '/**',
       },
     ],
   },

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
+import { createContentSchedule, type ContentSchedule } from '@/lib/api/marketing';
 
 export default function NewSchedulePage() {
   const router = useRouter();
@@ -29,13 +30,13 @@ export default function NewSchedulePage() {
   async function fetchLookupData() {
     try {
       // TODO: Implement API endpoints for these lookups
-      const [content, channels] = await Promise.all([
-        apiClient.get('/admin/content?status=approved,published'),
-        apiClient.get('/admin/marketing-channels?active=true'),
+      const [contentData, channelsData] = await Promise.all([
+        apiClient.get<any[]>('/admin/content?status=approved,published'),
+        apiClient.get<any[]>('/admin/marketing-channels?active=true'),
       ]);
 
-      setContent(content || []);
-      setChannels(channels || []);
+      setContent(Array.isArray(contentData) ? contentData : []);
+      setChannels(Array.isArray(channelsData) ? channelsData : []);
     } catch (error) {
       console.error('Error fetching lookup data:', error);
     }
@@ -46,18 +47,16 @@ export default function NewSchedulePage() {
     setLoading(true);
 
     try {
-      const schedule = await apiClient.post('/admin/content-schedule', {
-        contentId,
-        channelId,
-        scheduledDate,
-        scheduledTime: scheduledTime || null,
+      const schedule = await createContentSchedule({
+        content_id: contentId,
+        channel_id: channelId,
+        scheduled_for: scheduledDate + (scheduledTime ? `T${scheduledTime}` : ''),
         status,
-        notes: notes || null,
       });
       
       router.push(`/marketing/calendar/${schedule.id}`);
-    } catch (error) {
-      console.error('Error creating schedule:', error);
+    } catch (_error) {
+      console.error('Error creating schedule:', _error);
       alert('Failed to schedule content. Please try again.');
     } finally {
       setLoading(false);

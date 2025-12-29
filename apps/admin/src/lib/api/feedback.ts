@@ -155,3 +155,28 @@ export async function getFeedbackInsights(periodType: 'daily' | 'weekly' | 'mont
 export async function generateFeedbackInsight(periodType: 'daily' | 'weekly' | 'monthly'): Promise<FeedbackInsight> {
   throw new Error('Not implemented: API migration pending');
 }
+
+// Feedback Stats - TODO: Migrate to API
+export async function getFeedbackStats(): Promise<{
+  total: number;
+  byStatus: Record<string, number>;
+  byPriority: Record<string, number>;
+  bySentiment: Record<string, number>;
+  recentTrend: number;
+}> {
+  return { total: 0, byStatus: {}, byPriority: {}, bySentiment: {}, recentTrend: 0 };
+}
+
+// Feedback Tags - TODO: Migrate to API
+export async function addFeedbackTag(feedbackId: string, tagId: string): Promise<void> {
+  throw new Error('Not implemented: API migration pending');
+}
+
+// Sentiment Analysis - TODO: Migrate to API
+export async function analyzeFeedbackSentiment(feedbackId: string): Promise<{
+  sentiment: 'positive' | 'negative' | 'neutral';
+  label: 'positive' | 'negative' | 'neutral';
+  score: number;
+}> {
+  return { sentiment: 'neutral', label: 'neutral', score: 0 };
+}

@@ -7,10 +7,10 @@ import { getBlogCategories, createBlogCategory, updateBlogCategory, deleteBlogCa
 // Types imported from API
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<BlogCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [editingCategory, setEditingCategory] = useState<BlogCategory | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -81,7 +81,7 @@ export default function CategoriesPage() {
     }
   }
 
-  function handleEdit(category: Category) {
+  function handleEdit(category: BlogCategory) {
     setEditingCategory(category)
     setFormData({
       name: category.name,

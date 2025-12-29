@@ -66,10 +66,7 @@ export function ContactInfo({ conversationId, onClose }: ContactInfoProps) {
         // Filter for messages with media
       });
       
-      const messages = result.data?.filter((msg: any) => msg.mediaUrl) || [];
-        .limit(50);
-
-      if (error) throw error;
+      const messages = (result.data?.filter((msg: any) => msg.mediaUrl) || []).slice(0, 50);
 
       // Filter by type
       const filtered = messages?.filter((msg) => {

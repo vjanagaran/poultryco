@@ -72,9 +72,6 @@ export function ConnectionsList() {
         throw new Error(result.error || 'Failed to remove connection');
       }
       return connectionId;
-        .eq('profile_id_2', maxId);
-      
-      if (error) throw error;
     },
     onSuccess: () => {
       toast({

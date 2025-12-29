@@ -14,6 +14,26 @@ interface ScheduledContent {
   channel_id: string;
   published_url: string | null;
   created_at: string;
+  campaign?: {
+    id: string;
+    name: string;
+    color: string;
+    icon?: string | null;
+  } | null;
+  scheduled_time?: string | null;
+  content?: {
+    id: string;
+    title: string;
+    slug?: string;
+    content_types?: {
+      name: string;
+    } | null;
+  } | null;
+  channel?: {
+    id: string;
+    name: string;
+    platform?: string;
+  } | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -224,10 +244,10 @@ export default function ContentCalendarPage() {
                             </div>
                           )}
                           <div className="text-xs font-medium text-gray-900 truncate">
-                            {item.content.title}
+                            {item.content?.title || 'Untitled Content'}
                           </div>
                           <div className="text-xs text-gray-500 truncate">
-                            {item.channel.name} • {item.content.content_types?.name}
+                            {item.channel?.name || 'Unknown Channel'} • {item.content?.content_types?.name || 'No Type'}
                           </div>
                           <div className="flex items-center gap-2 mt-1">
                             <span

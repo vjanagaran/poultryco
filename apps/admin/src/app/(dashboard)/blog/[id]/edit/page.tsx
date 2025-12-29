@@ -89,7 +89,7 @@ export default function EditBlogPostPage() {
         slug: post.slug || '',
         excerpt: post.excerpt || '',
         content: post.content || '',
-        category_id: post.categoryId || '',
+        category_id: post.category_id || '',
         status: post.status || 'draft',
         scheduled_for: post.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : '',
         meta_title: post.metaTitle || '',
@@ -186,7 +186,7 @@ export default function EditBlogPostPage() {
 
     try {
       const now = new Date().toISOString()
-      let status = formData.status
+      let status: 'draft' | 'published' | 'scheduled' | 'archived' = formData.status as 'draft' | 'published' | 'scheduled' | 'archived'
       let publishedAt = null
 
       if (action === 'publish') {

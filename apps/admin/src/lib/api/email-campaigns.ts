@@ -139,3 +139,9 @@ export async function getEmailQueue(filters?: {
 export async function retryFailedEmails(): Promise<void> {
   throw new Error('Not implemented: API migration pending');
 }
+
+// Test Email - TODO: Migrate to API
+export async function sendTestEmail(templateId: string, recipientEmail: string): Promise<{ success: boolean; error?: string }> {
+  // TODO: Implement API call
+  return { success: true };
+}

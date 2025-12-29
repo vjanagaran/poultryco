@@ -202,3 +202,8 @@ export function useRemoveContentTag() {
     },
   });
 }
+
+// Aliases for backward compatibility
+export const useCreateTag = useCreateContentTag;
+export const useUpdateTag = useUpdateContentTag;
+export const useDeleteTag = useDeleteContentTag;

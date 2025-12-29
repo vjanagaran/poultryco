@@ -49,6 +49,17 @@ export interface EntityMetrics {
   avgMembersPerOrg: number;
 }
 
+export interface RecentUser {
+  id: string;
+  full_name: string | null;
+  email: string;
+  location_city: string | null;
+  location_district: string | null;
+  location_state: string;
+  profile_strength?: number; // Optional for dashboard compatibility
+  created_at: string;
+}
+
 // Fetch user metrics
 export async function getUserMetrics(): Promise<UserMetrics> {
   return apiClient.get<UserMetrics>('/analytics/users/metrics');
@@ -75,8 +86,8 @@ export async function getEntityMetrics(): Promise<EntityMetrics> {
 }
 
 // Get recent signups with details
-export async function getRecentSignups(limit: number = 10) {
-  return apiClient.get(`/analytics/users/recent-signups?limit=${limit}`);
+export async function getRecentSignups(limit: number = 10): Promise<RecentUser[]> {
+  return apiClient.get<RecentUser[]>(`/analytics/users/recent-signups?limit=${limit}`);
 }
 
 // Export analytics data

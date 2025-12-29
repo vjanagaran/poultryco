@@ -56,7 +56,7 @@ export async function middleware(request: NextRequest) {
     nextResponse.headers.set('x-admin-role', data.user.role.slug);
     
     return nextResponse;
-  } catch (error) {
+  } catch (_error) {
     // Error verifying token, redirect to login
     const redirectResponse = NextResponse.redirect(new URL('/login', request.url));
     redirectResponse.cookies.delete('admin_token');

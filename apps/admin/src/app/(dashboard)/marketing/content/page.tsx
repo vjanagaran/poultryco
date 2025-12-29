@@ -41,44 +41,34 @@ export default function ContentListPage() {
       setLoading(true);
       const status = filterStatus !== 'all' ? filterStatus : undefined;
       const data = await getContent({ status });
-        .select('*, content_types(name), content_pillars(title)')
-        .order('created_at', { ascending: false });
+      
+      // Sort by created_at descending
+      const sortedData = (data || []).sort((a, b) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      });
+      
+      setContent(sortedData);
 
-      if (error) throw error;
-      setContent(data || []);
+      // Extract tag and campaign assignments from content data
+      if (sortedData && sortedData.length > 0) {
+        const tagMap: Record<string, string[]> = {};
+        const campaignMap: Record<string, string> = {};
 
-      // Fetch tag and campaign assignments
-      if (data && data.length > 0) {
-        const contentIds = data.map((c) => c.id);
+        sortedData.forEach((content) => {
+          // If API returns tagIds array, use it
+          if (content.tagIds && Array.isArray(content.tagIds)) {
+            tagMap[content.id] = content.tagIds;
+          }
+          // If API returns campaignId, use it
+          if (content.campaignId) {
+            campaignMap[content.id] = content.campaignId;
+          }
+        });
 
-        // Fetch tags
-        const { data: tagData } = await supabase
-          .from('content_tag_assignments')
-          .select('content_id, tag_id')
-          .in('content_id', contentIds);
-
-        if (tagData) {
-          const tagMap: Record<string, string[]> = {};
-          tagData.forEach((item) => {
-            if (!tagMap[item.content_id]) tagMap[item.content_id] = [];
-            tagMap[item.content_id].push(item.tag_id);
-          });
-          setContentTags(tagMap);
-        }
-
-        // Fetch campaigns
-        const { data: campaignData } = await supabase
-          .from('content_campaign_assignments')
-          .select('content_id, campaign_id')
-          .in('content_id', contentIds);
-
-        if (campaignData) {
-          const campaignMap: Record<string, string> = {};
-          campaignData.forEach((item) => {
-            campaignMap[item.content_id] = item.campaign_id;
-          });
-          setContentCampaigns(campaignMap);
-        }
+        setContentTags(tagMap);
+        setContentCampaigns(campaignMap);
       }
     } catch (error) {
       console.error('Error fetching content:', error);

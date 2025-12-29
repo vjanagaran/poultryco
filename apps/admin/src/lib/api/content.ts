@@ -4,15 +4,31 @@ export interface BlogPost {
   id: string;
   title: string;
   slug: string;
-  excerpt: string;
+  excerpt: string | null;
   content: string;
   status: 'draft' | 'published' | 'scheduled' | 'archived';
-  published_at: string | null;
-  view_count: number;
-  author_name: string | null;
-  category_id: string | null;
-  created_at: string;
-  updated_at: string;
+  publishedAt: string | null;
+  viewCount: number;
+  authorName: string | null;
+  authorId?: string | null; // Author ID for creating/updating
+  categoryId: string | null;
+  scheduledFor?: string | null; // For scheduled posts
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  featuredImage?: string | null;
+  featuredImageAlt?: string | null;
+  tagIds?: string[]; // Tag assignments from API
+  wordCount?: number; // Word count for creating posts
+  readingTimeMinutes?: number; // Reading time for creating posts
+  createdAt: string;
+  updatedAt: string;
+  // Legacy snake_case fields for backward compatibility
+  published_at?: string | null;
+  view_count?: number;
+  author_name?: string | null;
+  category_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface BlogCategory {
@@ -21,6 +37,9 @@ export interface BlogCategory {
   slug: string;
   description: string | null;
   is_active: boolean;
+  color?: string | null;
+  icon?: string | null;
+  post_count?: number;
   created_at: string;
 }
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
+import { updateContentIdea } from '@/lib/api/marketing';
 
 export default function IdeaDetailPage() {
   const router = useRouter();
@@ -678,13 +679,10 @@ export default function IdeaDetailPage() {
                 <button
                   onClick={async () => {
                     try {
-                      await supabase
-                        .from('content_ideas')
-                        .update({ status: 'evaluated' })
-                        .eq('id', ideaId);
+                      await updateContentIdea(ideaId, { status: 'evaluated' });
                       fetchData();
-                    } catch (error) {
-                      console.error('Error:', error);
+                    } catch (_error) {
+                      console.error('Error:', _error);
                     }
                   }}
                   className="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
@@ -697,13 +695,10 @@ export default function IdeaDetailPage() {
                 <button
                   onClick={async () => {
                     try {
-                      await supabase
-                        .from('content_ideas')
-                        .update({ status: 'approved' })
-                        .eq('id', ideaId);
+                      await updateContentIdea(ideaId, { status: 'approved' });
                       fetchData();
-                    } catch (error) {
-                      console.error('Error:', error);
+                    } catch (_error) {
+                      console.error('Error:', _error);
                     }
                   }}
                   className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -716,13 +711,10 @@ export default function IdeaDetailPage() {
                 <button
                   onClick={async () => {
                     try {
-                      await supabase
-                        .from('content_ideas')
-                        .update({ status: 'in_production' })
-                        .eq('id', ideaId);
+                      await updateContentIdea(ideaId, { status: 'in_production' });
                       fetchData();
-                    } catch (error) {
-                      console.error('Error:', error);
+                    } catch (_error) {
+                      console.error('Error:', _error);
                     }
                   }}
                   className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -737,10 +729,7 @@ export default function IdeaDetailPage() {
                     const reason = prompt('Why is this idea being rejected?');
                     if (reason) {
                       try {
-                        await supabase
-                          .from('content_ideas')
-                          .update({ status: 'rejected', rejection_reason: reason })
-                          .eq('id', ideaId);
+                        await updateContentIdea(ideaId, { status: 'rejected', rejection_reason: reason });
                         fetchData();
                       } catch (error) {
                         console.error('Error:', error);

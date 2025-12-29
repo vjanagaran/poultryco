@@ -69,29 +69,26 @@ export default function NewChannelPage() {
     setLoading(true);
 
     try {
-      await createMarketingChannel({
+      const channel = await createMarketingChannel({
         platform,
-        channel_type: channelType,
         name,
         handle: handle || undefined,
+        account_handle: handle || undefined,
         url: url || undefined,
-          description: description || null,
-          is_active: isActive,
-          posting_schedule: postingSchedule || null,
-          default_hashtags: defaultHashtags.length > 0 ? defaultHashtags : null,
-          character_limit: characterLimit ? parseInt(characterLimit) : null,
-          target_posts_per_week: targetPostsPerWeek,
-          target_engagement_rate: targetEngagementRate / 100, // Convert to decimal
-          current_followers: currentFollowers,
-          current_subscribers: currentSubscribers,
-        })
-        .select()
-        .single();
+        description: description || null,
+        is_active: isActive,
+        posting_schedule: postingSchedule || null,
+        default_hashtags: defaultHashtags.length > 0 ? defaultHashtags.join(',') : null,
+        character_limit: characterLimit ? parseInt(characterLimit) : null,
+        target_posts_per_week: targetPostsPerWeek,
+        target_engagement_rate: targetEngagementRate ? targetEngagementRate / 100 : null, // Convert to decimal
+        current_followers: currentFollowers,
+        current_subscribers: currentSubscribers,
+      });
 
-      if (error) throw error;
-      router.push(`/marketing/channels/${data.id}`);
-    } catch (error) {
-      console.error('Error creating channel:', error);
+      router.push(`/marketing/channels/${channel.id}`);
+    } catch (_error) {
+      console.error('Error creating channel:', _error);
       alert('Failed to create channel. Please try again.');
     } finally {
       setLoading(false);

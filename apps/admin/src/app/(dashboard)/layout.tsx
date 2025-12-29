@@ -11,8 +11,8 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Get token from cookies
-  const cookieStore = cookies();
+  // Get token from cookies (Next.js 15 requires await)
+  const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
 
   if (!token) {
@@ -20,7 +20,7 @@ export default async function DashboardLayout({
   }
 
   // Fetch user info from API
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api/v1';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/v1';
   let user = null;
   
   try {
@@ -37,7 +37,7 @@ export default async function DashboardLayout({
 
     const data = await response.json();
     user = data.user;
-  } catch (error) {
+  } catch (_error) {
     redirect("/login");
   }
 

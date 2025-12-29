@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { apiClient } from '@/lib/api/client';
+import { createContent, type Content } from '@/lib/api/marketing';
 import { TagSelector } from '@/components/marketing/TagSelector';
 import { CampaignSelector } from '@/components/marketing/CampaignSelector';
 
@@ -67,10 +68,10 @@ export default function NewContentPage() {
         apiClient.get('/admin/content?mode=master'),
       ]);
 
-      setPillars(pillars || []);
-      setTopics(topics || []);
-      setContentTypes(types || []);
-      setMasterContent(master || []);
+      setPillars(Array.isArray(pillars) ? pillars : []);
+      setTopics(Array.isArray(topics) ? topics : []);
+      setContentTypes(Array.isArray(types) ? types : []);
+      setMasterContent(Array.isArray(master) ? master : []);
     } catch (error) {
       console.error('Error fetching lookup data:', error);
     }
@@ -124,27 +125,27 @@ export default function NewContentPage() {
 
     try {
       // Create content via API
-      const content = await apiClient.post('/admin/content', {
+      const content = await createContent({
         title,
-        slug: slug || null,
-        contentMode,
-        masterContentId: contentMode === 'repurposed' ? masterContentId || null : null,
-        pillarId: pillarId || null,
-        topicId: topicId || null,
-        contentTypeId,
-        contentBody: contentBody || null,
-        excerpt: excerpt || null,
-        metaTitle: metaTitle || null,
-        metaDescription: metaDescription || null,
-        focusKeywords: focusKeywords.length > 0 ? focusKeywords : null,
-        targetUrl: targetUrl || null,
-        featuredImageUrl: featuredImageUrl || null,
-        hashtags: hashtags.length > 0 ? hashtags : null,
-        ctaText: ctaText || null,
-        ctaUrl: ctaUrl || null,
+        slug: slug || undefined,
+        content_mode: contentMode,
+        master_content_id: contentMode === 'repurposed' ? masterContentId || undefined : undefined,
+        pillar_id: pillarId || undefined,
+        topic_id: topicId || undefined,
+        content_type_id: contentTypeId,
+        content_body: contentBody || undefined,
+        excerpt: excerpt || undefined,
+        meta_title: metaTitle || undefined,
+        meta_description: metaDescription || undefined,
+        focus_keywords: focusKeywords.length > 0 ? focusKeywords : undefined,
+        target_url: targetUrl || undefined,
+        featured_image_url: featuredImageUrl || undefined,
+        hashtags: hashtags.length > 0 ? hashtags : undefined,
+        cta_text: ctaText || undefined,
+        cta_url: ctaUrl || undefined,
         status,
         tagIds: selectedTags,
-        campaignId: selectedCampaign || null,
+        campaignId: selectedCampaign || undefined,
       });
 
       router.push(`/marketing/content/${content.id}`);

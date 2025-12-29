@@ -48,13 +48,28 @@ export interface ContentPillar {
 export interface Content {
   id: string;
   title: string;
-  slug: string;
+  slug: string | null | undefined;
   content_mode: 'master' | 'repurposed';
-  pillar_id: string | null;
-  topic_id: string | null;
+  pillar_id: string | null | undefined;
+  topic_id: string | null | undefined;
   content_type_id: string;
   status: string;
   created_at: string;
+  content_body?: string | null | undefined;
+  excerpt?: string | null | undefined;
+  meta_title?: string | null | undefined;
+  meta_description?: string | null | undefined;
+  focus_keywords?: string[] | null | undefined;
+  target_url?: string | null | undefined;
+  featured_image_url?: string | null | undefined;
+  hashtags?: string[] | null | undefined;
+  cta_text?: string | null | undefined;
+  cta_url?: string | null | undefined;
+  master_content_id?: string | null | undefined;
+  tagIds?: string[]; // Tag assignments from API
+  campaignId?: string; // Campaign assignment from API
+  content_types?: { name: string };
+  content_pillars?: { title: string };
 }
 
 export interface ContentIdea {
@@ -65,6 +80,7 @@ export interface ContentIdea {
   pillar_id: string | null;
   segment_id: string | null;
   status: string;
+  rejection_reason?: string | null;
   created_at: string;
 }
 
@@ -73,8 +89,18 @@ export interface MarketingChannel {
   name: string;
   platform: string;
   account_handle: string;
-  followers_count: number;
+  handle?: string; // Alias for account_handle
+  url?: string | null;
+  description?: string | null;
+  followers_count?: number;
+  current_followers?: number | null;
+  current_subscribers?: number | null;
   is_active: boolean;
+  posting_schedule?: string | null;
+  default_hashtags?: string | null;
+  character_limit?: number | null;
+  target_posts_per_week?: number | null;
+  target_engagement_rate?: number | null;
   created_at: string;
 }
 
@@ -85,6 +111,7 @@ export interface ContentSchedule {
   scheduled_for: string;
   status: string;
   published_url: string | null;
+  published_at?: string | null;
   created_at: string;
 }
 

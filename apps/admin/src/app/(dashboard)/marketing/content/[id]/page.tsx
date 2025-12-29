@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
+import { getContentById, type Content } from '@/lib/api/marketing';
 import { TagSelector } from '@/components/marketing/TagSelector';
 import { CampaignSelector } from '@/components/marketing/CampaignSelector';
 
@@ -40,7 +41,7 @@ export default function ContentDetailPage() {
       setLoading(true);
 
       // Fetch content via API
-      const contentData = await apiClient.get(`/admin/content/${contentId}`);
+      const contentData = await getContentById(contentId);
       setContent(contentData);
       setFormData(contentData);
 
@@ -52,10 +53,10 @@ export default function ContentDetailPage() {
         apiClient.get(`/admin/content?mode=master&exclude=${contentId}`),
       ]);
 
-      setContentTypes(types || []);
-      setPillars(pillars || []);
-      setTopics(topics || []);
-      setMasterContent(master || []);
+      setContentTypes(Array.isArray(types) ? types : []);
+      setPillars(Array.isArray(pillars) ? pillars : []);
+      setTopics(Array.isArray(topics) ? topics : []);
+      setMasterContent(Array.isArray(master) ? master : []);
 
       // Extract assigned tags and campaign from content data
       if (contentData.tagIds) {
@@ -66,14 +67,14 @@ export default function ContentDetailPage() {
       }
 
       // If this is master content, fetch repurposed content
-      if (contentData.contentMode === 'master') {
-        const repurposedData = await apiClient.get(`/admin/content?masterContentId=${contentId}`);
-        setRepurposedContent(repurposedData || []);
+      if (contentData.content_mode === 'master') {
+        const repurposedData = await apiClient.get<any[]>(`/admin/content?masterContentId=${contentId}`);
+        setRepurposedContent(Array.isArray(repurposedData) ? repurposedData : []);
       }
 
       // Fetch schedules
-      const scheduleData = await apiClient.get(`/admin/content-schedule?contentId=${contentId}`);
-      setSchedules(scheduleData || []);
+      const scheduleData = await apiClient.get<any[]>(`/admin/content-schedule?contentId=${contentId}`);
+      setSchedules(Array.isArray(scheduleData) ? scheduleData : []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

@@ -96,9 +96,10 @@ export default function ChannelDetailPage() {
     try {
       await updateMarketingChannel(channelId, {
         platform: formData.platform,
-        channel_type: formData.channel_type,
+        // channel_type removed - not in MarketingChannel interface
         name: formData.name,
         handle: formData.handle,
+        account_handle: formData.handle, // Map handle to account_handle
         url: formData.url,
         description: formData.description,
         is_active: formData.is_active,
@@ -191,7 +192,7 @@ export default function ChannelDetailPage() {
                   }`}
                 />
                 <span className="text-sm text-gray-600 capitalize">
-                  {channel.platform} • {channel.channel_type.replace('_', ' ')}
+                  {channel.platform}
                 </span>
               </div>
             </div>
