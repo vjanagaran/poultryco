@@ -14,14 +14,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/v1';
     
-    // Call Supabase Edge Function
-    const response = await fetch(`${supabaseUrl}/functions/v1/scrape-necc-prices`, {
+    // Call REST API scraper endpoint
+    const response = await fetch(`${apiUrl}/necc/scrape`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${supabaseServiceKey}`,
         'Content-Type': 'application/json',
       },
     });

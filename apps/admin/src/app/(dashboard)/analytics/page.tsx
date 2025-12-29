@@ -18,6 +18,7 @@ import {
   type LocationDistribution,
   type DailyUserGrowth,
   type EntityMetrics,
+  type RecentUser,
 } from '@/lib/api/analytics';
 
 export default function AnalyticsPage() {
@@ -27,15 +28,7 @@ export default function AnalyticsPage() {
   const [locationData, setLocationData] = useState<LocationDistribution[]>([]);
   const [growthData, setGrowthData] = useState<DailyUserGrowth[]>([]);
   const [entityMetrics, setEntityMetrics] = useState<EntityMetrics | null>(null);
-  const [recentUsers, setRecentUsers] = useState<Array<{
-    id: string;
-    full_name: string | null;
-    email: string;
-    location_city: string | null;
-    location_district: string | null;
-    location_state: string;
-    created_at: string;
-  }>>([]);
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [selectedSegment, setSelectedSegment] = useState<ProfileCompletionSegment | null>(null);
   const [exportingData, setExportingData] = useState(false);
 

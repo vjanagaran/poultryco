@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import * as socialApi from '@/lib/api/social';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatTimestamp, renderRichContent, formatCount } from '@/lib/streamUtils';
 import { createCommentMentionNotifications } from '@/lib/notificationService';
@@ -49,45 +49,55 @@ export function CommentSection({ postId, onCommentAdded }: CommentSectionProps) 
   }, [postId]);
 
   const fetchComments = async () => {
-    const supabase = createClient();
-    
     try {
-      // Fetch top-level comments
-      const { data: topComments, error } = await supabase
-        .from('post_comments')
-        .select(`
-          *,
-          commenter:profiles!commenter_id(
-            id,
-            full_name,
-            profile_slug,
-            profile_photo_url,
-            headline
-          )
-        `)
-        .eq('post_id', postId)
-        .is('parent_comment_id', null)
-        .order('created_at', { ascending: true });
+      // Fetch comments via API
+      const commentsData = await socialApi.getPostComments(postId);
+      
+      // Filter top-level comments and map to our format
+      const topComments = commentsData
+        .filter((c: any) => !c.parent_comment_id)
+        .map((c: any) => ({
+          id: c.id,
+          post_id: c.post_id,
+          commenter_id: c.author_id || c.commenter_id,
+          content: c.content,
+          parent_comment_id: c.parent_comment_id,
+          likes_count: c.likes_count || 0,
+          replies_count: c.replies_count || 0,
+          created_at: c.created_at,
+          edited: c.is_edited || false,
+          commenter: c.commenter || c.author || {
+            id: c.author_id || c.commenter_id,
+            full_name: 'Unknown User',
+            profile_slug: 'unknown',
+            profile_photo_url: null,
+            headline: null,
+          },
+          user_liked: c.is_liked || false,
+          replies: commentsData
+            .filter((r: any) => r.parent_comment_id === c.id)
+            .map((r: any) => ({
+              id: r.id,
+              post_id: r.post_id,
+              commenter_id: r.author_id || r.commenter_id,
+              content: r.content,
+              parent_comment_id: r.parent_comment_id,
+              likes_count: r.likes_count || 0,
+              replies_count: r.replies_count || 0,
+              created_at: r.created_at,
+              edited: r.is_edited || false,
+              commenter: r.commenter || r.author || {
+                id: r.author_id || r.commenter_id,
+                full_name: 'Unknown User',
+                profile_slug: 'unknown',
+                profile_photo_url: null,
+                headline: null,
+              },
+              user_liked: r.is_liked || false,
+            })),
+        }));
 
-      if (error) throw error;
-
-      // Check if user liked comments
-      if (user) {
-        const commentIds = topComments?.map((c) => c.id) || [];
-        const { data: likes } = await supabase
-          .from('post_comment_likes')
-          .select('comment_id')
-          .eq('user_id', user.id)
-          .in('comment_id', commentIds);
-
-        const likedCommentIds = new Set(likes?.map((l) => l.comment_id) || []);
-        
-        topComments?.forEach((comment) => {
-          comment.user_liked = likedCommentIds.has(comment.id);
-        });
-      }
-
-      setComments(topComments || []);
+      setComments(topComments);
     } catch (error) {
       console.error('Error fetching comments:', error);
     } finally {
@@ -101,29 +111,16 @@ export function CommentSection({ postId, onCommentAdded }: CommentSectionProps) 
     setSubmitting(true);
 
     try {
-      const supabase = createClient();
-
-      const { data: comment, error } = await supabase
-        .from('post_comments')
-        .insert({
-          post_id: postId,
-          commenter_id: user.id,
-          parent_comment_id: parentId,
-          content: newComment.trim(),
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      const comment = await socialApi.commentOnPost(postId, newComment.trim(), parentId || undefined);
 
       // Create mention notifications
-      if (comment) {
+      if (comment && comment.id) {
         await createCommentMentionNotifications(
           comment.id,
           postId,
           newComment.trim(),
           user.id,
-          user.user_metadata?.full_name || 'Someone'
+          user.full_name || 'Someone'
         );
       }
 
@@ -141,22 +138,11 @@ export function CommentSection({ postId, onCommentAdded }: CommentSectionProps) 
   const handleLikeComment = async (commentId: string, currentlyLiked: boolean) => {
     if (!user) return;
 
-    const supabase = createClient();
-
     try {
       if (currentlyLiked) {
-        await supabase
-          .from('post_comment_likes')
-          .delete()
-          .eq('comment_id', commentId)
-          .eq('user_id', user.id);
+        await socialApi.unlikeComment(commentId);
       } else {
-        await supabase
-          .from('post_comment_likes')
-          .insert({
-            comment_id: commentId,
-            user_id: user.id,
-          });
+        await socialApi.likeComment(commentId);
       }
 
       // Update local state
@@ -181,10 +167,8 @@ export function CommentSection({ postId, onCommentAdded }: CommentSectionProps) 
   const handleDeleteComment = async (commentId: string) => {
     if (!confirm('Delete this comment?')) return;
 
-    const supabase = createClient();
-
     try {
-      await supabase.from('post_comments').delete().eq('id', commentId);
+      await socialApi.deleteComment(commentId);
       await fetchComments();
       onCommentAdded(); // Update parent comment count
     } catch (error) {

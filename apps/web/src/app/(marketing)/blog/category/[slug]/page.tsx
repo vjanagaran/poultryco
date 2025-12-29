@@ -1,11 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { getBlogCategoryBySlug, getBlogPosts } from '@/lib/api/blog'
 
 const POSTS_PER_PAGE = 12
 
@@ -33,58 +29,35 @@ interface BlogPost {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const { data: category } = await supabase
-    .from('blog_categories')
-    .select('name, description')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single()
+  
+  try {
+    const category = await getBlogCategoryBySlug(slug)
 
-  if (!category) {
+    if (!category) {
+      return { title: 'Category Not Found - PoultryCo Blog' }
+    }
+
+    return {
+      title: `${category.name} - PoultryCo Blog`,
+      description: category.description || `Browse all ${category.name} posts on PoultryCo Blog`,
+    }
+  } catch (error) {
     return { title: 'Category Not Found - PoultryCo Blog' }
   }
-
-  return {
-    title: `${category.name} - PoultryCo Blog`,
-    description: category.description || `Browse all ${category.name} posts on PoultryCo Blog`,
-  }
 }
 
-async function getCategory(slug: string) {
-  const { data, error } = await supabase
-    .from('blog_categories')
-    .select('*')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single()
-
-  if (error || !data) return null
-  return data as Category
-}
-
-async function getCategoryPosts(categoryId: string, page: number = 1) {
-  const from = (page - 1) * POSTS_PER_PAGE
-  const to = from + POSTS_PER_PAGE - 1
-
-  const { data, error, count } = await supabase
-    .from('blog_posts')
-    .select('*', { count: 'exact' })
-    .eq('status', 'published')
-    .eq('category_id', categoryId)
-    .lte('published_at', new Date().toISOString())
-    .order('published_at', { ascending: false })
-    .range(from, to)
-
-  if (error) {
-    console.error('Error:', error)
-    return { posts: [], totalPages: 0 }
-  }
-
-  const totalPages = count ? Math.ceil(count / POSTS_PER_PAGE) : 0
-
+// Helper to transform API response
+function transformBlogPost(post: any): BlogPost {
   return {
-    posts: data as BlogPost[],
-    totalPages,
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt,
+    featured_image: post.featuredImage,
+    featured_image_alt: post.featuredImageAlt,
+    published_at: post.publishedAt,
+    reading_time_minutes: post.readingTimeMinutes,
+    author_name: post.authorName,
   }
 }
 
@@ -97,14 +70,24 @@ export default async function CategoryPage({
 }) {
   const { slug } = await params
   const { page: pageParam } = await searchParams
-  const category = await getCategory(slug)
+  
+  try {
+    const category = await getBlogCategoryBySlug(slug)
 
-  if (!category) {
-    notFound()
-  }
+    if (!category) {
+      notFound()
+    }
 
-  const page = parseInt(pageParam || '1')
-  const { posts, totalPages } = await getCategoryPosts(category.id, page)
+    const page = parseInt(pageParam || '1')
+    const postsData = await getBlogPosts({ 
+      page, 
+      limit: POSTS_PER_PAGE, 
+      status: 'published',
+      categoryId: category.id 
+    })
+    
+    const posts = (postsData.posts || []).map(transformBlogPost)
+    const totalPages = postsData.totalPages
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -246,6 +229,10 @@ export default async function CategoryPage({
         )}
       </div>
     </div>
-  )
+    )
+  } catch (error) {
+    console.error('Error fetching category:', error)
+    notFound()
+  }
 }
 

@@ -1,4 +1,3 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
@@ -8,8 +7,18 @@ export async function middleware(request: NextRequest) {
     },
   })
 
-  // Add Content Security Policy headers to allow Google Analytics
+  // Add Content Security Policy headers
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+  
+  // Extract origin from API URL (CSP connect-src only accepts origins, not full URLs with paths)
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/v1';
+  let apiOrigin = 'http://localhost:3002';
+  try {
+    apiOrigin = new URL(apiUrl).origin;
+  } catch {
+    // Fallback if URL parsing fails
+    apiOrigin = 'http://localhost:3002';
+  }
   
   const cspHeader = `
     default-src 'self';
@@ -17,7 +26,7 @@ export async function middleware(request: NextRequest) {
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https://www.google-analytics.com https://www.googletagmanager.com;
     font-src 'self' data:;
-    connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://*.supabase.co wss://*.supabase.co;
+    connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.googletagmanager.com ${apiOrigin} https://*.amazonaws.com;
     frame-ancestors 'self';
     base-uri 'self';
     form-action 'self';
@@ -29,61 +38,14 @@ export async function middleware(request: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
-    }
-  )
-
-  // Refresh session if expired
-  await supabase.auth.getUser()
+  // Check for JWT token in cookies or localStorage (handled client-side)
+  // For server-side, we'll validate on API calls
+  const token = request.cookies.get('app_token')?.value
 
   // Redirect authenticated users from homepage to /home
-  if (request.nextUrl.pathname === '/' && request.cookies.get('sb-access-token')) {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      return NextResponse.redirect(new URL('/home', request.url))
-    }
+  if (request.nextUrl.pathname === '/' && token) {
+    // Token exists, redirect to home (actual validation happens client-side)
+    return NextResponse.redirect(new URL('/home', request.url))
   }
 
   return response

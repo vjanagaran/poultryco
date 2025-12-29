@@ -1,4 +1,9 @@
-import { createClient } from '@/lib/supabase/server';
+/**
+ * @deprecated This scraper has been migrated to the API
+ * The API now handles NECC scraping at /api/v1/necc/scraper/run-month
+ * This file should not be used - use the API endpoint instead
+ */
+
 import { parseNECCTable } from './necc-parser';
 
 export interface ScrapeResult {
@@ -14,11 +19,14 @@ export interface ScrapeResult {
   };
 }
 
+/**
+ * @deprecated Use API endpoint: POST /api/v1/necc/scraper/run-month
+ */
 export async function scrapeNECCMonth(
   month: number,
   year: number
 ): Promise<ScrapeResult> {
-  const supabase = await createClient();
+  throw new Error('This scraper has been deprecated. Please use the API endpoint: POST /api/v1/necc/scraper/run-month');
 
   const stats = {
     zonesFound: 0,
@@ -55,11 +63,15 @@ export async function scrapeNECCMonth(
     const html = await response.text();
 
     // 2. Parse HTML table
-    const { zones, prices } = await parseNECCTable(html, month, year);
+    const { zones, prices } = await parseNECCTable(html, month, year) as any;
     stats.zonesFound = zones.length;
 
     // 3. Validate zones exist (DO NOT create new zones - manage manually)
+    // NOTE: This file is deprecated - use API endpoint instead
+    // All supabase code commented out since this file throws an error at the start
     const missingZones: string[] = [];
+    /* eslint-disable @typescript-eslint/no-unused-vars */
+    /* 
     for (const zoneData of zones) {
       const { data: existingZone } = await supabase
         .from('necc_zones')
@@ -141,6 +153,7 @@ export async function scrapeNECCMonth(
         stats.errors.push(errorMsg);
       }
     }
+    */
 
     console.log(`[Scraper] Completed: ${stats.pricesInserted} inserted, ${stats.pricesSkipped} skipped${stats.errors.length > 0 ? `, ${stats.errors.length} errors` : ''}`);
 
@@ -149,9 +162,9 @@ export async function scrapeNECCMonth(
       message: `Successfully scraped ${month}/${year}`,
       stats,
     };
-  } catch (error: unknown) {
-    console.error('[Scraper] Error:', error);
-    const message = error instanceof Error ? error.message : 'Scraping failed';
+  } catch (err: unknown) {
+    console.error('[Scraper] Error:', err);
+    const message = err instanceof Error ? (err as Error).message : 'Scraping failed';
     return {
       success: false,
       message,

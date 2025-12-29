@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { Container } from '@/components/ui';
 import Image from 'next/image';
 import { uploadToStorage } from '@/lib/storageUtils';
@@ -107,43 +107,28 @@ export function BusinessEditContent({ business }: BusinessEditContentProps) {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // Update business profile
-      const { error: businessError } = await supabase
-        .from('business_profiles')
-        .update({
-          business_name: formData.business_name,
-          display_name: formData.display_name || null,
-          tagline: formData.tagline || null,
-          about: formData.about || null,
-          business_type: formData.business_type,
-          company_size: formData.company_size || null,
-          founded_year: formData.founded_year || null,
-          website_url: formData.website_url || null,
-          logo_url: formData.logo_url,
-          cover_photo_url: formData.cover_photo_url,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', business.id);
-
-      if (businessError) throw businessError;
-
-      // Update contact info
-      const { error: contactError } = await supabase
-        .from('business_profiles_contact')
-        .upsert({
-          business_profile_id: business.id,
-          headquarters_address: formData.headquarters_address || null,
-          headquarters_state: formData.headquarters_state,
-          headquarters_city: formData.headquarters_city || null,
+      // Update business profile via API
+      await apiClient.put(`/businesses/${business.id}`, {
+        name: formData.business_name,
+        displayName: formData.display_name || null,
+        tagline: formData.tagline || null,
+        about: formData.about || null,
+        businessTypeId: formData.business_type,
+        companySize: formData.company_size || null,
+        foundedYear: formData.founded_year || null,
+        websiteUrl: formData.website_url || null,
+        logoUrl: formData.logo_url,
+        coverPhotoUrl: formData.cover_photo_url,
+        // Contact info should be included in the update
+        contact: {
+          headquartersAddress: formData.headquarters_address || null,
+          headquartersState: formData.headquarters_state,
+          headquartersCity: formData.headquarters_city || null,
           phone: formData.phone || null,
           email: formData.email || null,
-          whatsapp_business: formData.whatsapp_business || null,
-          updated_at: new Date().toISOString(),
-        });
-
-      if (contactError) throw contactError;
+          whatsappBusiness: formData.whatsapp_business || null,
+        },
+      });
 
       // Success!
       router.push(`/com/${business.business_slug}`);

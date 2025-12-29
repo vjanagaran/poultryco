@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+// TODO: Migrate realtime metrics to API/WebSocket
 
 interface RealtimeMetric {
   activeUsers: number;
@@ -25,51 +25,13 @@ export function RealtimeMetrics() {
   });
 
   useEffect(() => {
-    const supabase = createClient();
-    
-    // Get initial active users count
-    const getActiveUsers = async () => {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .gte('last_active_at', fiveMinutesAgo);
-      
-      setMetrics(prev => ({ ...prev, activeUsers: count || 0 }));
-    };
-
-    getActiveUsers();
-    
-    // Set up real-time subscription for new profiles
-    const profileSubscription = supabase
-      .channel('admin-new-profiles')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'profiles',
-        },
-        (payload) => {
-          setMetrics(prev => ({
-            ...prev,
-            recentSignups: [
-              {
-                id: payload.new.id,
-                full_name: payload.new.full_name,
-                created_at: payload.new.created_at,
-              },
-              ...prev.recentSignups.slice(0, 4),
-            ],
-          }));
-        }
-      )
-      .subscribe();
-
-    // Clean up subscription
-    return () => {
-      supabase.removeChannel(profileSubscription);
-    };
+    // TODO: Migrate to API/WebSocket for real-time metrics
+    // For now, show placeholder data
+    setMetrics({
+      activeUsers: 0,
+      recentSignups: [],
+      recentActivity: [],
+    });
   }, []);
 
   return (

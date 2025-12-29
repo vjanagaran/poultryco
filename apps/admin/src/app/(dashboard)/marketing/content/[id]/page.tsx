@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
+import { getContentById, type Content } from '@/lib/api/marketing';
 import { TagSelector } from '@/components/marketing/TagSelector';
 import { CampaignSelector } from '@/components/marketing/CampaignSelector';
 
@@ -11,7 +12,7 @@ export default function ContentDetailPage() {
   const router = useRouter();
   const params = useParams();
   const contentId = params.id as string;
-  const supabase = createClient();
+  // Using API client
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,75 +40,41 @@ export default function ContentDetailPage() {
     try {
       setLoading(true);
 
-      // Fetch content
-      const { data: contentData, error: contentError } = await supabase
-        .from('content')
-        .select('*, content_types(name), content_pillars(title), content_topics(title)')
-        .eq('id', contentId)
-        .single();
-
-      if (contentError) throw contentError;
+      // Fetch content via API
+      const contentData = await getContentById(contentId);
       setContent(contentData);
       setFormData(contentData);
 
       // Fetch lookup data
-      const [typesRes, pillarsRes, topicsRes, masterRes] = await Promise.all([
-        supabase.from('content_types').select('*').order('name'),
-        supabase.from('content_pillars').select('id, title').order('title'),
-        supabase.from('content_topics').select('id, title').order('title'),
-        supabase
-          .from('content')
-          .select('id, title')
-          .eq('content_mode', 'master')
-          .neq('id', contentId)
-          .order('title'),
+      const [types, pillars, topics, master] = await Promise.all([
+        apiClient.get('/admin/content-types'),
+        apiClient.get('/admin/content-pillars'),
+        apiClient.get('/admin/content-topics'),
+        apiClient.get(`/admin/content?mode=master&exclude=${contentId}`),
       ]);
 
-      if (typesRes.data) setContentTypes(typesRes.data);
-      if (pillarsRes.data) setPillars(pillarsRes.data);
-      if (topicsRes.data) setTopics(topicsRes.data);
-      if (masterRes.data) setMasterContent(masterRes.data);
+      setContentTypes(Array.isArray(types) ? types : []);
+      setPillars(Array.isArray(pillars) ? pillars : []);
+      setTopics(Array.isArray(topics) ? topics : []);
+      setMasterContent(Array.isArray(master) ? master : []);
 
-      // Fetch assigned tags
-      const { data: tagsData } = await supabase
-        .from('content_tag_assignments')
-        .select('tag_id')
-        .eq('content_id', contentId);
-
-      if (tagsData) {
-        setAssignedTags(tagsData.map((t) => t.tag_id));
+      // Extract assigned tags and campaign from content data
+      if (contentData.tagIds) {
+        setAssignedTags(contentData.tagIds);
       }
-
-      // Fetch assigned campaign
-      const { data: campaignData } = await supabase
-        .from('content_campaign_assignments')
-        .select('campaign_id')
-        .eq('content_id', contentId)
-        .maybeSingle();
-
-      if (campaignData) {
-        setAssignedCampaign(campaignData.campaign_id);
+      if (contentData.campaignId) {
+        setAssignedCampaign(contentData.campaignId);
       }
 
       // If this is master content, fetch repurposed content
       if (contentData.content_mode === 'master') {
-        const { data: repurposedData } = await supabase
-          .from('content')
-          .select('*, content_types(name)')
-          .eq('master_content_id', contentId)
-          .order('created_at', { ascending: false });
-
-        if (repurposedData) setRepurposedContent(repurposedData);
+        const repurposedData = await apiClient.get<any[]>(`/admin/content?masterContentId=${contentId}`);
+        setRepurposedContent(Array.isArray(repurposedData) ? repurposedData : []);
       }
 
       // Fetch schedules
-      const { data: scheduleData } = await supabase
-        .from('content_schedule')
-        .select('*, marketing_channels(name, platform)')
-        .eq('content_id', contentId)
-        .order('scheduled_date', { ascending: true });
-
-      if (scheduleData) setSchedules(scheduleData);
+      const scheduleData = await apiClient.get<any[]>(`/admin/content-schedule?contentId=${contentId}`);
+      setSchedules(Array.isArray(scheduleData) ? scheduleData : []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -157,51 +124,29 @@ export default function ContentDetailPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      // Update content
-      const { error: contentError } = await supabase
-        .from('content')
-        .update({
-          title: formData.title,
-          slug: formData.slug,
-          content_mode: formData.content_mode,
-          master_content_id: formData.master_content_id,
-          pillar_id: formData.pillar_id,
-          topic_id: formData.topic_id,
-          content_type_id: formData.content_type_id,
-          content_body: formData.content_body,
-          excerpt: formData.excerpt,
-          meta_title: formData.meta_title,
-          meta_description: formData.meta_description,
-          focus_keywords: formData.focus_keywords,
-          target_url: formData.target_url,
-          featured_image_url: formData.featured_image_url,
-          hashtags: formData.hashtags,
-          cta_text: formData.cta_text,
-          cta_url: formData.cta_url,
-          status: formData.status,
-        })
-        .eq('id', contentId);
-
-      if (contentError) throw contentError;
-
-      // Update tags
-      await supabase.from('content_tag_assignments').delete().eq('content_id', contentId);
-      if (assignedTags.length > 0) {
-        const tagAssignments = assignedTags.map((tagId) => ({
-          content_id: contentId,
-          tag_id: tagId,
-        }));
-        await supabase.from('content_tag_assignments').insert(tagAssignments);
-      }
-
-      // Update campaign
-      await supabase.from('content_campaign_assignments').delete().eq('content_id', contentId);
-      if (assignedCampaign) {
-        await supabase.from('content_campaign_assignments').insert({
-          content_id: contentId,
-          campaign_id: assignedCampaign,
-        });
-      }
+      // Update content via API
+      await apiClient.put(`/admin/content/${contentId}`, {
+        title: formData.title,
+        slug: formData.slug,
+        contentMode: formData.content_mode,
+        masterContentId: formData.master_content_id,
+        pillarId: formData.pillar_id,
+        topicId: formData.topic_id,
+        contentTypeId: formData.content_type_id,
+        contentBody: formData.content_body,
+        excerpt: formData.excerpt,
+        metaTitle: formData.meta_title,
+        metaDescription: formData.meta_description,
+        focusKeywords: formData.focus_keywords,
+        targetUrl: formData.target_url,
+        featuredImageUrl: formData.featured_image_url,
+        hashtags: formData.hashtags,
+        ctaText: formData.cta_text,
+        ctaUrl: formData.cta_url,
+        status: formData.status,
+        tagIds: assignedTags,
+        campaignId: assignedCampaign,
+      });
 
       setEditing(false);
       fetchData();
@@ -219,9 +164,7 @@ export default function ContentDetailPage() {
     }
 
     try {
-      const { error } = await supabase.from('content').delete().eq('id', contentId);
-
-      if (error) throw error;
+      await apiClient.delete(`/admin/content/${contentId}`);
       router.push('/marketing/content');
     } catch (error) {
       console.error('Error deleting content:', error);
@@ -937,8 +880,9 @@ export default function ContentDetailPage() {
               <div className="text-sm text-gray-600">Total Engagement</div>
               <div className="text-2xl font-bold text-gray-900">
                 {(
-                  (content.total_likes || 0) +
-                  (content.total_comments || 0) +
+                  (content.total_likes ?? 0) +
+                  (content.total_comments ?? 0) +
+                  (content.total_shares ?? 0) +
                   (content.total_shares || 0)
                 ).toLocaleString()}
               </div>
@@ -947,13 +891,13 @@ export default function ContentDetailPage() {
               <div>
                 <div className="text-xs text-gray-500">Likes</div>
                 <div className="text-sm font-semibold text-gray-900">
-                  {content.total_likes || 0}
+                  {content.total_likes ?? 0}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Comments</div>
                 <div className="text-sm font-semibold text-gray-900">
-                  {content.total_comments || 0}
+                  {content.total_comments ?? 0}
                 </div>
               </div>
               <div>

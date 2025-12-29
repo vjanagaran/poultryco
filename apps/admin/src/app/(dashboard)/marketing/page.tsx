@@ -1,33 +1,34 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { getMarketingDashboardStats } from '@/lib/api/marketing';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MarketingDashboard() {
-  const supabase = await createClient();
+  let stats = {
+    topicsCount: 0,
+    segmentsCount: 0,
+    pillarsCount: 0,
+    channelsCount: 0,
+    scheduledCount: 0,
+  };
 
-  // Fetch summary data
-  const [
-    { count: topicsCount },
-    { count: segmentsCount },
-    { count: pillarsCount },
-    { count: channelsCount },
-    { count: scheduledCount },
-  ] = await Promise.all([
-    supabase.from('content_topics').select('*', { count: 'exact', head: true }),
-    supabase.from('stakeholder_segments').select('*', { count: 'exact', head: true }),
-    supabase.from('content_pillars').select('*', { count: 'exact', head: true }),
-    supabase.from('marketing_channels').select('*', { count: 'exact', head: true }),
-    supabase
-      .from('content_schedule')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'scheduled'),
-  ]);
+  try {
+    const dashboardStats = await getMarketingDashboardStats() as any;
+    stats = {
+      topicsCount: dashboardStats?.topicsCount || 0,
+      segmentsCount: dashboardStats?.segmentsCount || 0,
+      pillarsCount: dashboardStats?.pillarsCount || 0,
+      channelsCount: dashboardStats?.channelsCount || 0,
+      scheduledCount: dashboardStats?.scheduledCount || 0,
+    };
+  } catch (error) {
+    console.error('Error fetching marketing stats:', error);
+  }
 
   const cards = [
     {
       title: 'NDP Topics',
-      count: topicsCount || 0,
+      count: stats.topicsCount || 0,
       icon: '💡',
       href: '/marketing/topics',
       description: 'Content topics based on Need-Desire-Pain framework',
@@ -35,7 +36,7 @@ export default async function MarketingDashboard() {
     },
     {
       title: 'Customer Segments',
-      count: segmentsCount || 0,
+      count: stats.segmentsCount || 0,
       icon: '👥',
       href: '/marketing/segments',
       description: 'Target audience segments and personas',
@@ -43,7 +44,7 @@ export default async function MarketingDashboard() {
     },
     {
       title: 'Content Pillars',
-      count: pillarsCount || 0,
+      count: stats.pillarsCount || 0,
       icon: '🏛️',
       href: '/marketing/pillars',
       description: 'Core research topics for content generation',
@@ -51,7 +52,7 @@ export default async function MarketingDashboard() {
     },
     {
       title: 'Marketing Channels',
-      count: channelsCount || 0,
+      count: stats.channelsCount || 0,
       icon: '📱',
       href: '/marketing/channels',
       description: 'Social media accounts and distribution channels',
@@ -59,7 +60,7 @@ export default async function MarketingDashboard() {
     },
     {
       title: 'Content Calendar',
-      count: scheduledCount || 0,
+      count: stats.scheduledCount || 0,
       subtitle: 'scheduled',
       icon: '📅',
       href: '/marketing/calendar',

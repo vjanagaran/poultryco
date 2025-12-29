@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import PhotoUploadModal from '../PhotoUploadModal';
-import { getPublicUrl } from '@/lib/supabase/storage';
+// Storage URLs come directly from API/CDN, no need for getPublicUrl
 import { ConnectionButton } from '@/components/connections/ConnectionButton';
 import { ConnectionCount } from '@/components/connections/ConnectionCount';
 import { MutualConnections } from '@/components/connections/MutualConnections';
@@ -31,8 +31,9 @@ export function ProfileHeader({ profile, isOwner }: ProfileHeaderProps) {
   };
 
   // Get proper URLs for images
-  const coverPhotoUrl = getPublicUrl(profile.cover_photo_url);
-  const profilePhotoUrl = getPublicUrl(profile.profile_photo_url);
+  // URLs come directly from API/CDN
+  const coverPhotoUrl = profile.cover_photo_url;
+  const profilePhotoUrl = profile.profile_photo_url;
   const locationParts = [
     profile.location_city,
     profile.location_district,

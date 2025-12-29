@@ -1,29 +1,18 @@
-import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { getZonesCount, getPricesCount, getLatestPriceDate } from "@/lib/api/necc";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function NECCDashboardPage() {
-  const supabase = await createClient();
-
-  // Get stats
-  const [zonesResult, pricesResult, latestPriceResult] = await Promise.all([
-    supabase.from('necc_zones').select('id', { count: 'exact', head: true }),
-    supabase.from('necc_prices').select('id', { count: 'exact', head: true }),
-    supabase
-      .from('necc_prices')
-      .select('date')
-      .order('date', { ascending: false })
-      .limit(1)
-      .single(),
+  // Get stats from API
+  const [totalZones, totalPrices, latestPriceDate] = await Promise.all([
+    getZonesCount(),
+    getPricesCount(),
+    getLatestPriceDate(),
   ]);
-
-  const totalZones = zonesResult.count || 0;
-  const totalPrices = pricesResult.count || 0;
-  const latestPriceDate = latestPriceResult.data?.date || 'N/A';
 
   return (
     <div className="space-y-8">
@@ -71,7 +60,7 @@ export default async function NECCDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-gray-900">
-              {latestPriceDate !== 'N/A' 
+              {latestPriceDate 
                 ? new Date(latestPriceDate).toLocaleDateString('en-IN', {
                     day: '2-digit',
                     month: 'short',
@@ -80,7 +69,7 @@ export default async function NECCDashboardPage() {
               }
             </div>
             <p className="text-sm text-gray-500 mt-1">
-              {latestPriceDate !== 'N/A' && new Date(latestPriceDate).toLocaleDateString('en-IN', { year: 'numeric' })}
+              {latestPriceDate && new Date(latestPriceDate).toLocaleDateString('en-IN', { year: 'numeric' })}
             </p>
           </CardContent>
         </Card>

@@ -2,64 +2,26 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { getBlogPosts, deleteBlogPost, type BlogPost } from '@/lib/api/content'
 
-interface BlogPost {
-  id: string
-  title: string
-  slug: string
-  excerpt: string
-  status: 'draft' | 'published' | 'scheduled' | 'archived'
-  published_at: string | null
-  view_count: number
-  author_name: string | null
-  category_id: string | null
-  created_at: string
-  updated_at: string
-}
-
-interface Category {
-  id: string
-  name: string
-  slug: string
-}
+// Types imported from API
 
 export default function BlogPostsPage() {
   const [posts, setPosts] = useState<BlogPost[]>([])
-  const [_categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const supabase = createClient()
-
   useEffect(() => {
     fetchPosts()
-    fetchCategories()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function fetchPosts() {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select(`
-          id,
-          title,
-          slug,
-          excerpt,
-          status,
-          published_at,
-          view_count,
-          created_at,
-          updated_at,
-          category_id
-        `)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setPosts((data as BlogPost[]) || [])
+      const data = await getBlogPosts()
+      setPosts(data || [])
     } catch (error) {
       console.error('Error fetching posts:', error)
     } finally {
@@ -67,31 +29,11 @@ export default function BlogPostsPage() {
     }
   }
 
-  async function fetchCategories() {
-    try {
-      const { data, error } = await supabase
-        .from('blog_categories')
-        .select('id, name, slug')
-        .eq('is_active', true)
-        .order('name')
-
-      if (error) throw error
-      setCategories(data || [])
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }
-
   async function deletePost(id: string) {
     if (!confirm('Are you sure you want to delete this post?')) return
 
     try {
-      const { error } = await supabase
-        .from('blog_posts')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
+      await deleteBlogPost(id)
       alert('Post deleted successfully')
       fetchPosts()
     } catch (error) {

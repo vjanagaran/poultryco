@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
-import { createClient } from '@/lib/supabase/client';
+import * as usersApi from '@/lib/api/users';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface EducationSectionProps {
@@ -129,30 +129,19 @@ function EducationModal({ education, onClose }: { education?: any; onClose: () =
     if (!user) return;
 
     setSaving(true);
-    const supabase = createClient();
 
     try {
       const data = {
-        profile_id: user.id,
         ...formData,
         end_year: formData.is_ongoing ? null : formData.end_year,
       };
 
       if (education) {
         // Update existing
-        const { error } = await supabase
-          .from('profile_education')
-          .update(data)
-          .eq('id', education.id);
-
-        if (error) throw error;
+        await usersApi.updateEducation(education.id, data);
       } else {
         // Create new
-        const { error } = await supabase
-          .from('profile_education')
-          .insert(data);
-
-        if (error) throw error;
+        await usersApi.addEducation(data);
       }
 
       await fetchProfile();
@@ -327,16 +316,9 @@ function DeleteEducationButton({ educationId, institutionName }: { educationId: 
     }
 
     setDeleting(true);
-    const supabase = createClient();
 
     try {
-      const { error } = await supabase
-        .from('profile_education')
-        .delete()
-        .eq('id', educationId);
-
-      if (error) throw error;
-
+      await usersApi.deleteEducation(educationId);
       await fetchProfile();
     } catch (error) {
       console.error('Error deleting education:', error);

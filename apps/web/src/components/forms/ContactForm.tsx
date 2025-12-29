@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Button, Input, Textarea, Alert } from "@/components/ui";
 import { Form, FormRow, FormActions, FormError, Select } from "@/components/ui/Form";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/api/client";
 
 interface FormData {
   name: string;
@@ -36,19 +36,16 @@ export function ContactForm() {
     setError("");
 
     try {
-      const { error: insertError } = await supabase
-        .from('contact_submissions')
-        .insert([{
-          full_name: formData.name,
-          email: formData.email,
-          subject: formData.subject,
-          message: formData.message,
-          inquiry_type: 'general',
-          source: 'contact-page',
-          referrer: typeof window !== 'undefined' ? document.referrer : null,
-        }])
-
-      if (insertError) throw insertError;
+      // Submit via API
+      await apiClient.post('/forms/contact', {
+        fullName: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+        inquiryType: 'general',
+        source: 'contact-page',
+        referrer: typeof window !== 'undefined' ? document.referrer : null,
+      });
       
       setIsSuccess(true);
       

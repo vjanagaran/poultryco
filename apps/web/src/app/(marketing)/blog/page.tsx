@@ -1,10 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { Metadata } from 'next'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { getBlogPosts, getFeaturedPost, getBlogCategories } from '@/lib/api/blog'
 
 const POSTS_PER_PAGE = 12
 
@@ -36,89 +32,26 @@ export const metadata: Metadata = {
   description: 'Latest insights, tips, and news for poultry professionals. Learn from experts and stay updated with industry trends.',
 }
 
-async function getBlogPosts(page: number = 1) {
-  const from = (page - 1) * POSTS_PER_PAGE
-  const to = from + POSTS_PER_PAGE - 1
-
-  const { data: posts, error, count } = await supabase
-    .from('blog_posts')
-    .select(`
-      id,
-      title,
-      slug,
-      excerpt,
-      featured_image,
-      featured_image_alt,
-      published_at,
-      reading_time_minutes,
-      view_count,
-      author_name,
-      category_id,
-      blog_categories (
-        name,
-        slug,
-        color
-      )
-    `, { count: 'exact' })
-    .eq('status', 'published')
-    .lte('published_at', new Date().toISOString())
-    .order('published_at', { ascending: false })
-    .range(from, to)
-
-  if (error) {
-    console.error('Error fetching posts:', error)
-    return { posts: [], totalPages: 0, currentPage: page }
-  }
-
-  const totalPages = count ? Math.ceil(count / POSTS_PER_PAGE) : 0
-
+// Helper to transform API response to match component expectations
+function transformBlogPost(post: any): BlogPost {
   return {
-    posts: posts as BlogPost[],
-    totalPages,
-    currentPage: page,
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt,
+    featured_image: post.featuredImage,
+    featured_image_alt: post.featuredImageAlt,
+    published_at: post.publishedAt,
+    reading_time_minutes: post.readingTimeMinutes,
+    view_count: post.viewCount || 0,
+    author_name: post.authorName,
+    category_id: post.categoryId,
+    blog_categories: post.category ? {
+      name: post.category.name,
+      slug: post.category.slug,
+      color: post.category.color,
+    } : null,
   }
-}
-
-async function getFeaturedPost() {
-  const { data, error } = await supabase
-    .from('blog_posts')
-    .select(`
-      id,
-      title,
-      slug,
-      excerpt,
-      featured_image,
-      featured_image_alt,
-      published_at,
-      reading_time_minutes,
-      author_name,
-      blog_categories (
-        name,
-        slug,
-        color
-      )
-    `)
-    .eq('status', 'published')
-    .eq('is_featured', true)
-    .lte('published_at', new Date().toISOString())
-    .order('featured_order', { ascending: true })
-    .limit(1)
-    .single()
-
-  if (error || !data) return null
-  return data as BlogPost
-}
-
-async function getCategories() {
-  const { data, error } = await supabase
-    .from('blog_categories')
-    .select('id, name, slug, post_count, color')
-    .eq('is_active', true)
-    .order('post_count', { ascending: false })
-    .limit(8)
-
-  if (error) return []
-  return data
 }
 
 export default async function BlogPage({
@@ -128,9 +61,38 @@ export default async function BlogPage({
 }) {
   const params = await searchParams
   const page = parseInt(params.page || '1')
-  const { posts, totalPages, currentPage } = await getBlogPosts(page)
-  const featuredPost = await getFeaturedPost()
-  const categories = await getCategories()
+  
+  try {
+    const [postsData, featuredPostData, categoriesData] = await Promise.all([
+      getBlogPosts({ page, limit: POSTS_PER_PAGE, status: 'published' }),
+      getFeaturedPost(),
+      getBlogCategories(),
+    ])
+    
+    const posts = (postsData.posts || []).map(transformBlogPost)
+    const totalPages = postsData.totalPages
+    const currentPage = postsData.currentPage
+    const featuredPost = featuredPostData ? transformBlogPost(featuredPostData) : null
+    const categories = (categoriesData || []).map((cat: any) => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      post_count: cat.postCount || 0,
+      color: cat.color,
+    }))
+  } catch (error) {
+    console.error('Error fetching blog data:', error)
+    // Return empty state on error
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">Error loading blog posts. Please try again later.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
+import { getContentPillarById, type ContentPillar } from '@/lib/api/marketing';
 import { TagSelector } from '@/components/marketing/TagSelector';
 import { CampaignSelector } from '@/components/marketing/CampaignSelector';
 
@@ -11,7 +12,7 @@ export default function PillarDetailPage() {
   const router = useRouter();
   const params = useParams();
   const pillarId = params.id as string;
-  const supabase = createClient();
+  // Using API client
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,67 +40,39 @@ export default function PillarDetailPage() {
     try {
       setLoading(true);
 
-      // Fetch pillar
-      const { data: pillarData, error: pillarError } = await supabase
-        .from('content_pillars')
-        .select('*')
-        .eq('id', pillarId)
-        .single();
-
-      if (pillarError) throw pillarError;
+      // Fetch pillar via API
+      const pillarData = await getContentPillarById(pillarId);
       setPillar(pillarData);
       setFormData(pillarData);
 
       // Fetch lookup data
-      const [typesRes, topicsRes, segmentsRes, contentTypesRes] = await Promise.all([
-        supabase.from('pillar_types').select('*').order('name'),
-        supabase.from('content_topics').select('id, title').order('title'),
-        supabase.from('stakeholder_segments').select('id, name').order('name'),
-        supabase.from('content_types').select('*').order('name'),
+      const [types, topics, segments, contentTypes] = await Promise.all([
+        apiClient.get('/admin/pillar-types'),
+        apiClient.get('/admin/content-topics'),
+        apiClient.get('/admin/stakeholder-segments'),
+        apiClient.get('/admin/content-types'),
       ]);
 
-      if (typesRes.data) setPillarTypes(typesRes.data);
-      if (topicsRes.data) setTopics(topicsRes.data);
-      if (segmentsRes.data) setSegments(segmentsRes.data);
-      if (contentTypesRes.data) setContentTypes(contentTypesRes.data);
+      setPillarTypes(Array.isArray(types) ? types : []);
+      setTopics(Array.isArray(topics) ? topics : []);
+      setSegments(Array.isArray(segments) ? segments : []);
+      setContentTypes(Array.isArray(contentTypes) ? contentTypes : []);
 
-      // Fetch assigned tags
-      const { data: tagsData } = await supabase
-        .from('pillar_tag_assignments')
-        .select('tag_id')
-        .eq('pillar_id', pillarId);
-
-      if (tagsData) {
-        setAssignedTags(tagsData.map((t) => t.tag_id));
+      // Extract assigned tags and campaign from pillar data
+      if (pillarData.tagIds) {
+        setAssignedTags(pillarData.tagIds);
       }
-
-      // Fetch assigned campaign
-      const { data: campaignData } = await supabase
-        .from('pillar_campaign_assignments')
-        .select('campaign_id')
-        .eq('pillar_id', pillarId)
-        .maybeSingle();
-
-      if (campaignData) {
-        setAssignedCampaign(campaignData.campaign_id);
+      if (pillarData.campaignId) {
+        setAssignedCampaign(pillarData.campaignId);
       }
-
-      // Fetch planned types
-      const { data: plannedData } = await supabase
-        .from('content_pillar_types')
-        .select('*, content_types(name)')
-        .eq('pillar_id', pillarId);
-
-      if (plannedData) setPlannedTypes(plannedData);
+      if (pillarData.plannedTypes) {
+        setPlannedTypes(pillarData.plannedTypes);
+      }
 
       // Fetch content
-      const { data: contentData } = await supabase
-        .from('content')
-        .select('*, content_types(name)')
-        .eq('pillar_id', pillarId)
-        .order('created_at', { ascending: false });
+      const contentData = await apiClient.get(`/admin/content?pillarId=${pillarId}`);
 
-      if (contentData) setContent(contentData);
+      if (contentData) setContent(Array.isArray(contentData) ? contentData : []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -146,47 +119,25 @@ export default function PillarDetailPage() {
   async function handleSave() {
     setSaving(true);
     try {
-      // Update pillar
-      const { error: pillarError } = await supabase
-        .from('content_pillars')
-        .update({
-          title: formData.title,
-          slug: formData.slug,
-          description: formData.description,
-          pillar_type_id: formData.pillar_type_id,
-          research_question: formData.research_question,
-          hypothesis: formData.hypothesis,
-          research_notes: formData.research_notes,
-          key_insights: formData.key_insights,
-          target_url: formData.target_url,
-          focus_keywords: formData.focus_keywords,
-          topic_id: formData.topic_id,
-          segment_id: formData.segment_id,
-          status: formData.status,
-          priority_score: formData.priority_score,
-        })
-        .eq('id', pillarId);
-
-      if (pillarError) throw pillarError;
-
-      // Update tags
-      await supabase.from('pillar_tag_assignments').delete().eq('pillar_id', pillarId);
-      if (assignedTags.length > 0) {
-        const tagAssignments = assignedTags.map((tagId) => ({
-          pillar_id: pillarId,
-          tag_id: tagId,
-        }));
-        await supabase.from('pillar_tag_assignments').insert(tagAssignments);
-      }
-
-      // Update campaign
-      await supabase.from('pillar_campaign_assignments').delete().eq('pillar_id', pillarId);
-      if (assignedCampaign) {
-        await supabase.from('pillar_campaign_assignments').insert({
-          pillar_id: pillarId,
-          campaign_id: assignedCampaign,
-        });
-      }
+      // Update pillar via API
+      await apiClient.put(`/admin/content-pillars/${pillarId}`, {
+        title: formData.title,
+        slug: formData.slug,
+        description: formData.description,
+        pillarTypeId: formData.pillar_type_id,
+        researchQuestion: formData.research_question,
+        hypothesis: formData.hypothesis,
+        researchNotes: formData.research_notes,
+        keyInsights: formData.key_insights,
+        targetUrl: formData.target_url,
+        focusKeywords: formData.focus_keywords,
+        topicId: formData.topic_id,
+        segmentId: formData.segment_id,
+        status: formData.status,
+        priorityScore: formData.priority_score,
+        tagIds: assignedTags,
+        campaignId: assignedCampaign,
+      });
 
       setEditing(false);
       fetchData();
@@ -204,9 +155,7 @@ export default function PillarDetailPage() {
     }
 
     try {
-      const { error } = await supabase.from('content_pillars').delete().eq('id', pillarId);
-
-      if (error) throw error;
+      await apiClient.delete(`/admin/content-pillars/${pillarId}`);
       router.push('/marketing/pillars');
     } catch (error) {
       console.error('Error deleting pillar:', error);

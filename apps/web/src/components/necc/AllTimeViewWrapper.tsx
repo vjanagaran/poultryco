@@ -3,14 +3,7 @@
 import { AllTimeViewSelector, AllTimeView } from './AllTimeViewSelector';
 import { PriceTrendChart } from './PriceTrendChart';
 import { YearOverYearChart } from './YearOverYearChart';
-import { YoYDataPoint, YoYStats } from '@/lib/api/necc-prices';
-
-interface MonthlyAverage {
-  month: string;
-  avg_price: number;
-  min_price: number;
-  max_price: number;
-}
+import { YoYDataPoint, YoYStats, MonthlyAverage } from '@/lib/api/necc-prices';
 
 interface AllTimeViewWrapperProps {
   monthlyData: MonthlyAverage[];
@@ -24,16 +17,29 @@ interface AllTimeViewWrapperProps {
 export function AllTimeViewWrapper({ monthlyData, yoyData, yoyStats, zoneName, currentView, zoneSlug }: AllTimeViewWrapperProps) {
   const view = currentView;
 
+  // Debug: Log data received
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[AllTimeViewWrapper] Data received:', {
+      monthlyDataLength: monthlyData?.length || 0,
+      yoyDataLength: yoyData?.length || 0,
+      view,
+      zoneName,
+    });
+  }
+
   // Transform monthly data for historical chart
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const historicalTrendData = monthlyData.map(m => {
-    const [year, month] = m.month.split('-');
+  const historicalTrendData = (monthlyData || []).map(m => {
+    const [year, month] = (m.month || '').split('-');
+    // Use avg_suggested_price as primary, fallback to avg_price if available
+    const price = m.avg_suggested_price || m.avg_price || 0;
     return {
       date: m.month,
-      price: m.avg_price,
+      price: price,
       label: `${monthNames[parseInt(month) - 1]} ${year}`,
     };
-  }).sort((a, b) => a.date.localeCompare(b.date));
+  }).filter(d => d.price > 0) // Filter out invalid data
+    .sort((a, b) => a.date.localeCompare(b.date));
 
   // Transform YoY data for chart
   const yoyChartData = yoyData.map(d => ({

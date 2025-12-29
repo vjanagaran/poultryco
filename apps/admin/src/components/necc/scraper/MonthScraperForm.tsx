@@ -20,7 +20,8 @@ const MONTHS = [
 ];
 
 const currentYear = new Date().getFullYear();
-const YEARS = Array.from({ length: 6 }, (_, i) => currentYear - i);
+// Years from 2009 to 2026
+const YEARS = Array.from({ length: 2026 - 2009 + 1 }, (_, i) => 2009 + i).reverse();
 
 interface ScrapeResult {
   success: boolean;
@@ -35,24 +36,51 @@ interface ScrapeResult {
   };
 }
 
+interface YearScrapeResult {
+  success: boolean;
+  message: string;
+  year: number;
+  monthsCompleted: number;
+  monthsFailed: number;
+  totalStats: {
+    zonesFound: number;
+    zonesValidated: number;
+    zonesMissing: number;
+    pricesInserted: number;
+    pricesSkipped: number;
+    errors: string[];
+  };
+  monthlyResults: Array<{
+    month: number;
+    success: boolean;
+    message: string;
+    stats: {
+      zonesFound: number;
+      zonesValidated: number;
+      zonesMissing: number;
+      pricesInserted: number;
+      pricesSkipped: number;
+      errors: string[];
+    };
+  }>;
+}
+
 export function MonthScraperForm() {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(currentYear);
   const [loading, setLoading] = useState(false);
+  const [yearLoading, setYearLoading] = useState(false);
   const [result, setResult] = useState<ScrapeResult | null>(null);
+  const [yearResult, setYearResult] = useState<YearScrapeResult | null>(null);
 
   const handleScrape = async () => {
     setLoading(true);
     setResult(null);
+    setYearResult(null);
 
     try {
-      const response = await fetch('/api/admin/necc/scraper/run-month', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ month, year }),
-      });
-
-      const data = await response.json();
+      const { runScraper } = await import('@/lib/api/necc');
+      const data = await runScraper(month, year);
       setResult(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Failed to scrape data';
@@ -70,6 +98,38 @@ export function MonthScraperForm() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleScrapeYear = async () => {
+    setYearLoading(true);
+    setYearResult(null);
+    setResult(null);
+
+    try {
+      const { runYearScraper } = await import('@/lib/api/necc');
+      const data = await runYearScraper(year);
+      setYearResult(data);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to scrape year';
+      setYearResult({
+        success: false,
+        message,
+        year,
+        monthsCompleted: 0,
+        monthsFailed: 12,
+        totalStats: {
+          zonesFound: 0,
+          zonesValidated: 0,
+          zonesMissing: 0,
+          pricesInserted: 0,
+          pricesSkipped: 0,
+          errors: [message],
+        },
+        monthlyResults: [],
+      });
+    } finally {
+      setYearLoading(false);
     }
   };
 
@@ -117,14 +177,26 @@ export function MonthScraperForm() {
           </div>
         </div>
 
-        <Button
-          onClick={handleScrape}
-          disabled={loading}
-          className="w-full"
-          size="lg"
-        >
-          {loading ? '⏳ Scraping...' : '🚀 Scrape Month'}
-        </Button>
+        <div className="grid grid-cols-2 gap-4">
+          <Button
+            onClick={handleScrape}
+            disabled={loading || yearLoading}
+            className="w-full"
+            size="lg"
+          >
+            {loading ? '⏳ Scraping...' : '🚀 Scrape Month'}
+          </Button>
+          
+          <Button
+            onClick={handleScrapeYear}
+            disabled={loading || yearLoading}
+            className="w-full"
+            size="lg"
+            variant="outline"
+          >
+            {yearLoading ? '⏳ Scraping Year...' : '📅 Scrape Entire Year'}
+          </Button>
+        </div>
 
         {result && (
           <div
@@ -177,6 +249,81 @@ export function MonthScraperForm() {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {yearResult && (
+          <div
+            className={`p-4 rounded-lg ${
+              yearResult.success ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'
+            }`}
+          >
+            <p className={`font-semibold mb-2 ${yearResult.success ? 'text-green-700' : 'text-yellow-700'}`}>
+              {yearResult.success ? '✅ ' : '⚠️ '}
+              {yearResult.message}
+            </p>
+
+            <div className="space-y-2 text-sm text-gray-700 mt-3">
+              <div className="flex justify-between">
+                <span>Months Completed:</span>
+                <span className="font-semibold text-green-600">{yearResult.monthsCompleted}/12</span>
+              </div>
+              {yearResult.monthsFailed > 0 && (
+                <div className="flex justify-between">
+                  <span>Months Failed:</span>
+                  <span className="font-semibold text-red-600">{yearResult.monthsFailed}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>Total Prices Inserted:</span>
+                <span className="font-semibold text-blue-600">{yearResult.totalStats.pricesInserted}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total Prices Skipped:</span>
+                <span className="font-semibold text-gray-600">{yearResult.totalStats.pricesSkipped}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Total Zones Found:</span>
+                <span className="font-semibold">{yearResult.totalStats.zonesFound}</span>
+              </div>
+
+              {yearResult.monthlyResults.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="font-semibold mb-2">Monthly Breakdown:</p>
+                  <div className="grid grid-cols-3 gap-2 text-xs max-h-48 overflow-y-auto">
+                    {yearResult.monthlyResults.map((monthResult) => (
+                      <div
+                        key={monthResult.month}
+                        className={`p-2 rounded ${
+                          monthResult.success ? 'bg-green-100' : 'bg-red-100'
+                        }`}
+                      >
+                        <div className="font-semibold">
+                          {MONTHS.find(m => m.value === monthResult.month)?.label || `Month ${monthResult.month}`}
+                        </div>
+                        <div className="text-xs mt-1">
+                          {monthResult.success ? '✅' : '❌'} {monthResult.stats.pricesInserted} inserted
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {yearResult.totalStats.errors.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-red-200">
+                  <p className="font-semibold text-red-700 mb-1">Errors ({yearResult.totalStats.errors.length}):</p>
+                  <ul className="list-disc list-inside text-red-600 text-xs max-h-32 overflow-y-auto">
+                    {yearResult.totalStats.errors.slice(0, 10).map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                    {yearResult.totalStats.errors.length > 10 && (
+                      <li>... and {yearResult.totalStats.errors.length - 10} more errors</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </CardContent>

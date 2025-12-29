@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { Suspense } from 'react';
-import LoginForm from '@/components/auth/LoginForm';
+import AuthForm from '@/components/auth/AuthForm';
 
 export const metadata: Metadata = {
   title: 'Login | PoultryCo',
@@ -14,32 +14,17 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Welcome Back
+            Welcome to PoultryCo
           </h1>
           <p className="text-lg text-gray-600">
-            Sign in to your PoultryCo account
+            Connect with poultry professionals worldwide
           </p>
         </div>
 
-        {/* Login Form */}
+        {/* Unified Auth Form */}
         <Suspense fallback={<div className="bg-white rounded-2xl shadow-xl p-8 text-center">Loading...</div>}>
-          <LoginForm />
+          <AuthForm />
         </Suspense>
-
-        {/* Footer */}
-        <div className="mt-6 text-center space-y-3">
-          <p className="text-sm text-gray-600">
-            Don&apos;t have an account?{' '}
-            <a href="/register" className="font-medium text-primary hover:text-primary/80">
-              Join PoultryCo
-            </a>
-          </p>
-          <p className="text-sm text-gray-600">
-            <a href="/forgot-password" className="font-medium text-primary hover:text-primary/80">
-              Forgot your password?
-            </a>
-          </p>
-        </div>
       </div>
     </div>
   );

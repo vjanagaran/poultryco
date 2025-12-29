@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PriceTable } from "@/components/necc/prices/PriceTable";
+import { getPrices, getAllZones } from "@/lib/api/necc";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,27 +17,37 @@ interface Props {
 
 export default async function PricesPage({ searchParams }: Props) {
   const params = await searchParams;
-  const supabase = await createClient();
-
-  // Build query
-  let query = supabase
-    .from('necc_prices')
-    .select('*, necc_zones(name, slug)')
-    .order('date', { ascending: false })
-    .limit(100);
-
-  if (params.date) {
-    query = query.eq('date', params.date);
+  
+  let prices: any[] = [];
+  let zones: any[] = [];
+  
+  try {
+    [prices, zones] = await Promise.all([
+      getPrices({
+        date: params.date,
+        zoneId: params.zone,
+        limit: 100,
+      }),
+      getAllZones(),
+    ]);
+    
+    // Sort prices by date descending
+    prices.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    // Sort zones by name
+    zones.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Transform prices to match expected format
+    prices = prices.map(p => ({
+      ...p,
+      necc_zones: p.zone ? {
+        name: p.zone.name,
+        slug: p.zone.slug,
+      } : null,
+    }));
+  } catch (error) {
+    console.error('Error fetching prices:', error);
   }
-
-  if (params.zone) {
-    query = query.eq('zone_id', params.zone);
-  }
-
-  const [pricesResult, zonesResult] = await Promise.all([
-    query,
-    supabase.from('necc_zones').select('id, name').order('name'),
-  ]);
 
   return (
     <div className="space-y-6">
@@ -61,8 +71,8 @@ export default async function PricesPage({ searchParams }: Props) {
 
       {/* Price Table */}
       <PriceTable 
-        prices={pricesResult.data || []} 
-        zones={zonesResult.data || []}
+        prices={prices || []} 
+        zones={zones || []}
       />
     </div>
   );

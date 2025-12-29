@@ -2,26 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getStakeholderSegments, type StakeholderSegment } from '@/lib/api/marketing';
 
-interface StakeholderSegment {
-  id: string;
-  name: string;
-  description: string | null;
-  segment_size_estimate: number | null;
-  key_characteristics: string | null;
-  communication_preferences: string | null;
-  priority_level: number;
-  is_active: boolean;
-  created_at: string;
-}
+// Types imported from API
 
 export default function CustomerSegmentsPage() {
   const [segments, setSegments] = useState<StakeholderSegment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-
-  const supabase = createClient();
 
   useEffect(() => {
     fetchSegments();
@@ -29,12 +17,8 @@ export default function CustomerSegmentsPage() {
 
   async function fetchSegments() {
     try {
-      const { data, error } = await supabase
-        .from('stakeholder_segments')
-        .select('*')
-        .order('priority_level', { ascending: false });
-
-      if (error) throw error;
+      setLoading(true);
+      const data = await getStakeholderSegments();
       setSegments(data || []);
     } catch (error) {
       console.error('Error fetching segments:', error);
@@ -111,7 +95,7 @@ export default function CustomerSegmentsPage() {
             High Priority
           </div>
           <div className="text-2xl font-bold text-purple-900">
-            {segments.filter((s) => s.priority_level >= 8).length}
+            {segments.filter((s) => (s.priority_level ?? 0) >= 8).length}
           </div>
         </div>
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
@@ -191,11 +175,11 @@ export default function CustomerSegmentsPage() {
                     <div className="w-24 bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-poultryco-green rounded-full h-2"
-                        style={{ width: `${segment.priority_level * 10}%` }}
+                        style={{ width: `${(segment.priority_level ?? 0) * 10}%` }}
                       ></div>
                     </div>
                     <span className="font-medium text-gray-900">
-                      {segment.priority_level}/10
+                      {segment.priority_level ?? 0}/10
                     </span>
                   </div>
                 </div>
@@ -210,7 +194,7 @@ export default function CustomerSegmentsPage() {
                 )}
 
                 <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-200">
-                  <span>Created {new Date(segment.created_at).toLocaleDateString()}</span>
+                  <span>Created {segment.created_at ? new Date(segment.created_at).toLocaleDateString() : 'N/A'}</span>
                   <span className="text-poultryco-green hover:underline">View Details →</span>
                 </div>
               </div>

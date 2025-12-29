@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { getCurrentSession, getCurrentUser } from '@/lib/auth/cognito';
+import { apiClient } from '@/lib/api/client';
 
 function generateSlug(fullName: string): string {
   return fullName
@@ -17,139 +17,49 @@ export async function GET(request: Request) {
   const next = requestUrl.searchParams.get('next') || '/dashboard';
 
   if (code) {
-    const cookieStore = await cookies();
-    const supabase = await createClient(cookieStore);
-    const { data: { session }, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (sessionError) {
-      console.error('Session exchange error:', sessionError);
-      return NextResponse.redirect(new URL('/login?error=auth_failed', request.url));
-    }
-
-    if (session?.user) {
-      // Check if profile exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id, profile_photo_url')
-        .eq('id', session.user.id)
-        .single();
-
-      // Extract OAuth metadata
-      const metadata = session.user.user_metadata;
+    try {
+      // Exchange authorization code for tokens
+      // Cognito handles this automatically via the redirect
+      // We just need to validate the session
+      const session = await getCurrentSession();
       
-      // Get profile photo (Google: picture, LinkedIn: picture or avatar_url)
-      const profilePhoto = metadata?.picture || 
-                          metadata?.avatar_url || 
-                          null;
-
-      // Log what we got from OAuth for debugging
-      console.log('OAuth metadata:', {
-        provider: metadata?.provider,
-        has_picture: !!metadata?.picture,
-        has_avatar_url: !!metadata?.avatar_url,
-        picture_url: profilePhoto,
-        name: metadata?.name || metadata?.full_name,
-        email: session.user.email
-      });
-
-      // If no profile exists, create one (fallback for OAuth users)
-      if (!existingProfile) {
+      if (session && session.isValid()) {
+        const idToken = session.getIdToken().getJwtToken();
+        
+        // Validate token with API and get app JWT
         try {
-          // Get full name (Google: name, LinkedIn: full_name)
-          const fullName = metadata?.full_name ||
-                          metadata?.name ||
-                          session.user.email?.split('@')[0] ||
-                          'User';
-          
-          // Get phone if available
-          const phone = session.user.phone || 
-                       metadata?.phone || 
-                       '';
-          
-          const phoneVerified = session.user.phone_confirmed_at ? true : false;
-          
-          // Generate unique slug
-          const baseSlug = generateSlug(fullName);
-          let slug = baseSlug;
-          let counter = 1;
-
-          // Make slug unique
-          while (true) {
-            const { data: existing } = await supabase
-              .from('profiles')
-              .select('profile_slug')
-              .eq('profile_slug', slug)
-              .single();
-
-            if (!existing) break;
-            
-            slug = `${baseSlug}-${counter}`;
-            counter++;
-          }
-
-          console.log('Creating profile with data:', {
-            user_id: session.user.id,
-            full_name: fullName,
-            slug: slug,
-            profile_photo: profilePhoto,
-            phone: phone
+          const result = await apiClient.post<{
+            accessToken: string;
+            user: {
+              id: string;
+              email: string;
+              profile?: any;
+            };
+          }>('/auth/cognito/validate', {
+            token: idToken,
           });
 
-          // Create profile using RPC function with all available data
-          const { data: result, error: rpcError } = await supabase
-            .rpc('create_profile_for_user', {
-              p_user_id: session.user.id,
-              p_full_name: fullName,
-              p_email: session.user.email || '',
-              p_slug: slug,
-              p_profile_photo_url: profilePhoto,
-              p_phone: phone,
-              p_phone_verified: phoneVerified,
-            });
+          // Store app token
+          apiClient.setToken(result.accessToken);
 
-          if (rpcError) {
-            console.error('RPC Error creating profile:', rpcError);
-          }
-
-          if (!result || result.success === false) {
-            console.error('Profile creation failed:', result);
-          } else {
-            console.log('Profile created successfully for OAuth user:', result);
-          }
-        } catch (error) {
-          console.error('Error creating profile for OAuth user:', error);
+          // If profile doesn't exist, it will be created by the API
+          // The API's validateCognitoToken method handles profile creation
+          
+          return NextResponse.redirect(new URL(next, request.url));
+        } catch (error: any) {
+          console.error('Token validation error:', error);
+          return NextResponse.redirect(new URL(`/login?error=auth_failed`, request.url));
         }
       } else {
-        // Profile exists, but update photo if missing and OAuth has one
-        if (profilePhoto && !existingProfile.profile_photo_url) {
-          try {
-            console.log('Updating existing profile with OAuth photo:', profilePhoto);
-            
-            // Calculate new profile strength (base 25 + name 15 + photo 20 = 60)
-            const newStrength = 60; // Will be recalculated properly later
-
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({ 
-                profile_photo_url: profilePhoto,
-                profile_strength: newStrength,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', session.user.id);
-
-            if (updateError) {
-              console.error('Error updating profile photo:', updateError);
-            } else {
-              console.log('Profile photo updated successfully');
-            }
-          } catch (error) {
-            console.error('Error updating existing profile:', error);
-          }
-        }
+        // No valid session, redirect to login
+        return NextResponse.redirect(new URL('/login?error=no_session', request.url));
       }
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      return NextResponse.redirect(new URL('/login?error=auth_failed', request.url));
     }
   }
 
-  return NextResponse.redirect(new URL(next, request.url));
+  // No code parameter, redirect to login
+  return NextResponse.redirect(new URL('/login', request.url));
 }
-

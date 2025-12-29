@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
 import { ZoneForm } from "@/components/necc/zones/ZoneForm";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
+import { getZoneById } from "@/lib/api/necc";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -13,15 +13,9 @@ interface Props {
 
 export default async function EditZonePage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createClient();
+  const zone = await getZoneById(id);
 
-  const { data: zone, error } = await supabase
-    .from('necc_zones')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error || !zone) {
+  if (!zone) {
     notFound();
   }
 
@@ -39,7 +33,11 @@ export default async function EditZonePage({ params }: Props) {
       </div>
 
       {/* Form */}
-      <ZoneForm zone={zone} />
+      <ZoneForm zone={{
+        ...zone,
+        sorting: zone.sort_order,
+        status: zone.is_active,
+      } as any} />
     </div>
   );
 }

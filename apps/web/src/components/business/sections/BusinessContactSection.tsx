@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { BusinessProfile } from '../BusinessProfileView';
 import { AssignContactPersonModal } from '../modals/AssignContactPersonModal';
 
@@ -25,8 +25,8 @@ export function BusinessContactSection({ business, isOwner }: BusinessContactSec
 
     setRemovingContact(contactId);
     try {
-      const supabase = createClient();
-      await supabase.from('business_contact_persons').delete().eq('id', contactId);
+      // TODO: Implement remove contact person endpoint
+      await apiClient.delete(`/businesses/${business.id}/contact-persons/${contactId}`);
       router.refresh();
     } catch (error) {
       console.error('Error removing contact:', error);
