@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { apiClient } from './client';
 
 export interface NECCZone {
   id: string;
@@ -11,8 +10,8 @@ export interface NECCZone {
   state: string | null;
   district: string | null;
   city: string | null;
-  sorting: number;
-  status: boolean;
+  sort_order: number;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -21,54 +20,35 @@ export interface NECCZone {
  * Get all active zones
  */
 export async function getAllZones(): Promise<NECCZone[]> {
-  const supabase = await createClient(await cookies());
-  const { data, error } = await supabase
-    .from('necc_zones')
-    .select('*')
-    .eq('status', true)
-    .order('sorting', { ascending: true })
-    .order('name', { ascending: true });
-
-  if (error) throw error;
-  return data || [];
+  return apiClient.get<NECCZone[]>('/necc/zones');
 }
 
 /**
  * Get zone by ID
  */
 export async function getZoneById(zoneId: string): Promise<NECCZone | null> {
-  const supabase = await createClient(await cookies());
-  const { data, error } = await supabase
-    .from('necc_zones')
-    .select('*')
-    .eq('id', zoneId)
-    .eq('status', true)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null; // Not found
+  try {
+    return await apiClient.get<NECCZone>(`/necc/zones/${zoneId}`);
+  } catch (error: any) {
+    if (error.statusCode === 404 || error.statusCode === 400) {
+      return null;
+    }
     throw error;
   }
-  return data;
 }
 
 /**
  * Get zone by slug
  */
 export async function getZoneBySlug(slug: string): Promise<NECCZone | null> {
-  const supabase = await createClient(await cookies());
-  const { data, error } = await supabase
-    .from('necc_zones')
-    .select('*')
-    .eq('slug', slug)
-    .eq('status', true)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null; // Not found
+  try {
+    return await apiClient.get<NECCZone>(`/necc/zones/slug/${encodeURIComponent(slug)}`);
+  } catch (error: any) {
+    if (error.statusCode === 404 || error.statusCode === 400) {
+      return null;
+    }
     throw error;
   }
-  return data;
 }
 
 /**
@@ -77,29 +57,13 @@ export async function getZoneBySlug(slug: string): Promise<NECCZone | null> {
 export async function getZonesByType(
   zoneType: 'production_center' | 'consumption_center'
 ): Promise<NECCZone[]> {
-  const supabase = await createClient(await cookies());
-  const { data, error } = await supabase
-    .from('necc_zones')
-    .select('*')
-    .eq('zone_type', zoneType)
-    .eq('status', true)
-    .order('name', { ascending: true });
-
-  if (error) throw error;
-  return data || [];
+  return apiClient.get<NECCZone[]>(`/necc/zones/type/${zoneType}`);
 }
 
 /**
  * Get zones count
  */
 export async function getZonesCount(): Promise<number> {
-  const supabase = await createClient(await cookies());
-  const { count, error } = await supabase
-    .from('necc_zones')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', true);
-
-  if (error) throw error;
-  return count || 0;
+  const result = await apiClient.get<{ count: number }>('/necc/zones/count');
+  return result.count;
 }
-

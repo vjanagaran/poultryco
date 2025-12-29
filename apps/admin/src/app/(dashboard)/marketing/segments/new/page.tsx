@@ -3,11 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { createStakeholderSegment, type StakeholderSegment } from '@/lib/api/marketing';
 
 export default function NewSegmentPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -32,26 +31,17 @@ export default function NewSegmentPage() {
     setSaving(true);
 
     try {
-      const { data: userData } = await supabase.auth.getUser();
-
-      const { data, error: insertError } = await supabase
-        .from('stakeholder_segments')
-        .insert({
-          name: formData.name,
-          description: formData.description || null,
-          segment_size_estimate: formData.segment_size_estimate
-            ? parseInt(formData.segment_size_estimate)
-            : null,
-          key_characteristics: formData.key_characteristics || null,
-          communication_preferences: formData.communication_preferences || null,
-          priority_level: formData.priority_level,
-          is_active: formData.is_active,
-          created_by: userData.user?.id,
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
+      await createStakeholderSegment({
+        name: formData.name,
+        description: formData.description || undefined,
+        segment_size_estimate: formData.segment_size_estimate
+          ? parseInt(formData.segment_size_estimate)
+          : undefined,
+        key_characteristics: formData.key_characteristics || undefined,
+        communication_preferences: formData.communication_preferences || undefined,
+        priority_level: formData.priority_level,
+        is_active: formData.is_active,
+      });
 
       router.push('/marketing/segments');
     } catch (err: any) {

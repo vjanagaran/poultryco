@@ -2,25 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getContentIdeas, type ContentIdea } from '@/lib/api/marketing';
 
-interface ContentIdea {
-  id: string;
-  title: string;
-  description: string | null;
-  idea_source: string | null;
-  format: string | null;
-  estimated_effort: string | null;
-  estimated_impact: string | null;
-  priority_score: number;
-  status: string;
-  assigned_to: string | null;
-  due_date: string | null;
-  created_at: string;
-  content_topics?: { title: string };
-  stakeholder_segments?: { name: string };
-  content_pillars?: { title: string };
-}
+// Types imported from API
 
 const STATUS_COLORS: Record<string, string> = {
   captured: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -50,23 +34,14 @@ export default function ContentIdeasPage() {
   const [filterEffort, setFilterEffort] = useState<string>('all');
   const [filterImpact, setFilterImpact] = useState<string>('all');
 
-  const supabase = createClient();
-
   useEffect(() => {
     fetchIdeas();
   }, []);
 
   async function fetchIdeas() {
     try {
-      const { data, error } = await supabase
-        .from('content_ideas')
-        .select(
-          '*, content_topics(title), stakeholder_segments(name), content_pillars(title)'
-        )
-        .order('priority_score', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      setLoading(true);
+      const data = await getContentIdeas();
       setIdeas(data || []);
     } catch (error) {
       console.error('Error fetching ideas:', error);
@@ -243,7 +218,7 @@ export default function ContentIdeasPage() {
                         <div
                           key={i}
                           className={`w-1.5 h-1.5 rounded-full ${
-                            i < idea.priority_score ? 'bg-amber-400' : 'bg-gray-200'
+                            i < (idea.priority_score ?? 0) ? 'bg-amber-400' : 'bg-gray-200'
                           }`}
                         />
                       ))}
@@ -285,7 +260,7 @@ export default function ContentIdeasPage() {
                     {idea.content_topics && (
                       <div className="flex items-center gap-1">
                         <span className="text-gray-500">Topic:</span>
-                        <span className="text-gray-900">{idea.content_topics.title}</span>
+                        <span className="text-gray-900">{idea.content_topics.title || idea.content_topics.name}</span>
                       </div>
                     )}
                     {idea.stakeholder_segments && (

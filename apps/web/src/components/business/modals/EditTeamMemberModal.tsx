@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 
 interface EditTeamMemberModalProps {
   isOpen: boolean;
@@ -60,15 +60,8 @@ export function EditTeamMemberModal({
 
     setRemoving(true);
     try {
-      const supabase = createClient();
-
-      // Delete team member
-      const { error } = await supabase
-        .from('business_team_members')
-        .delete()
-        .eq('id', member.id);
-
-      if (error) throw error;
+      // Delete team member via API
+      await apiClient.delete(`/businesses/${businessId}/team/${member.id}`);
 
       onMemberUpdated();
       onClose();
@@ -86,26 +79,18 @@ export function EditTeamMemberModal({
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // Update team member
-      const { error } = await supabase
-        .from('business_team_members')
-        .update({
-          role_title: formData.role_title,
-          department: formData.department || null,
-          employment_type: formData.employment_type,
-          is_admin: formData.is_admin,
-          can_post_updates: formData.can_post_updates,
-          can_manage_products: formData.can_manage_products,
-          can_manage_jobs: formData.can_manage_jobs,
-          can_view_analytics: formData.can_view_analytics,
-          show_on_page: formData.show_on_page,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', member.id);
-
-      if (error) throw error;
+      // Update team member via API
+      await apiClient.put(`/businesses/${businessId}/team/${member.id}`, {
+        roleTitle: formData.role_title,
+        department: formData.department || null,
+        employmentType: formData.employment_type,
+        isAdmin: formData.is_admin,
+        canPostUpdates: formData.can_post_updates,
+        canManageProducts: formData.can_manage_products,
+        canManageJobs: formData.can_manage_jobs,
+        canViewAnalytics: formData.can_view_analytics,
+        showOnPage: formData.show_on_page,
+      });
 
       onMemberUpdated();
       onClose();

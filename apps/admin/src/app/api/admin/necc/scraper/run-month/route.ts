@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { scrapeNECCMonth } from '@/lib/scraper/necc-month-scraper';
+import { runScraper } from '@/lib/api/necc';
 
 export const maxDuration = 60; // 60 seconds timeout
 
@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Run scraper
-    const result = await scrapeNECCMonth(month, year);
+    // Run scraper via API
+    const result = await runScraper(month, year);
 
     return NextResponse.json(result);
   } catch (error: unknown) {

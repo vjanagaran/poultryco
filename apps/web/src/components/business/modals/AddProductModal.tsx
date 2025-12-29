@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { uploadToStorage } from '@/lib/storageUtils';
 
 interface AddProductModalProps {
@@ -75,27 +75,18 @@ export function AddProductModal({ isOpen, onClose, businessId, onProductAdded }:
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      // Create product
-      const { data: product, error: productError } = await supabase
-        .from('business_products')
-        .insert({
-          business_profile_id: businessId,
-          product_name: formData.product_name,
-          description: formData.description || null,
-          category: formData.category || null,
-          sub_category: formData.sub_category || null,
-          price_range: formData.price_range || null,
-          unit: formData.unit || null,
-          min_order_quantity: formData.min_order_quantity || null,
-          availability_status: formData.availability_status,
-          is_featured: formData.is_featured,
-        })
-        .select()
-        .single();
-
-      if (productError) throw productError;
+      // Create product via API
+      const product = await apiClient.post(`/businesses/${businessId}/products`, {
+        name: formData.product_name,
+        description: formData.description || null,
+        category: formData.category || null,
+        subCategory: formData.sub_category || null,
+        priceRange: formData.price_range || null,
+        unit: formData.unit || null,
+        minOrderQuantity: formData.min_order_quantity || null,
+        availabilityStatus: formData.availability_status,
+        isFeatured: formData.is_featured,
+      });
 
       // Upload images
       if (uploadingImages.length > 0) {
@@ -104,11 +95,11 @@ export function AddProductModal({ isOpen, onClose, businessId, onProductAdded }:
           const result = await uploadToStorage(file, `products/${businessId}`, product.id);
 
           if (result.success && result.url) {
-            await supabase.from('product_images').insert({
-              product_id: product.id,
-              image_url: result.url,
-              is_primary: i === 0, // First image is primary
-              sort_order: i,
+            // Add image via API
+            await apiClient.post(`/businesses/${businessId}/products/${product.id}/images`, {
+              imageUrl: result.url,
+              isPrimary: i === 0, // First image is primary
+              sortOrder: i,
             });
           }
         }

@@ -1,15 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { confirmPasswordReset } from '@/lib/auth/cognito';
 
 export default function ResetPasswordForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
+    email: searchParams.get('email') || '',
+    code: '',
     password: '',
     confirmPassword: '',
   });
@@ -32,14 +35,22 @@ export default function ResetPasswordForm() {
       return;
     }
 
+    if (!formData.email || !formData.code) {
+      setError('Email and verification code are required');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const supabase = createClient();
+      const result = await confirmPasswordReset(
+        formData.email,
+        formData.code,
+        formData.password
+      );
 
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: formData.password,
-      });
-
-      if (updateError) throw updateError;
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to reset password');
+      }
 
       setSuccess(true);
 
@@ -110,6 +121,38 @@ export default function ResetPasswordForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            Email Address
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            placeholder="you@example.com"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="code" className="block text-sm font-medium text-gray-700 mb-1">
+            Verification Code
+          </label>
+          <input
+            id="code"
+            name="code"
+            type="text"
+            required
+            value={formData.code}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            placeholder="Enter code from email"
+          />
+        </div>
+
+        <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             New Password
           </label>
@@ -152,4 +195,3 @@ export default function ResetPasswordForm() {
     </div>
   );
 }
-

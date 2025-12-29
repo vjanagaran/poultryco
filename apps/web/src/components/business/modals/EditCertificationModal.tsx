@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { uploadToStorage } from '@/lib/storageUtils';
 
 interface EditCertificationModalProps {
@@ -78,13 +78,7 @@ export function EditCertificationModal({
 
     setDeleting(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('business_certifications')
-        .delete()
-        .eq('id', certification.id);
-
-      if (error) throw error;
+      await apiClient.delete(`/businesses/${businessId}/certifications/${certification.id}`);
 
       onCertificationUpdated();
       onClose();
@@ -102,7 +96,6 @@ export function EditCertificationModal({
     setLoading(true);
 
     try {
-      const supabase = createClient();
       let certificateFileUrl = certification.certificate_file_url;
 
       // Upload new file if selected
@@ -115,23 +108,17 @@ export function EditCertificationModal({
         setUploadingFile(false);
       }
 
-      // Update certification
-      const { error } = await supabase
-        .from('business_certifications')
-        .update({
-          certification_name: formData.certification_name,
-          certification_type: formData.certification_type,
-          issuing_authority: formData.issuing_authority || null,
-          certificate_number: formData.certificate_number || null,
-          issue_date: formData.issue_date || null,
-          expiry_date: formData.expiry_date || null,
-          description: formData.description || null,
-          certificate_file_url: certificateFileUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', certification.id);
-
-      if (error) throw error;
+      // Update certification via API
+      await apiClient.put(`/businesses/${businessId}/certifications/${certification.id}`, {
+        name: formData.certification_name,
+        certificationType: formData.certification_type,
+        issuingAuthority: formData.issuing_authority || null,
+        certificateNumber: formData.certificate_number || null,
+        issueDate: formData.issue_date || null,
+        expiryDate: formData.expiry_date || null,
+        description: formData.description || null,
+        certificateFileUrl: certificateFileUrl,
+      });
 
       onCertificationUpdated();
       onClose();

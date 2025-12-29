@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getSocialMediaKpis, getPlatformKpis } from '@/lib/api/marketing';
 import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
 
 interface SocialMediaKPI {
@@ -30,14 +30,13 @@ export default function KPIDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('week'); // week, month, all
 
-  const supabase = createClient();
-
   useEffect(() => {
     fetchKPIs();
   }, [dateRange]);
 
   async function fetchKPIs() {
     try {
+      setLoading(true);
       const today = new Date();
       let startDate;
 
@@ -50,26 +49,16 @@ export default function KPIDashboardPage() {
       }
 
       // Fetch social media KPIs
-      const { data: social, error: socialError } = await supabase
-        .from('social_media_kpis')
-        .select(`
-          *,
-          channel:marketing_channels(name, platform)
-        `)
-        .gte('metric_date', format(startDate, 'yyyy-MM-dd'))
-        .order('metric_date', { ascending: false });
+      const social = await getSocialMediaKpis({
+        startDate: format(startDate, 'yyyy-MM-dd'),
+      });
 
-      if (socialError) throw socialError;
-      setSocialKPIs(social as any || []);
+      setSocialKPIs(social || []);
 
       // Fetch platform KPIs
-      const { data: platform, error: platformError } = await supabase
-        .from('platform_kpis')
-        .select('*')
-        .gte('metric_date', format(startDate, 'yyyy-MM-dd'))
-        .order('metric_date', { ascending: false });
-
-      if (platformError) throw platformError;
+      const platform = await getPlatformKpis({
+        startDate: format(startDate, 'yyyy-MM-dd'),
+      });
       setPlatformKPIs(platform || []);
     } catch (error) {
       console.error('Error fetching KPIs:', error);

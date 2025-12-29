@@ -1,38 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-
-interface Profile {
-  id: string;
-  full_name: string;
-  profile_slug: string;
-  profile_photo_url: string | null;
-  cover_photo_url: string | null;
-  headline: string | null;
-  bio: string | null;
-  location_state: string;
-  location_district: string | null;
-  location_city: string | null;
-  country: string;
-  phone: string;
-  phone_verified: boolean;
-  email: string;
-  email_verified: boolean;
-  whatsapp_number: string | null;
-  profile_strength: number;
-  verification_level: string;
-  is_public: boolean;
-  last_active_at: string | null;
-  last_profile_update_at: string | null;
-  created_at: string;
-  updated_at: string;
-  roles?: any[];
-  experiences?: any[];
-  education?: any[];
-  skills?: any[];
-}
+import * as usersApi from '@/lib/api/users';
+import type { Profile } from '@/lib/api/users';
 
 interface ProfileContextType {
   profile: Profile | null;
@@ -49,57 +20,35 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
-  const supabase = createClient();
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          roles:profile_roles(*),
-          experiences:profile_experience(*),
-          education:profile_education(*),
-          skills:profile_skills(
-            id,
-            profile_id,
-            skill_id,
-            proficiency_level,
-            years_of_experience,
-            sort_order,
-            created_at,
-            skills(id, skill_name, skill_category)
-          )
-        `)
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-
-      setProfile(data as Profile);
+      const profileData = await usersApi.getCurrentProfile();
+      setProfile(profileData);
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
     }
-  }, [user, supabase]);
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    } else {
+      setProfile(null);
+    }
+  }, [user, fetchProfile]);
 
   const updateProfile = async (data: Partial<Profile>) => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update(data)
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      // Refetch profile
-      await fetchProfile();
+      const updated = await usersApi.updateProfile(data);
+      setProfile(updated);
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
@@ -107,21 +56,12 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addRole = async (roleType: string) => {
-    if (!user) return;
+    if (!user || !profile) return;
 
     try {
-      const { error } = await supabase
-        .from('profile_roles')
-        .insert({
-          profile_id: user.id,
-          role_type: roleType,
-          is_active: true,
-          is_primary: profile?.roles?.length === 0,
-        });
-
-      if (error) throw error;
-
-      // Refetch profile
+      // TODO: Implement role API endpoint in backend
+      // For now, this is a placeholder
+      // await usersApi.addRole(roleType);
       await fetchProfile();
     } catch (error) {
       console.log('Error adding role:', error);
@@ -131,14 +71,9 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
 
   const removeRole = async (roleId: string) => {
     try {
-      const { error } = await supabase
-        .from('profile_roles')
-        .delete()
-        .eq('id', roleId);
-
-      if (error) throw error;
-
-      // Refetch profile
+      // TODO: Implement role API endpoint in backend
+      // For now, this is a placeholder
+      // await usersApi.removeRole(roleId);
       await fetchProfile();
     } catch (error) {
       console.error('Error removing role:', error);
@@ -169,4 +104,3 @@ export function useProfile() {
   }
   return context;
 }
-

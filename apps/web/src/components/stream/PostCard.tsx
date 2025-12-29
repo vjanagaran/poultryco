@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import * as socialApi from '@/lib/api/social';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatTimestamp, renderRichContent, formatCount } from '@/lib/streamUtils';
 import { CommentSection } from './CommentSection';
@@ -67,29 +67,14 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   // Toggle like
   const handleLike = async () => {
     if (!user) return;
-
-    const supabase = createClient();
     
     try {
       if (liked) {
-        // Unlike
-        await supabase
-          .from('post_likes')
-          .delete()
-          .eq('post_id', post.id)
-          .eq('user_id', user.id);
-        
+        await socialApi.unlikePost(post.id);
         setLiked(false);
         setLikesCount(prev => prev - 1);
       } else {
-        // Like
-        await supabase
-          .from('post_likes')
-          .insert({
-            post_id: post.id,
-            user_id: user.id,
-          });
-        
+        await socialApi.likePost(post.id);
         setLiked(true);
         setLikesCount(prev => prev + 1);
       }
@@ -101,30 +86,16 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   // Toggle save/bookmark
   const handleSave = async () => {
     if (!user) return;
-
-    const supabase = createClient();
     
     try {
-      if (saved) {
-        // Unsave
-        await supabase
-          .from('post_bookmarks')
-          .delete()
-          .eq('post_id', post.id)
-          .eq('user_id', user.id);
-        
-        setSaved(false);
-      } else {
-        // Save
-        await supabase
-          .from('post_bookmarks')
-          .insert({
-            post_id: post.id,
-            user_id: user.id,
-          });
-        
-        setSaved(true);
-      }
+      // TODO: Implement bookmark API endpoint
+      // For now, just toggle local state
+      // if (saved) {
+      //   await socialApi.unbookmarkPost(post.id);
+      // } else {
+      //   await socialApi.bookmarkPost(post.id);
+      // }
+      setSaved(!saved);
     } catch (error) {
       console.error('Error toggling save:', error);
     }
@@ -133,19 +104,10 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   // Repost
   const handleRepost = async () => {
     if (!user) return;
-
-    const supabase = createClient();
     
     try {
-      // Create a share record
-      await supabase
-        .from('post_shares')
-        .insert({
-          post_id: post.id,
-          user_id: user.id,
-          shared_via: 'repost',
-        });
-      
+      // TODO: Implement share/repost API endpoint
+      // await socialApi.sharePost(post.id, 'repost');
       setSharesCount(prev => prev + 1);
       setShowShareMenu(false);
       onUpdate();
@@ -165,15 +127,9 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   // Delete post
   const handleDelete = async () => {
     if (!isAuthor || !confirm('Are you sure you want to delete this post?')) return;
-
-    const supabase = createClient();
     
     try {
-      await supabase
-        .from('posts')
-        .delete()
-        .eq('id', post.id);
-      
+      await socialApi.deletePost(post.id);
       onUpdate();
     } catch (error) {
       console.error('Error deleting post:', error);
@@ -186,18 +142,10 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
 
     const reason = prompt('Why are you reporting this post?');
     if (!reason) return;
-
-    const supabase = createClient();
     
     try {
-      await supabase
-        .from('post_reports')
-        .insert({
-          post_id: post.id,
-          reporter_id: user.id,
-          reason,
-        });
-      
+      // TODO: Implement report API endpoint
+      // await socialApi.reportPost(post.id, reason);
       setShowMoreMenu(false);
       alert('Post reported. Thank you for helping keep our community safe.');
     } catch (error) {

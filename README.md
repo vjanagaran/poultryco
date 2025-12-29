@@ -25,7 +25,7 @@ Empower poultry professionals worldwide with the tools and network they need to 
 
 ### 10 Core Modules (All Live on Web ✅)
 
-1. **Authentication** - Email, Google, LinkedIn OAuth
+1. **Authentication** - OTP-based (Email, SMS, WhatsApp)
 2. **Profiles** - Personal, Business, Organization profiles
 3. **Network** - Connections (2-way) & Following (1-way)
 4. **Discover** - Find members, businesses, orgs, products, jobs, events
@@ -64,10 +64,11 @@ Empower poultry professionals worldwide with the tools and network they need to 
 - **Deployment:** Vercel
 
 ### Backend
-- **Database:** Supabase (PostgreSQL)
-- **Authentication:** Supabase Auth
-- **Storage:** Supabase Storage + CDN (cdn.poultryco.net)
-- **Real-time:** Supabase Realtime (planned)
+- **API:** NestJS 10 (REST API with Socket.io)
+- **Database:** PostgreSQL 18.1 (AWS RDS)
+- **Authentication:** Custom OTP-based Auth (Email/SMS/WhatsApp)
+- **Storage:** AWS S3 + CloudFront CDN
+- **Real-time:** Socket.io
 
 ### DevOps
 - **Monorepo:** Turborepo
@@ -91,8 +92,11 @@ poultryco/
 │   ├── ui/              # Shared UI components
 │   ├── utils/           # Shared utility functions
 │   └── config/          # Shared configuration
-├── supabase/
-│   └── schema/          # Database migrations (12 files)
+├── aws/
+│   └── database/
+│       └── schema/      # PostgreSQL schema files
+├── apps/
+│   └── api/            # NestJS REST API
 ├── docs/
 │   ├── sprints/         # Sprint plans and roadmaps
 │   ├── strategy/        # Strategic decisions and status
@@ -109,7 +113,8 @@ poultryco/
 ### Prerequisites
 - **Node.js:** >= 20.0.0
 - **npm:** >= 10.0.0
-- **Supabase Account:** For backend services
+- **PostgreSQL 18.1:** AWS RDS or local instance
+- **AWS Account:** For S3, SES, and RDS
 - **Expo Account:** For mobile development (optional but recommended)
 
 ### Installation
@@ -144,6 +149,7 @@ poultryco/
    npm run mobile    # Mobile app on Expo
    npm run web       # Web app on http://localhost:3000
    npm run admin     # Admin portal on http://localhost:3001
+   npm run api       # API server on http://localhost:3002
    ```
 
 For detailed setup instructions, see [QUICK_START.md](docs/QUICK_START.md).

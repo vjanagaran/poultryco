@@ -36,7 +36,6 @@
     "styled-jsx": "5.1.2"
   },
   "dependencies": {
-    "@vercel/speed-insights": "^1.2.0",
-    "supabase": "^2.53.6"
+    "@vercel/speed-insights": "^1.2.0"
   }
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import BasicInfoStep from './steps/BasicInfoStep';
 import ContactLocationStep from './steps/ContactLocationStep';
 import PhotosStep from './steps/PhotosStep';
@@ -85,100 +85,41 @@ export function BusinessCreationWizard() {
 
     setLoading(true);
     try {
-      const supabase = createClient();
-
-      // Check if slug is unique
-      const { data: existingBusiness } = await supabase
-        .from('business_profiles')
-        .select('id')
-        .eq('business_slug', businessData.business_slug)
-        .single();
-
-      if (existingBusiness) {
-        alert('Business slug already exists. Please choose a different name or slug.');
-        setLoading(false);
-        return;
-      }
-
-      // Create business profile
-      const { data: business, error: businessError } = await supabase
-        .from('business_profiles')
-        .insert({
-          business_name: businessData.business_name,
-          business_slug: businessData.business_slug,
-          display_name: businessData.display_name || null,
-          tagline: businessData.tagline || null,
-          about: businessData.about || null,
-          business_type: businessData.business_type,
-          company_size: businessData.company_size || null,
-          founded_year: businessData.founded_year || null,
-          website_url: businessData.website_url || null,
-          logo_url: businessData.logo_url,
-          cover_photo_url: businessData.cover_photo_url,
-          owner_id: user.id,
-          is_verified: true,  // Auto-verify business profiles
-        })
-        .select()
-        .single();
-
-      if (businessError) throw businessError;
-
-      // Create business contact record
-      const { error: contactError } = await supabase
-        .from('business_profiles_contact')
-        .insert({
-          business_profile_id: business.id,
-          headquarters_address: businessData.headquarters_address || null,
-          headquarters_state: businessData.headquarters_state,
-          headquarters_city: businessData.headquarters_city || null,
+      // Create business profile via API
+      const business = await apiClient.post('/businesses', {
+        name: businessData.business_name,
+        slug: businessData.business_slug,
+        displayName: businessData.display_name || null,
+        tagline: businessData.tagline || null,
+        about: businessData.about || null,
+        businessTypeId: businessData.business_type,
+        companySize: businessData.company_size || null,
+        foundedYear: businessData.founded_year || null,
+        websiteUrl: businessData.website_url || null,
+        logoUrl: businessData.logo_url,
+        coverPhotoUrl: businessData.cover_photo_url,
+        contact: {
+          headquartersAddress: businessData.headquarters_address || null,
+          headquartersState: businessData.headquarters_state,
+          headquartersCity: businessData.headquarters_city || null,
           phone: businessData.phone || null,
           email: businessData.email || null,
-          whatsapp_business: businessData.whatsapp_business || null,
-        });
-
-      if (contactError) throw contactError;
-
-      // Create type-specific details if applicable
-      if (businessData.business_type === 'farm' && Object.keys(businessData.typeSpecificData).length > 0) {
-        await supabase
-          .from('business_farm_details')
-          .insert({
-            business_profile_id: business.id,
-            ...businessData.typeSpecificData,
-          });
-      } else if (
-        ['medicine_company', 'equipment_supplier', 'chick_supplier', 'distributor'].includes(businessData.business_type) &&
-        Object.keys(businessData.typeSpecificData).length > 0
-      ) {
-        await supabase
-          .from('business_supplier_details')
-          .insert({
-            business_profile_id: business.id,
-            ...businessData.typeSpecificData,
-          });
-      }
-
-      // Auto-add owner as team member with admin rights
-      await supabase
-        .from('business_team_members')
-        .insert({
-          business_profile_id: business.id,
-          profile_id: user.id,
-          role_title: 'Owner',
-          is_admin: true,
-          can_post_updates: true,
-          can_manage_products: true,
-          can_manage_jobs: true,
-          can_view_analytics: true,
-          show_on_page: true,
-        });
+          whatsappBusiness: businessData.whatsapp_business || null,
+        },
+        // Type-specific data should be included in the create request
+        typeSpecificData: businessData.typeSpecificData,
+      });
 
       // Show success message and redirect to edit page
       alert('Business profile created successfully! You can now edit and manage your profile.');
-      router.push(`/com/${business.business_slug}/edit`);
+      router.push(`/com/${business.slug}/edit`);
     } catch (error: any) {
       console.error('Error creating business:', error);
-      alert(error.message || 'Failed to create business profile');
+      if (error.statusCode === 409) {
+        alert('Business slug already exists. Please choose a different name or slug.');
+      } else {
+        alert(error.message || 'Failed to create business profile');
+      }
     } finally {
       setLoading(false);
     }

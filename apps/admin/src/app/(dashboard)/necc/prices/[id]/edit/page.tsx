@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { PriceEditForm } from '@/components/necc/prices/PriceEditForm';
+import { getPrices, getAllZones } from '@/lib/api/necc';
 
 export default async function EditPricePage({
   params,
@@ -9,32 +9,18 @@ export default async function EditPricePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
 
   // Fetch the price
-  const { data: price, error } = await supabase
-    .from('necc_prices')
-    .select(`
-      *,
-      necc_zones (
-        id,
-        name,
-        slug
-      )
-    `)
-    .eq('id', id)
-    .single();
+  try {
+    const prices = await getPrices({ limit: 1000 }); // Get all prices to find the one we need
+    const price = prices.find((p: any) => p.id === id);
 
-  if (error || !price) {
-    redirect('/necc/prices');
-  }
+    if (!price) {
+      redirect('/necc/prices');
+    }
 
-  // Fetch all zones for the dropdown
-  const { data: zones } = await supabase
-    .from('necc_zones')
-    .select('id, name')
-    .eq('status', true)
-    .order('name');
+    // Fetch all zones for the dropdown
+    const zones = await getAllZones();
 
   return (
     <div className="space-y-6">
@@ -42,7 +28,7 @@ export default async function EditPricePage({
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Edit Price</h1>
           <p className="mt-2 text-gray-600">
-            Update NECC egg price for {price.necc_zones?.name} on{' '}
+            Update NECC egg price on{' '}
             {new Date(price.date).toLocaleDateString('en-IN', {
               day: '2-digit',
               month: 'long',
@@ -61,5 +47,8 @@ export default async function EditPricePage({
       <PriceEditForm price={price} zones={zones || []} />
     </div>
   );
+  } catch (error) {
+    redirect('/necc/prices');
+  }
 }
 

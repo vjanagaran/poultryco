@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import Link from 'next/link';
 import { getEmailTemplates, type EmailTemplate } from '@/lib/api/email-campaigns';
 
@@ -253,42 +253,26 @@ export default function NewCampaignPage() {
 
     try {
       setLoading(true);
-      const supabase = createClient();
-
-      // Create campaign
-      const { data: campaign, error: campaignError } = await supabase
-        .from('email_campaigns')
-        .insert({
-          name: formData.name,
-          description: formData.description || null,
-          type: formData.type,
-          status: formData.status,
-          targeting_rules: formData.targeting_rules,
-          start_date: formData.start_date || null,
-          end_date: formData.end_date || null,
-        })
-        .select()
-        .single();
-
-      if (campaignError) throw campaignError;
-
-      // Create campaign steps
-      const stepsData = steps.map(step => ({
-        campaign_id: campaign.id,
-        step_number: step.step_number,
-        template_id: step.template_id,
-        delay_days: step.delay_days,
-        delay_hours: step.delay_hours,
-        send_time: step.send_time || null,
-        conditions: step.conditions,
-        is_active: step.is_active,
-      }));
-
-      const { error: stepsError } = await supabase
-        .from('campaign_steps')
-        .insert(stepsData);
-
-      if (stepsError) throw stepsError;
+      
+      // Create campaign via API
+      const campaign = await apiClient.post('/admin/email-campaigns', {
+        name: formData.name,
+        description: formData.description || null,
+        type: formData.type,
+        status: formData.status,
+        targetingRules: formData.targeting_rules,
+        startDate: formData.start_date || null,
+        endDate: formData.end_date || null,
+        steps: steps.map(step => ({
+          stepNumber: step.step_number,
+          templateId: step.template_id,
+          delayDays: step.delay_days,
+          delayHours: step.delay_hours,
+          sendTime: step.send_time || null,
+          conditions: step.conditions,
+          isActive: step.is_active,
+        })),
+      });
 
       router.push('/email-campaigns');
     } catch (error) {

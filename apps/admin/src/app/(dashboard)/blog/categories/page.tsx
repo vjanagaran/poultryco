@@ -2,25 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { getBlogCategories, createBlogCategory, updateBlogCategory, deleteBlogCategory, type BlogCategory } from '@/lib/api/content'
 
-interface Category {
-  id: string
-  name: string
-  slug: string
-  description: string | null
-  color: string | null
-  icon: string | null
-  post_count: number
-  is_active: boolean
-  created_at: string
-}
+// Types imported from API
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([])
+  const [categories, setCategories] = useState<BlogCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [editingCategory, setEditingCategory] = useState<BlogCategory | null>(null)
 
   const [formData, setFormData] = useState({
     name: '',
@@ -30,8 +20,6 @@ export default function CategoriesPage() {
     icon: '',
     is_active: true
   })
-
-  const supabase = createClient()
 
   useEffect(() => {
     fetchCategories()
@@ -52,12 +40,7 @@ export default function CategoriesPage() {
   async function fetchCategories() {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('blog_categories')
-        .select('*')
-        .order('name')
-
-      if (error) throw error
+      const data = await getBlogCategories()
       setCategories(data || [])
     } catch (error) {
       console.error('Error:', error)
@@ -72,20 +55,11 @@ export default function CategoriesPage() {
     try {
       if (editingCategory) {
         // Update
-        const { error } = await supabase
-          .from('blog_categories')
-          .update(formData)
-          .eq('id', editingCategory.id)
-
-        if (error) throw error
+        await updateBlogCategory(editingCategory.id, formData)
         alert('Category updated successfully')
       } else {
         // Create
-        const { error } = await supabase
-          .from('blog_categories')
-          .insert([formData])
-
-        if (error) throw error
+        await createBlogCategory(formData)
         alert('Category created successfully')
       }
 
@@ -107,7 +81,7 @@ export default function CategoriesPage() {
     }
   }
 
-  function handleEdit(category: Category) {
+  function handleEdit(category: BlogCategory) {
     setEditingCategory(category)
     setFormData({
       name: category.name,
@@ -124,12 +98,7 @@ export default function CategoriesPage() {
     if (!confirm('Are you sure you want to delete this category?')) return
 
     try {
-      const { error } = await supabase
-        .from('blog_categories')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
+      await deleteBlogCategory(id)
       alert('Category deleted successfully')
       fetchCategories()
     } catch (error) {

@@ -2,32 +2,37 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getContentSchedule, getMarketingChannels, type ContentSchedule } from '@/lib/api/marketing';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, addWeeks, subWeeks } from 'date-fns';
 
+// Types imported from API - simplified for now
 interface ScheduledContent {
   id: string;
   content_id: string;
-  scheduled_date: string;
-  scheduled_time: string | null;
+  scheduled_for: string;
   status: string;
   channel_id: string;
-  channel: {
-    name: string;
-    platform: string;
-  };
-  content: {
-    title: string;
-    content_type_id: string;
-    content_types?: {
-      name: string;
-    };
-  };
+  published_url: string | null;
+  created_at: string;
   campaign?: {
     id: string;
     name: string;
     color: string;
-    icon: string;
+    icon?: string | null;
+  } | null;
+  scheduled_time?: string | null;
+  content?: {
+    id: string;
+    title: string;
+    slug?: string;
+    content_types?: {
+      name: string;
+    } | null;
+  } | null;
+  channel?: {
+    id: string;
+    name: string;
+    platform?: string;
   } | null;
 }
 
@@ -43,8 +48,6 @@ export default function ContentCalendarPage() {
   const [scheduledContent, setScheduledContent] = useState<ScheduledContent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
-
   const weekEnd = endOfWeek(currentWeekStart, { weekStartsOn: 1 });
   const daysOfWeek = eachDayOfInterval({ start: currentWeekStart, end: weekEnd });
 
@@ -54,52 +57,12 @@ export default function ContentCalendarPage() {
 
   async function fetchScheduledContent() {
     try {
-      // Fetch scheduled content with content details
-      const { data: scheduleData, error: scheduleError } = await supabase
-        .from('content_schedule')
-        .select(`
-          *,
-          channel:marketing_channels(name, platform),
-          content:content(
-            title,
-            content_type_id,
-            content_types(name)
-          )
-        `)
-        .gte('scheduled_date', format(currentWeekStart, 'yyyy-MM-dd'))
-        .lte('scheduled_date', format(weekEnd, 'yyyy-MM-dd'))
-        .order('scheduled_date', { ascending: true })
-        .order('scheduled_time', { ascending: true });
-
-      if (scheduleError) throw scheduleError;
-
-      // Fetch campaign assignments for the content
-      const contentIds = scheduleData?.map((s: any) => s.content_id) || [];
-      let campaignMap: Record<string, any> = {};
-
-      if (contentIds.length > 0) {
-        const { data: campaignData } = await supabase
-          .from('content_campaign_assignments')
-          .select(`
-            content_id,
-            campaign:content_campaigns(id, name, color, icon)
-          `)
-          .in('content_id', contentIds);
-
-        if (campaignData) {
-          campaignData.forEach((item: any) => {
-            campaignMap[item.content_id] = item.campaign;
-          });
-        }
-      }
-
-      // Merge campaign data with schedule data
-      const enrichedData = scheduleData?.map((item: any) => ({
-        ...item,
-        campaign: campaignMap[item.content_id] || null,
-      }));
-
-      setScheduledContent(enrichedData as any || []);
+      setLoading(true);
+      const startDate = format(currentWeekStart, 'yyyy-MM-dd');
+      const endDate = format(weekEnd, 'yyyy-MM-dd');
+      const data = await getContentSchedule({ startDate, endDate });
+      // TODO: Map API response to match ScheduledContent interface when API returns full data
+      setScheduledContent((data as any[]) || []);
     } catch (error) {
       console.error('Error fetching scheduled content:', error);
     } finally {
@@ -109,7 +72,7 @@ export default function ContentCalendarPage() {
 
   const getContentForDay = (day: Date) => {
     return scheduledContent.filter((content) =>
-      isSameDay(new Date(content.scheduled_date), day)
+      isSameDay(new Date(content.scheduled_for), day)
     );
   };
 
@@ -281,10 +244,10 @@ export default function ContentCalendarPage() {
                             </div>
                           )}
                           <div className="text-xs font-medium text-gray-900 truncate">
-                            {item.content.title}
+                            {item.content?.title || 'Untitled Content'}
                           </div>
                           <div className="text-xs text-gray-500 truncate">
-                            {item.channel.name} • {item.content.content_types?.name}
+                            {item.channel?.name || 'Unknown Channel'} • {item.content?.content_types?.name || 'No Type'}
                           </div>
                           <div className="flex items-center gap-2 mt-1">
                             <span

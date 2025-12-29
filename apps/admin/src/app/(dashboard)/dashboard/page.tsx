@@ -3,21 +3,14 @@
 import { useEffect, useState } from 'react';
 import { MetricCard } from '@/components/analytics/MetricCard';
 import { RealtimeMetrics } from '@/components/analytics/RealtimeMetrics';
-import { getUserMetrics, getRecentSignups, type UserMetrics } from '@/lib/api/analytics';
-import { createClient } from '@/lib/supabase/client';
+import { getUserMetrics, getRecentSignups, type UserMetrics, type RecentUser } from '@/lib/api/analytics';
+// TODO: Migrate blog and newsletter counts to API
 import Link from 'next/link';
 
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<UserMetrics | null>(null);
-  const [recentUsers, setRecentUsers] = useState<Array<{
-    id: string;
-    full_name: string | null;
-    profile_strength: number;
-    location_city: string | null;
-    location_state: string;
-    created_at: string;
-  }>>([]);
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [blogCount, setBlogCount] = useState(0);
   const [emailCount, setEmailCount] = useState(0);
 
@@ -28,8 +21,6 @@ export default function DashboardPage() {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const supabase = createClient();
-      
       // Get user metrics
       const userMetrics = await getUserMetrics();
       setMetrics(userMetrics);
@@ -38,17 +29,10 @@ export default function DashboardPage() {
       const recent = await getRecentSignups(5);
       setRecentUsers(recent);
       
-      // Get blog count
-      const { count: blogPosts } = await supabase
-        .from('blog_posts')
-        .select('*', { count: 'exact', head: true });
-      setBlogCount(blogPosts || 0);
-      
-      // Get email subscriber count
-      const { count: emailSubscribers } = await supabase
-        .from('newsletter_signups')
-        .select('*', { count: 'exact', head: true });
-      setEmailCount(emailSubscribers || 0);
+      // TODO: Migrate blog and newsletter counts to API
+      // For now, set to 0
+      setBlogCount(0);
+      setEmailCount(0);
       
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -143,11 +127,11 @@ export default function DashboardPage() {
                   </div>
                   <div className="text-right">
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      user.profile_strength >= 80 ? 'bg-green-100 text-green-800' :
-                      user.profile_strength >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                      (user.profile_strength ?? 0) >= 80 ? 'bg-green-100 text-green-800' :
+                      (user.profile_strength ?? 0) >= 50 ? 'bg-yellow-100 text-yellow-800' :
                       'bg-red-100 text-red-800'
                     }`}>
-                      {user.profile_strength}% complete
+                      {user.profile_strength ?? 0}% complete
                     </span>
                   </div>
                 </div>

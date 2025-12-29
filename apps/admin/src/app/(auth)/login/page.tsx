@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { adminLogin } from "@/lib/api/admin";
 
 function LoginForm() {
   const [email, setEmail] = useState("");
@@ -21,39 +21,14 @@ function LoginForm() {
     setError("");
 
     try {
-      const supabase = createClient();
+      const response = await adminLogin(email, password);
       
-      // Authenticate user
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) throw authError;
-
-      // Check if user is admin
-      const { data: adminUser, error: adminError } = await supabase
-        .from('admin_users')
-        .select('role, is_active')
-        .eq('user_id', authData.user.id)
-        .single();
-
-      if (adminError || !adminUser || !adminUser.is_active) {
-        // User is not an admin, sign them out
-        await supabase.auth.signOut();
-        throw new Error('You do not have admin access. Please use the main app.');
-      }
-
-      // Update last login
-      await supabase
-        .from('admin_users')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('user_id', authData.user.id);
-
+      // Store token in localStorage (apiClient already does this)
+      // Redirect to dashboard
       router.push("/dashboard");
       router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login");
+    } catch (err: any) {
+      setError(err.message || "Failed to login");
     } finally {
       setLoading(false);
     }
@@ -144,4 +119,3 @@ export default function LoginPage() {
     </Suspense>
   );
 }
-

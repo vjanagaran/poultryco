@@ -1,199 +1,77 @@
-import { createClient } from '@/lib/supabase/client';
+/**
+ * Connections API - Replaces Supabase connection queries
+ */
+
+import { apiClient } from './client';
+import { getConnections, sendConnectionRequest, acceptConnectionRequest } from './social';
+
+export interface ConnectionRequest {
+  id: string;
+  requesterId: string;
+  addresseeId: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'blocked';
+  message?: string | null;
+  createdAt: string;
+  
+  requester?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    slug: string;
+    profilePhoto?: string | null;
+    headline?: string | null;
+  };
+  addressee?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    slug: string;
+    profilePhoto?: string | null;
+    headline?: string | null;
+  };
+}
 
 /**
- * Send a connection request to another user
+ * Get pending connection requests (received)
  */
-export async function sendConnectionRequest(targetUserId: string): Promise<{ success: boolean; error?: string }> {
+export async function getPendingConnectionRequests(): Promise<{ success: boolean; data?: ConnectionRequest[] }> {
   try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const connections = await getConnections({ status: 'pending' });
     
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    // Filter to only received requests (where current user is addressee)
+    const currentUser = await apiClient.get<{ user: { profile: { id: string } } }>('/auth/me');
+    const currentProfileId = currentUser.user?.profile?.id;
+    
+    if (!currentProfileId) {
+      return { success: false };
     }
     
-    // Check if connection already exists
-    const { data: existingConnection } = await supabase
-      .from('connections')
-      .select('*')
-      .or(`and(profile_id_1.eq.${user.id},profile_id_2.eq.${targetUserId}),and(profile_id_1.eq.${targetUserId},profile_id_2.eq.${user.id})`)
-      .single();
+    const received = connections.filter((conn: any) => conn.addresseeId === currentProfileId);
     
-    if (existingConnection) {
-      return { success: false, error: 'Connection already exists' };
-    }
-    
-    // Sort IDs to ensure consistency (smaller ID first)
-    const [profileId1, profileId2] = [user.id, targetUserId].sort();
-    
-    // Insert the connection - the database trigger will handle notifications
-    const { error: connectionError } = await supabase
-      .from('connections')
-      .insert({
-        profile_id_1: profileId1,
-        profile_id_2: profileId2,
-        status: 'pending',
-        requested_by: user.id,
-      });
-    
-    if (connectionError) {
-      console.error('Connection error:', connectionError);
-      return { success: false, error: connectionError.message };
-    }
-    
-    return { success: true };
+    return { success: true, data: received };
   } catch (error) {
-    console.error('Error sending connection request:', error);
-    return { success: false, error: 'Failed to send connection request' };
+    console.error('Error fetching pending connection requests:', error);
+    return { success: false };
   }
 }
 
 /**
- * Check if a connection exists between two users
+ * Accept connection request
  */
-export async function checkConnectionStatus(targetUserId: string): Promise<{
-  exists: boolean;
-  status?: string;
-  isRequester?: boolean;
-  connectionId?: string;
-}> {
+export async function acceptConnectionRequestById(connectionId: string): Promise<{ success: boolean }> {
   try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      return { exists: false };
-    }
-    
-    const { data: connection } = await supabase
-      .from('connections')
-      .select('*')
-      .or(`and(profile_id_1.eq.${user.id},profile_id_2.eq.${targetUserId}),and(profile_id_1.eq.${targetUserId},profile_id_2.eq.${user.id})`)
-      .single();
-    
-    if (connection) {
-      return {
-        exists: true,
-        status: connection.status,
-        isRequester: connection.requested_by === user.id,
-        connectionId: connection.id,
-      };
-    }
-    
-    return { exists: false };
-  } catch (error) {
-    console.error('Error checking connection status:', error);
-    return { exists: false };
-  }
-}
-
-/**
- * Accept a connection request
- */
-export async function acceptConnectionRequest(connectionId: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-    
-    // Update connection status to connected
-    const { error } = await supabase
-      .from('connections')
-      .update({ 
-        status: 'connected',
-        responded_at: new Date().toISOString()
-      })
-      .eq('id', connectionId)
-      .neq('requested_by', user.id); // Ensure user is not the requester
-    
-    if (error) {
-      console.error('Error accepting connection:', error);
-      return { success: false, error: error.message };
-    }
-    
+    await acceptConnectionRequest(connectionId);
     return { success: true };
   } catch (error) {
     console.error('Error accepting connection request:', error);
-    return { success: false, error: 'Failed to accept connection request' };
+    return { success: false };
   }
 }
 
 /**
- * Reject a connection request
+ * Reject connection request
  */
-export async function rejectConnectionRequest(connectionId: string): Promise<{ success: boolean; error?: string }> {
-  try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-    
-    // Delete the connection request
-    const { error } = await supabase
-      .from('connections')
-      .delete()
-      .eq('id', connectionId)
-      .eq('status', 'pending')
-      .neq('requested_by', user.id); // Ensure user is not the requester
-    
-    if (error) {
-      console.error('Error rejecting connection:', error);
-      return { success: false, error: error.message };
-    }
-    
-    return { success: true };
-  } catch (error) {
-    console.error('Error rejecting connection request:', error);
-    return { success: false, error: 'Failed to reject connection request' };
-  }
-}
-
-/**
- * Get pending connection requests for the current user
- */
-export async function getPendingConnectionRequests(): Promise<{
-  success: boolean;
-  data?: any[];
-  error?: string;
-}> {
-  try {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-    
-    const { data, error } = await supabase
-      .from('connections')
-      .select(`
-        *,
-        requester:requested_by(
-          id,
-          full_name,
-          profile_slug,
-          profile_photo_url,
-          headline
-        )
-      `)
-      .or(`profile_id_1.eq.${user.id},profile_id_2.eq.${user.id}`)
-      .eq('status', 'pending')
-      .neq('requested_by', user.id)
-      .order('requested_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error fetching pending connections:', error);
-      return { success: false, error: error.message };
-    }
-    
-    return { success: true, data };
-  } catch (error) {
-    console.error('Error fetching pending connection requests:', error);
-    return { success: false, error: 'Failed to fetch connection requests' };
-  }
+export async function rejectConnectionRequest(connectionId: string): Promise<{ success: boolean }> {
+  // TODO: Implement reject endpoint in API
+  return { success: false };
 }

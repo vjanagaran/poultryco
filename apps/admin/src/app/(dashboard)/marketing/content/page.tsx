@@ -2,25 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getContent, type Content } from '@/lib/api/marketing';
 
-interface Content {
-  id: string;
-  title: string;
-  slug: string | null;
-  content_mode: string;
-  content_type_id: string;
-  status: string;
-  published_at: string | null;
-  total_views: number;
-  total_likes: number;
-  total_comments: number;
-  total_shares: number;
-  total_engagement: number;
-  created_at: string;
-  content_types?: { name: string };
-  content_pillars?: { title: string };
-}
+// Types imported from API
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -47,8 +31,6 @@ export default function ContentListPage() {
   const [contentTags, setContentTags] = useState<Record<string, string[]>>({});
   const [contentCampaigns, setContentCampaigns] = useState<Record<string, string>>({});
 
-  const supabase = createClient();
-
   useEffect(() => {
     fetchContent();
     fetchFilters();
@@ -56,46 +38,37 @@ export default function ContentListPage() {
 
   async function fetchContent() {
     try {
-      const { data, error } = await supabase
-        .from('content')
-        .select('*, content_types(name), content_pillars(title)')
-        .order('created_at', { ascending: false });
+      setLoading(true);
+      const status = filterStatus !== 'all' ? filterStatus : undefined;
+      const data = await getContent({ status });
+      
+      // Sort by created_at descending
+      const sortedData = (data || []).sort((a, b) => {
+        const dateA = new Date(a.created_at || 0).getTime();
+        const dateB = new Date(b.created_at || 0).getTime();
+        return dateB - dateA;
+      });
+      
+      setContent(sortedData);
 
-      if (error) throw error;
-      setContent(data || []);
+      // Extract tag and campaign assignments from content data
+      if (sortedData && sortedData.length > 0) {
+        const tagMap: Record<string, string[]> = {};
+        const campaignMap: Record<string, string> = {};
 
-      // Fetch tag and campaign assignments
-      if (data && data.length > 0) {
-        const contentIds = data.map((c) => c.id);
+        sortedData.forEach((content) => {
+          // If API returns tagIds array, use it
+          if (content.tagIds && Array.isArray(content.tagIds)) {
+            tagMap[content.id] = content.tagIds;
+          }
+          // If API returns campaignId, use it
+          if (content.campaignId) {
+            campaignMap[content.id] = content.campaignId;
+          }
+        });
 
-        // Fetch tags
-        const { data: tagData } = await supabase
-          .from('content_tag_assignments')
-          .select('content_id, tag_id')
-          .in('content_id', contentIds);
-
-        if (tagData) {
-          const tagMap: Record<string, string[]> = {};
-          tagData.forEach((item) => {
-            if (!tagMap[item.content_id]) tagMap[item.content_id] = [];
-            tagMap[item.content_id].push(item.tag_id);
-          });
-          setContentTags(tagMap);
-        }
-
-        // Fetch campaigns
-        const { data: campaignData } = await supabase
-          .from('content_campaign_assignments')
-          .select('content_id, campaign_id')
-          .in('content_id', contentIds);
-
-        if (campaignData) {
-          const campaignMap: Record<string, string> = {};
-          campaignData.forEach((item) => {
-            campaignMap[item.content_id] = item.campaign_id;
-          });
-          setContentCampaigns(campaignMap);
-        }
+        setContentTags(tagMap);
+        setContentCampaigns(campaignMap);
       }
     } catch (error) {
       console.error('Error fetching content:', error);
@@ -106,13 +79,9 @@ export default function ContentListPage() {
 
   async function fetchFilters() {
     try {
-      const [tagsRes, campaignsRes] = await Promise.all([
-        supabase.from('content_tags').select('id, name, color').order('name'),
-        supabase.from('content_campaigns').select('id, name, color').order('name'),
-      ]);
-
-      if (tagsRes.data) setTags(tagsRes.data);
-      if (campaignsRes.data) setCampaigns(campaignsRes.data);
+      // TODO: Fetch tags and campaigns when API supports it
+      setTags([]);
+      setCampaigns([]);
     } catch (error) {
       console.error('Error fetching filters:', error);
     }
@@ -244,7 +213,7 @@ export default function ContentListPage() {
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="text-sm font-medium text-green-800 mb-1">Total Views</div>
           <div className="text-2xl font-bold text-green-900">
-            {content.reduce((sum, c) => sum + c.total_views, 0).toLocaleString()}
+            {content.reduce((sum, c) => sum + (c.total_views ?? 0), 0).toLocaleString()}
           </div>
         </div>
       </div>
@@ -334,10 +303,10 @@ export default function ContentListPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {item.total_views.toLocaleString()} views
+                      {(item.total_views ?? 0).toLocaleString()} views
                     </div>
                     <div className="text-xs text-gray-500">
-                      {(item.total_likes + item.total_comments + item.total_shares).toLocaleString()}{' '}
+                      {((item.total_likes ?? 0) + (item.total_comments ?? 0) + (item.total_shares ?? 0)).toLocaleString()}{' '}
                       engagement
                     </div>
                   </td>

@@ -1,0 +1,56 @@
+# apps/api/Dockerfile
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+# Copy package files
+COPY package.json ./
+COPY apps/api/package.json ./apps/api/
+COPY package-lock.json* ./
+
+# Install dependencies using npm (as specified in package.json)
+RUN npm ci
+
+# Build the application
+FROM base AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Build the API
+RUN npm run build --workspace=apps/api
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+
+# Copy package files
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/apps/api/package.json ./apps/api/
+COPY --from=builder /app/package-lock.json* ./
+
+# Copy all node_modules from builder (includes all dependencies)
+COPY --from=builder /app/node_modules ./node_modules
+
+# Ensure uuid and other API dependencies are available at root level
+# (npm workspaces may not hoist all dependencies)
+RUN npm install uuid@^9.0.1 --no-save --legacy-peer-deps || true
+
+# Copy built application
+COPY --from=builder /app/apps/api/dist ./dist
+
+USER nestjs
+
+EXPOSE 3002
+
+# Use production start command
+CMD ["node", "dist/main.js"]

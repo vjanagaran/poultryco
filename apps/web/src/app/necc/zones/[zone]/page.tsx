@@ -129,13 +129,29 @@ export default async function ZonePage({ params, searchParams }: PageProps) {
     // For "All Time", we'll use monthlyData instead, so fetch empty array
     period === 'all' ? Promise.resolve([]) : getZonePrices(zoneData.id, startDate, endDate, recordLimit),
     // For "All Time" historical view, fetch from monthly averages materialized view
-    (period === 'all' && allTimeType === 'historical') ? getZoneMonthlyAverages(zoneData.id, startDate, endDate) : Promise.resolve([]),
+    // Convert dates to month format (YYYY-MM-01) for the API
+    (period === 'all' && allTimeType === 'historical') ? getZoneMonthlyAverages(
+      zoneData.id, 
+      startDate ? `${startDate.substring(0, 7)}-01` : undefined,
+      endDate ? `${endDate.substring(0, 7)}-01` : undefined
+    ).catch(err => {
+      console.error('[ZonePage] Error fetching monthly averages:', err);
+      return [];
+    }) : Promise.resolve([]),
     // For "All Time" YoY view, use optimized database function
-    (period === 'all' && allTimeType === 'yoy') ? getZoneYoYData(zoneData.id) : Promise.resolve([]),
+    (period === 'all' && allTimeType === 'yoy') ? getZoneYoYData(zoneData.id).catch(err => {
+      console.error('[ZonePage] Error fetching YoY data:', err);
+      return [];
+    }) : Promise.resolve([]),
     // For "All Time" YoY statistics (only when yoy view)
     (period === 'all' && allTimeType === 'yoy') ? getZoneYoYStats(zoneData.id) : Promise.resolve({ highest_price_day: null, lowest_price_day: null, avg_by_year: {}, years: [] }),
     // For "All Time", use appropriate stats based on view type
-    (period === 'all' && allTimeType === 'historical') ? getMonthlyAverageStats(zoneData.id, startDate, endDate) : 
+    // Convert dates to month format (YYYY-MM-01) for the API
+    (period === 'all' && allTimeType === 'historical') ? getMonthlyAverageStats(
+      zoneData.id,
+      startDate ? `${startDate.substring(0, 7)}-01` : undefined,
+      endDate ? `${endDate.substring(0, 7)}-01` : undefined
+    ) : 
     (period === 'all' && allTimeType === 'yoy') ? Promise.resolve({ average: 0, min: 0, max: 0, count: 0 }) :
     getPriceStats(startDate, endDate, zoneData.id),
     getPriceStats(currentYearStart, today, zoneData.id),
@@ -178,9 +194,11 @@ export default async function ZonePage({ params, searchParams }: PageProps) {
     trendData = monthlyData
       .map(m => {
         const [year, month] = m.month.split('-');
+        // Use avg_suggested_price as primary, fallback to avg_price if available
+        const price = m.avg_suggested_price || m.avg_price || 0;
         return {
           date: m.month,
-          price: m.avg_price,
+          price: price,
           label: `${monthNames[parseInt(month) - 1]} ${year}`,
         };
       })
@@ -339,10 +357,15 @@ export default async function ZonePage({ params, searchParams }: PageProps) {
         {showMonthlyAggregation ? (
           // All Time view with Historical vs YoY toggle
           <div className="mb-8">
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mb-4 p-2 bg-yellow-50 text-xs">
+                Debug: monthlyData={monthlyData?.length || 0}, yoyData={yoyData?.length || 0}, allTimeType={allTimeType}
+              </div>
+            )}
             <AllTimeViewWrapper
-              monthlyData={monthlyData}
-              yoyData={yoyData}
-              yoyStats={yoyStats}
+              monthlyData={monthlyData || []}
+              yoyData={yoyData || []}
+              yoyStats={yoyStats || { highest_price_day: null, lowest_price_day: null, avg_by_year: {}, years: [] }}
               zoneName={zoneData.name}
               currentView={allTimeType as 'historical' | 'yoy'}
               zoneSlug={zoneSlug}

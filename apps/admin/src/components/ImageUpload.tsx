@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { uploadFile } from '@/lib/api/upload'
 
 interface ImageUploadProps {
   onUploadComplete: (url: string) => void
@@ -22,7 +22,6 @@ export default function ImageUpload({
   const [preview, setPreview] = useState<string | null>(currentImage || null)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const supabase = createClient()
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -51,26 +50,11 @@ export default function ImageUpload({
       }
       reader.readAsDataURL(file)
 
-      // Generate unique filename
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-
-      // Upload to Supabase Storage
-      const { data, error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
-
-      if (uploadError) throw uploadError
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(data.path)
-
-      onUploadComplete(publicUrl)
+      // Upload to S3 via API
+      const result = await uploadFile(file, 'post-media', folder)
+      
+      // Use the URL from API response
+      onUploadComplete(result.url)
     } catch (err) {
       console.error('Upload error:', err)
       setError(err instanceof Error ? err.message : 'Upload failed')
@@ -164,7 +148,7 @@ export default function ImageUpload({
       )}
 
       <p className="text-xs text-gray-500">
-        Images will be uploaded to Supabase Storage
+        Images will be uploaded to S3 via API
       </p>
     </div>
   )

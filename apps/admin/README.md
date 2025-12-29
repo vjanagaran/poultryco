@@ -27,7 +27,7 @@ The PoultryCo Admin Portal is a comprehensive back-office system for managing th
 ### Prerequisites
 - Node.js 20.17+
 - npm 10+
-- Supabase account
+- API server running (see `apps/api/README.md`)
 
 ### Installation
 
@@ -41,7 +41,8 @@ npm install
 # Copy environment variables
 cp .env.example .env.local
 
-# Update .env.local with your Supabase credentials
+# Update .env.local with your API URL
+# NEXT_PUBLIC_API_URL=http://localhost:3002/api/v1
 
 # Run development server
 npm run dev
@@ -180,30 +181,34 @@ Never commit `.env.local` to git. Use `.env.example` as a template.
 
 ### Required Variables
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-key
+# API Configuration
+NEXT_PUBLIC_API_URL=http://localhost:3002/api/v1
+
+# Environment
+NODE_ENV=development
 ```
 
+**Note:** Supabase variables are no longer needed. All operations use the REST API.
+
 ### Best Practices
-- Use Row Level Security (RLS) in Supabase
+- API authentication via JWT tokens
 - Validate all inputs
 - Sanitize user-generated content
 - Log all admin actions
 - Use HTTPS in production
+- Keep API URL secure (use environment variables)
 
 ---
 
-## 📊 Database
+## 📊 Database Access
 
-### Admin Tables
-- `admin_users` - Admin user profiles and roles
-- `blog_posts` - Blog content
-- `email_campaigns` - Marketing campaigns
-- `admin_activity_logs` - Audit trail
-- `media_library` - File management
+All database operations go through the REST API:
+- Admin authentication via `/admin/auth/login`
+- Blog management via `/content/blog/*`
+- Marketing management via `/marketing/*`
+- NECC management via `/necc/*`
 
-See [Technical Architecture](../../docs/admin/TECHNICAL_ARCHITECTURE.md) for complete schema.
+See [API Documentation](../../docs/api/) for complete API reference.
 
 ---
 

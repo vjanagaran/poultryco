@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { getMessages } from '@/lib/api/messaging';
 import { Message } from '@/lib/messagingUtils';
 import { formatMessageTime } from '@/lib/messagingUtils';
 
@@ -17,7 +17,6 @@ export function MessageSearch({ conversationId, onClose, onMessageClick }: Messa
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const supabase = createClient();
 
   useEffect(() => {
     // Focus search input when opened
@@ -41,24 +40,13 @@ export function MessageSearch({ conversationId, onClose, onMessageClick }: Messa
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          *,
-          sender:profiles!messages_sender_id_fkey(
-            id,
-            full_name,
-            profile_photo_url
-          )
-        `)
-        .eq('conversation_id', conversationId)
-        .eq('deleted', false)
-        .ilike('content', `%${searchQuery}%`)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setSearchResults((data as Message[]) || []);
+      // Search messages via API
+      const result = await getMessages(conversationId, { 
+        search: searchQuery,
+        limit: 50 
+      });
+      
+      setSearchResults(result.data || []);
       setSelectedIndex(0);
     } catch (error) {
       console.error('Error searching messages:', error);

@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Message,
-  Conversation,
-  sendMessage,
-  markConversationRead,
-  markMessageDelivered,
+  getConversation,
+  getMessages,
+  sendMessage as apiSendMessage,
+  markConversationAsRead,
+  type Message,
+  type Conversation,
+} from '@/lib/api/messaging';
+import {
   getMessageStatus,
   formatMessageTime,
   groupMessagesByDate,
@@ -43,8 +45,8 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
     if (conversationId && user) {
       fetchConversation();
       fetchMessages();
-      subscribeToMessages();
-      markConversationRead(conversationId, user.id);
+      markConversationAsRead(conversationId);
+      // TODO: Set up Socket.io subscription for real-time messages
     }
   }, [conversationId, user]);
 
@@ -55,42 +57,27 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
   const fetchConversation = async () => {
     if (!user) return;
 
-    const supabase = createClient();
-
     try {
-      const { data: conv } = await supabase
-        .from('conversations')
-        .select('*')
-        .eq('id', conversationId)
-        .single();
+      const conv = await getConversation(conversationId);
+      
+      // Transform to match expected format
+      const otherParticipant = conv.participants?.find(
+        (p: any) => p.profileId !== user.id
+      );
 
-      if (!conv) return;
-
-      // Get other participant for one-on-one chats
-      if (!conv.is_group) {
-        const { data: otherParticipant } = await supabase
-          .from('conversation_participants')
-          .select(`
-            *,
-            user:profiles!user_id(
-              id,
-              full_name,
-              profile_slug,
-              profile_photo_url,
-              headline
-            )
-          `)
-          .eq('conversation_id', conversationId)
-          .neq('user_id', user.id)
-          .single();
-
-        setConversation({
-          ...conv,
-          other_participant: otherParticipant?.user,
-        } as Conversation);
-      } else {
-        setConversation(conv as Conversation);
-      }
+      setConversation({
+        ...conv,
+        is_group: conv.conversationType !== 'direct',
+        group_name: conv.name,
+        group_photo_url: conv.avatarUrl,
+        other_participant: otherParticipant?.profile ? {
+          id: otherParticipant.profile.id,
+          full_name: `${otherParticipant.profile.firstName} ${otherParticipant.profile.lastName}`,
+          profile_slug: otherParticipant.profile.slug,
+          profile_photo_url: otherParticipant.profile.profilePhoto,
+          headline: otherParticipant.profile.headline,
+        } : undefined,
+      } as any);
     } catch (error) {
       console.error('Error fetching conversation:', error);
     }
@@ -99,127 +86,15 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
   const fetchMessages = async () => {
     if (!user) return;
 
-    const supabase = createClient();
     setLoading(true);
-
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          *,
-          sender:profiles!sender_id(
-            id,
-            full_name,
-            profile_slug,
-            profile_photo_url
-          ),
-          reply_to:messages!reply_to_message_id(
-            id,
-            content,
-            message_type,
-            sender:profiles!sender_id(full_name)
-          )
-        `)
-        .eq('conversation_id', conversationId)
-        .eq('deleted', false)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      setMessages((data as Message[]) || []);
-
-      // Mark messages as delivered
-      if (data) {
-        data.forEach((msg: Message) => {
-          if (msg.sender_id !== user.id && !msg.delivered_to.includes(user.id)) {
-            markMessageDelivered(msg.id, user.id);
-          }
-        });
-      }
+      const result = await getMessages(conversationId, { limit: 50 });
+      setMessages(result.data || []);
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const subscribeToMessages = () => {
-    if (!user) return;
-
-    const supabase = createClient();
-
-    const channel = supabase
-      .channel(`messages:${conversationId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        async (payload) => {
-          const newMessage = payload.new as Message;
-          
-          // Fetch full message with sender info
-          const { data } = await supabase
-            .from('messages')
-            .select(`
-              *,
-              sender:profiles!sender_id(
-                id,
-                full_name,
-                profile_slug,
-                profile_photo_url
-              )
-            `)
-            .eq('id', newMessage.id)
-            .single();
-
-          if (data) {
-            setMessages((prev) => [...prev, data as Message]);
-            
-            // Mark as delivered and read
-            if (data.sender_id !== user.id) {
-              await markMessageDelivered(data.id, user.id);
-              await markConversationRead(conversationId, user.id);
-            }
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const updatedMessage = payload.new as Message;
-          setMessages((prev) =>
-            prev.map((msg) => (msg.id === updatedMessage.id ? { ...msg, ...updatedMessage } : msg))
-          );
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const deletedMessage = payload.old as Message;
-          setMessages((prev) => prev.filter((msg) => msg.id !== deletedMessage.id));
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
   };
 
   const handleSendMessage = async (content: string, mediaUrls: string[]) => {
@@ -230,16 +105,15 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
     try {
       const messageType = mediaUrls.length > 0 ? 'image' : 'text';
       
-      await sendMessage(
-        conversationId,
-        user.id,
-        content,
-        messageType,
-        mediaUrls,
-        replyToMessage?.id
-      );
+      await apiSendMessage(conversationId, {
+        content: content.trim(),
+        messageType: messageType === 'text' ? 'text' : 'image',
+        mediaUrl: mediaUrls[0],
+      });
 
       setReplyToMessage(null);
+      // Refresh messages
+      await fetchMessages();
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -255,7 +129,6 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Highlight the message briefly
       messageElement.classList.add('bg-yellow-100');
       setTimeout(() => {
         messageElement.classList.remove('bg-yellow-100');
@@ -280,7 +153,7 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
   }
 
   const groupedMessages = groupMessagesByDate(messages);
-  const participantIds = [user!.id]; // Add other participant IDs here
+  const participantIds = conversation.participants?.map((p: any) => p.profileId) || [user!.id];
 
   return (
     <div className="flex-1 flex flex-col">
@@ -299,38 +172,38 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
         {/* Avatar */}
         <Link
           href={
-            conversation.is_group
+            (conversation as any).is_group
               ? '#'
-              : `/me/${conversation.other_participant?.profile_slug}`
+              : `/me/${(conversation as any).other_participant?.profile_slug}`
           }
           className="flex-shrink-0"
         >
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-blue-500 overflow-hidden cursor-pointer">
-            {conversation.is_group ? (
-              conversation.group_photo_url ? (
+            {(conversation as any).is_group ? (
+              (conversation as any).group_photo_url ? (
                 <Image
-                  src={conversation.group_photo_url}
-                  alt={conversation.group_name || 'Group'}
+                  src={(conversation as any).group_photo_url}
+                  alt={(conversation as any).group_name || 'Group'}
                   width={40}
                   height={40}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-white font-semibold">
-                  {conversation.group_name?.charAt(0) || 'G'}
+                  {(conversation as any).group_name?.charAt(0) || 'G'}
                 </div>
               )
-            ) : conversation.other_participant?.profile_photo_url ? (
+            ) : (conversation as any).other_participant?.profile_photo_url ? (
               <Image
-                src={conversation.other_participant.profile_photo_url}
-                alt={conversation.other_participant.full_name}
+                src={(conversation as any).other_participant.profile_photo_url}
+                alt={(conversation as any).other_participant.full_name}
                 width={40}
                 height={40}
                 className="w-full h-full object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white font-semibold">
-                {conversation.other_participant?.full_name.charAt(0) || '?'}
+                {(conversation as any).other_participant?.full_name.charAt(0) || '?'}
               </div>
             )}
           </div>
@@ -339,19 +212,19 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
         {/* Info */}
         <div className="flex-1 min-w-0">
           <h2 className="font-semibold text-gray-900 truncate">
-            {conversation.is_group
-              ? conversation.group_name
-              : conversation.other_participant?.full_name}
+            {(conversation as any).is_group
+              ? (conversation as any).group_name
+              : (conversation as any).other_participant?.full_name}
           </h2>
           <p className="text-xs text-gray-500 truncate">
-            {conversation.is_group ? (
+            {(conversation as any).is_group ? (
               `${conversation.participants?.length || 0} members`
             ) : typingUsers.size > 0 ? (
               <span className="text-green-600">typing...</span>
-            ) : isUserOnline(conversation.other_participant?.last_seen_at) ? (
+            ) : isUserOnline((conversation as any).other_participant?.last_seen_at) ? (
               <span className="text-green-600">online</span>
             ) : (
-              formatLastSeen(conversation.other_participant?.last_seen_at)
+              formatLastSeen((conversation as any).other_participant?.last_seen_at)
             )}
           </p>
         </div>
@@ -397,16 +270,16 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
 
             {/* Messages */}
             {msgs.map((message, index) => {
-              const isOwn = message.sender_id === user?.id;
-              const showAvatar = !isOwn && (index === msgs.length - 1 || msgs[index + 1]?.sender_id !== message.sender_id);
+              const isOwn = message.senderId === user?.id;
+              const showAvatar = !isOwn && (index === msgs.length - 1 || msgs[index + 1]?.senderId !== message.senderId);
               
               return (
                 <div key={message.id} id={`message-${message.id}`} className="transition-colors duration-300">
                   <MessageBubble
-                    message={message}
+                    message={message as any}
                     isOwn={isOwn}
                     showAvatar={showAvatar}
-                    status={getMessageStatus(message, user!.id, participantIds)}
+                    status={getMessageStatus(message as any, user!.id, participantIds)}
                     onReply={() => setReplyToMessage(message)}
                   />
                 </div>
@@ -437,4 +310,3 @@ export function ChatArea({ conversationId, onBack, onToggleContactInfo }: ChatAr
     </div>
   );
 }
-
