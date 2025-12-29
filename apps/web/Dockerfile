@@ -47,8 +47,14 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy built application
+# Next.js standalone output structure:
+# - .next/standalone/apps/web/ contains the server.js
+# - Static files need to be at apps/web/.next/static (relative to server.js location)
+# - The standalone build already includes static files in apps/web/.next/static
+# - We also copy to root .next/static as a fallback
 COPY --from=builder /app/apps/web/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
 
 USER nextjs
