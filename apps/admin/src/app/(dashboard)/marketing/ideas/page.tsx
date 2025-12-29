@@ -218,7 +218,7 @@ export default function ContentIdeasPage() {
                         <div
                           key={i}
                           className={`w-1.5 h-1.5 rounded-full ${
-                            i < idea.priority_score ? 'bg-amber-400' : 'bg-gray-200'
+                            i < (idea.priority_score ?? 0) ? 'bg-amber-400' : 'bg-gray-200'
                           }`}
                         />
                       ))}
@@ -260,7 +260,7 @@ export default function ContentIdeasPage() {
                     {idea.content_topics && (
                       <div className="flex items-center gap-1">
                         <span className="text-gray-500">Topic:</span>
-                        <span className="text-gray-900">{idea.content_topics.title}</span>
+                        <span className="text-gray-900">{idea.content_topics.title || idea.content_topics.name}</span>
                       </div>
                     )}
                     {idea.stakeholder_segments && (

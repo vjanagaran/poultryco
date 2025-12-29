@@ -231,7 +231,7 @@ export default function ContentPillarsPage() {
             Total Content
           </div>
           <div className="text-2xl font-bold text-green-900">
-            {pillars.reduce((sum, p) => sum + p.content_pieces_created, 0)}
+            {pillars.reduce((sum, p) => sum + (p.content_pieces_created ?? 0), 0)}
           </div>
         </div>
       </div>
@@ -289,7 +289,7 @@ export default function ContentPillarsPage() {
                             <div
                               key={i}
                               className={`w-1.5 h-1.5 rounded-full ${
-                                i < pillar.priority_score
+                                i < (pillar.priority_score ?? 0)
                                   ? 'bg-amber-400'
                                   : 'bg-gray-200'
                               }`}
@@ -351,7 +351,7 @@ export default function ContentPillarsPage() {
                     <div>
                       <span className="text-gray-600">Content Created: </span>
                       <span className="font-semibold text-gray-900">
-                        {pillar.content_pieces_created}
+                        {pillar.content_pieces_created ?? 0}
                       </span>
                       {pillar.estimated_pieces && (
                         <span className="text-gray-500">
@@ -366,8 +366,8 @@ export default function ContentPillarsPage() {
                             className="bg-poultryco-green h-2 rounded-full"
                             style={{
                               width: `${Math.min(
-                                (pillar.content_pieces_created /
-                                  pillar.estimated_pieces) *
+                                ((pillar.content_pieces_created ?? 0) /
+                                  (pillar.estimated_pieces ?? 1)) *
                                   100,
                                 100
                               )}%`,

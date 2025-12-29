@@ -95,7 +95,7 @@ export default function CustomerSegmentsPage() {
             High Priority
           </div>
           <div className="text-2xl font-bold text-purple-900">
-            {segments.filter((s) => s.priority_level >= 8).length}
+            {segments.filter((s) => (s.priority_level ?? 0) >= 8).length}
           </div>
         </div>
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
@@ -175,11 +175,11 @@ export default function CustomerSegmentsPage() {
                     <div className="w-24 bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-poultryco-green rounded-full h-2"
-                        style={{ width: `${segment.priority_level * 10}%` }}
+                        style={{ width: `${(segment.priority_level ?? 0) * 10}%` }}
                       ></div>
                     </div>
                     <span className="font-medium text-gray-900">
-                      {segment.priority_level}/10
+                      {segment.priority_level ?? 0}/10
                     </span>
                   </div>
                 </div>
@@ -194,7 +194,7 @@ export default function CustomerSegmentsPage() {
                 )}
 
                 <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-200">
-                  <span>Created {new Date(segment.created_at).toLocaleDateString()}</span>
+                  <span>Created {segment.created_at ? new Date(segment.created_at).toLocaleDateString() : 'N/A'}</span>
                   <span className="text-poultryco-green hover:underline">View Details →</span>
                 </div>
               </div>

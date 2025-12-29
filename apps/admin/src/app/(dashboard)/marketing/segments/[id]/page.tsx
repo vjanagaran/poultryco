@@ -140,7 +140,7 @@ export default function SegmentDetailPage() {
               {segment.is_active ? 'Active' : 'Inactive'}
             </span>
             <span className="text-sm text-gray-500">
-              Created {new Date(segment.created_at).toLocaleDateString()}
+                Created {segment.created_at ? new Date(segment.created_at).toLocaleDateString() : 'N/A'}
             </span>
           </div>
         </div>
@@ -302,11 +302,11 @@ export default function SegmentDetailPage() {
                     <div className="flex-1 bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-poultryco-green rounded-full h-2"
-                        style={{ width: `${segment.priority_level * 10}%` }}
+                        style={{ width: `${(segment.priority_level ?? 0) * 10}%` }}
                       ></div>
                     </div>
                     <span className="text-sm font-medium text-gray-900">
-                      {segment.priority_level}/10
+                      {segment.priority_level ?? 0}/10
                     </span>
                   </div>
                 </div>
@@ -404,7 +404,7 @@ export default function SegmentDetailPage() {
               <div>
                 <div className="text-gray-600">Created</div>
                 <div className="font-medium text-gray-900">
-                  {new Date(segment.created_at).toLocaleString()}
+                  {segment.created_at ? new Date(segment.created_at).toLocaleString() : 'N/A'}
                 </div>
               </div>
             </div>

@@ -33,7 +33,11 @@ export default async function EditZonePage({ params }: Props) {
       </div>
 
       {/* Form */}
-      <ZoneForm zone={zone} />
+      <ZoneForm zone={{
+        ...zone,
+        sorting: zone.sort_order,
+        status: zone.is_active,
+      } as any} />
     </div>
   );
 }

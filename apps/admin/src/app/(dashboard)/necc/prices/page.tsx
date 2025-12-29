@@ -18,8 +18,8 @@ interface Props {
 export default async function PricesPage({ searchParams }: Props) {
   const params = await searchParams;
   
-  let prices = [];
-  let zones = [];
+  let prices: any[] = [];
+  let zones: any[] = [];
   
   try {
     [prices, zones] = await Promise.all([

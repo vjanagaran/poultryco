@@ -213,7 +213,7 @@ export default function ContentListPage() {
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="text-sm font-medium text-green-800 mb-1">Total Views</div>
           <div className="text-2xl font-bold text-green-900">
-            {content.reduce((sum, c) => sum + c.total_views, 0).toLocaleString()}
+            {content.reduce((sum, c) => sum + (c.total_views ?? 0), 0).toLocaleString()}
           </div>
         </div>
       </div>
@@ -303,10 +303,10 @@ export default function ContentListPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {item.total_views.toLocaleString()} views
+                      {(item.total_views ?? 0).toLocaleString()} views
                     </div>
                     <div className="text-xs text-gray-500">
-                      {(item.total_likes + item.total_comments + item.total_shares).toLocaleString()}{' '}
+                      {((item.total_likes ?? 0) + (item.total_comments ?? 0) + (item.total_shares ?? 0)).toLocaleString()}{' '}
                       engagement
                     </div>
                   </td>

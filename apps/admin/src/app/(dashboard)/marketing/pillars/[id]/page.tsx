@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
+import { getContentPillarById, type ContentPillar } from '@/lib/api/marketing';
 import { TagSelector } from '@/components/marketing/TagSelector';
 import { CampaignSelector } from '@/components/marketing/CampaignSelector';
 
@@ -40,7 +41,7 @@ export default function PillarDetailPage() {
       setLoading(true);
 
       // Fetch pillar via API
-      const pillarData = await apiClient.get(`/admin/content-pillars/${pillarId}`);
+      const pillarData = await getContentPillarById(pillarId);
       setPillar(pillarData);
       setFormData(pillarData);
 
@@ -52,10 +53,10 @@ export default function PillarDetailPage() {
         apiClient.get('/admin/content-types'),
       ]);
 
-      setPillarTypes(types || []);
-      setTopics(topics || []);
-      setSegments(segments || []);
-      setContentTypes(contentTypes || []);
+      setPillarTypes(Array.isArray(types) ? types : []);
+      setTopics(Array.isArray(topics) ? topics : []);
+      setSegments(Array.isArray(segments) ? segments : []);
+      setContentTypes(Array.isArray(contentTypes) ? contentTypes : []);
 
       // Extract assigned tags and campaign from pillar data
       if (pillarData.tagIds) {
@@ -71,7 +72,7 @@ export default function PillarDetailPage() {
       // Fetch content
       const contentData = await apiClient.get(`/admin/content?pillarId=${pillarId}`);
 
-      if (contentData) setContent(contentData);
+      if (contentData) setContent(Array.isArray(contentData) ? contentData : []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

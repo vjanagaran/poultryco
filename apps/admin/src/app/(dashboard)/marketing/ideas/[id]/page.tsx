@@ -44,9 +44,9 @@ export default function IdeaDetailPage() {
         apiClient.get('/admin/stakeholder-segments'),
       ]);
 
-      setTopics(topics || []);
-      setPillars(pillars || []);
-      setSegments(segments || []);
+      setTopics(Array.isArray(topics) ? topics : []);
+      setPillars(Array.isArray(pillars) ? pillars : []);
+      setSegments(Array.isArray(segments) ? segments : []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

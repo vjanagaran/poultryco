@@ -74,10 +74,10 @@ export default function NewPillarPage() {
         apiClient.get('/admin/content-types'),
       ]);
 
-      setPillarTypes(types || []);
-      setTopics(topics || []);
-      setSegments(segments || []);
-      setContentTypes(contentTypes || []);
+      setPillarTypes(Array.isArray(types) ? types : []);
+      setTopics(Array.isArray(topics) ? topics : []);
+      setSegments(Array.isArray(segments) ? segments : []);
+      setContentTypes(Array.isArray(contentTypes) ? contentTypes : []);
     } catch (error) {
       console.error('Error fetching lookup data:', error);
     }
@@ -141,17 +141,17 @@ export default function NewPillarPage() {
       // 1. Create the pillar via API
       const pillar = await createContentPillar({
         title,
-        slug: slug || null,
-        description: description || null,
-        pillar_type_id: pillarTypeId || null,
-        research_question: researchQuestion || null,
-        hypothesis: hypothesis || null,
-        research_notes: researchNotes || null,
-        key_insights: keyInsights.length > 0 ? keyInsights : null,
-        target_url: targetUrl || null,
-        focus_keywords: focusKeywords.length > 0 ? focusKeywords : null,
-        topic_id: topicId || null,
-        segment_id: segmentId || null,
+        slug: slug || undefined,
+        description: description || undefined,
+        pillar_type_id: pillarTypeId || undefined,
+        research_question: researchQuestion || undefined,
+        hypothesis: hypothesis || undefined,
+        research_notes: researchNotes || undefined,
+        key_insights: keyInsights.length > 0 ? keyInsights : undefined,
+        target_url: targetUrl || undefined,
+        focus_keywords: focusKeywords.length > 0 ? focusKeywords : undefined,
+        topic_id: topicId || undefined,
+        segment_id: segmentId || undefined,
         status,
         priority_score: priorityScore,
         tagIds: selectedTags.length > 0 ? selectedTags : undefined,

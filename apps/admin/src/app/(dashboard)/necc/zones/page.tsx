@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function ZonesPage() {
-  let zones = [];
+  let zones: any[] = [];
   try {
     zones = await getAllZones();
     // Sort by sort_order

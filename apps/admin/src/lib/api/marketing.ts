@@ -11,6 +11,17 @@ export interface StakeholderSegment {
   id: string;
   name: string;
   description: string | null;
+  segment_size_estimate?: number | null;
+  key_characteristics?: string | null;
+  pain_points?: string | null;
+  goals?: string | null;
+  challenges?: string | null;
+  communication_preferences?: string | null;
+  preferred_channels?: string | null;
+  content_preferences?: string | null;
+  priority_level?: number;
+  is_active?: boolean;
+  created_at?: string;
 }
 
 export interface ContentTopic {
@@ -40,8 +51,13 @@ export interface ContentPillar {
   estimated_pieces?: number;
   key_insights?: string[];
   research_question?: string | null;
+  hypothesis?: string | null;
+  research_notes?: string | null;
+  target_url?: string | null;
+  focus_keywords?: string[];
   tagIds?: string[]; // Tag assignments from API
   campaignId?: string; // Campaign assignment from API
+  plannedTypes?: string[]; // Planned content types
   created_at: string;
 }
 
@@ -55,6 +71,8 @@ export interface Content {
   content_type_id: string;
   status: string;
   created_at: string;
+  updated_at?: string;
+  published_at?: string | null;
   content_body?: string | null | undefined;
   excerpt?: string | null | undefined;
   meta_title?: string | null | undefined;
@@ -66,6 +84,10 @@ export interface Content {
   cta_text?: string | null | undefined;
   cta_url?: string | null | undefined;
   master_content_id?: string | null | undefined;
+  total_views?: number; // View count for analytics
+  total_likes?: number; // Like count for analytics
+  total_comments?: number; // Comment count for analytics
+  total_shares?: number; // Share count for analytics
   tagIds?: string[]; // Tag assignments from API
   campaignId?: string; // Campaign assignment from API
   content_types?: { name: string };
@@ -76,12 +98,23 @@ export interface ContentIdea {
   id: string;
   title: string;
   description: string | null;
+  idea_source?: string | null;
+  format?: string | null;
   topic_id: string | null;
   pillar_id: string | null;
   segment_id: string | null;
+  estimated_effort?: string | null;
+  estimated_impact?: string | null;
+  priority_score?: number | null;
+  due_date?: string | null;
+  notes?: string | null;
+  tagIds?: string[]; // Tag assignments from API
   status: string;
   rejection_reason?: string | null;
   created_at: string;
+  content_topics?: { name: string; title?: string };
+  content_pillars?: { title: string };
+  stakeholder_segments?: { name: string };
 }
 
 export interface MarketingChannel {
@@ -348,7 +381,8 @@ export interface ContentTag {
   slug: string;
   color: string;
   description: string | null;
-  usageCount: number;
+  usageCount?: number;
+  usage_count?: number; // Alias for usageCount (API may return snake_case)
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;

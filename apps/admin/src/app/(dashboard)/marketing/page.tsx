@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getMarketingDashboardStats } from '@/lib/api/marketing';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,14 @@ export default async function MarketingDashboard() {
   };
 
   try {
-    stats = await getMarketingDashboardStats();
+    const dashboardStats = await getMarketingDashboardStats() as any;
+    stats = {
+      topicsCount: dashboardStats?.topicsCount || 0,
+      segmentsCount: dashboardStats?.segmentsCount || 0,
+      pillarsCount: dashboardStats?.pillarsCount || 0,
+      channelsCount: dashboardStats?.channelsCount || 0,
+      scheduledCount: dashboardStats?.scheduledCount || 0,
+    };
   } catch (error) {
     console.error('Error fetching marketing stats:', error);
   }

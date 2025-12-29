@@ -880,8 +880,9 @@ export default function ContentDetailPage() {
               <div className="text-sm text-gray-600">Total Engagement</div>
               <div className="text-2xl font-bold text-gray-900">
                 {(
-                  (content.total_likes || 0) +
-                  (content.total_comments || 0) +
+                  (content.total_likes ?? 0) +
+                  (content.total_comments ?? 0) +
+                  (content.total_shares ?? 0) +
                   (content.total_shares || 0)
                 ).toLocaleString()}
               </div>
@@ -890,13 +891,13 @@ export default function ContentDetailPage() {
               <div>
                 <div className="text-xs text-gray-500">Likes</div>
                 <div className="text-sm font-semibold text-gray-900">
-                  {content.total_likes || 0}
+                  {content.total_likes ?? 0}
                 </div>
               </div>
               <div>
                 <div className="text-xs text-gray-500">Comments</div>
                 <div className="text-sm font-semibold text-gray-900">
-                  {content.total_comments || 0}
+                  {content.total_comments ?? 0}
                 </div>
               </div>
               <div>

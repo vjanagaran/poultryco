@@ -15,8 +15,11 @@ import {
   type ContentTag 
 } from '@/lib/api/marketing';
 
-// Types
-export interface ContentTag {
+// Re-export for convenience
+export type { ContentTag };
+
+// Remove duplicate interface - use the one from marketing.ts
+/*export interface ContentTag {
   id: string;
   name: string;
   slug: string;

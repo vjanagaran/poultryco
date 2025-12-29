@@ -68,18 +68,18 @@ export default function NewIdeaPage() {
       const idea = await createContentIdea({
         title,
         description: description || null,
-        ideaSource: ideaSource || null,
+        idea_source: ideaSource || null,
         format: format || null,
-        topicId: topicId || null,
-        pillarId: pillarId || null,
-        segmentId: segmentId || null,
-        estimatedEffort: estimatedEffort || null,
-        estimatedImpact: estimatedImpact || null,
-        priorityScore: priorityScore,
+        topic_id: topicId || null,
+        pillar_id: pillarId || null,
+        segment_id: segmentId || null,
+        estimated_effort: estimatedEffort || null,
+        estimated_impact: estimatedImpact || null,
+        priority_score: priorityScore,
         status,
-        dueDate: dueDate || null,
+        due_date: dueDate || null,
         notes: notes || null,
-        tags: tags.length > 0 ? tags : null,
+        tagIds: tags.length > 0 ? tags : undefined,
       });
       
       router.push(`/marketing/ideas/${idea.id}`);
