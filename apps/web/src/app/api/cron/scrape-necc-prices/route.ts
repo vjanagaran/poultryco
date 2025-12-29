@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api/v1';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/v1';
     
     // Call REST API scraper endpoint
     const response = await fetch(`${apiUrl}/necc/scrape`, {

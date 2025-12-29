@@ -27,7 +27,7 @@ async function bootstrap() {
   });
 
   // Global prefix
-  const apiPrefix = configService.get('API_PREFIX') || 'api/v1';
+  const apiPrefix = configService.get('API_PREFIX') || 'v1';
   app.setGlobalPrefix(apiPrefix);
 
   // Validation

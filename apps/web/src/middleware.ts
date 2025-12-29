@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
   
   // Extract origin from API URL (CSP connect-src only accepts origins, not full URLs with paths)
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/api/v1';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/v1';
   let apiOrigin = 'http://localhost:3002';
   try {
     apiOrigin = new URL(apiUrl).origin;

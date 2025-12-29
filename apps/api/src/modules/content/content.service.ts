@@ -570,6 +570,7 @@ export class ContentService {
 
     const conditions = [
       eq(blogPosts.status, 'published'),
+      sql`${blogPosts.publishedAt} IS NOT NULL`,
       lte(blogPosts.publishedAt, now),
     ];
 
