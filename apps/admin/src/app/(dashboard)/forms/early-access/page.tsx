@@ -1,31 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getEarlyAccessSignups, updateEarlyAccessSignupStatus, deleteEarlyAccessSignup, type EarlyAccessSignup } from '@/lib/api/forms'
 
-interface EarlyAccessSignup {
-  id: string
-  full_name: string
-  email: string
-  phone: string | null
-  role: string | null
-  company_name: string | null
-  country: string | null
-  interested_in: string[] | null
-  message: string | null
-  status: string
-  priority: string
-  created_at: string
-  source: string | null
-}
+// Types imported from API
 
 export default function EarlyAccessPage() {
   const [signups, setSignups] = useState<EarlyAccessSignup[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
-
-  const supabase = createClient()
 
   useEffect(() => {
     fetchSignups()
@@ -35,18 +19,8 @@ export default function EarlyAccessPage() {
   async function fetchSignups() {
     try {
       setLoading(true)
-      let query = supabase
-        .from('early_access_signups')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter)
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
+      const status = statusFilter !== 'all' ? statusFilter : undefined
+      const data = await getEarlyAccessSignups(status)
       setSignups(data || [])
     } catch (error) {
       console.error('Error fetching signups:', error)
@@ -57,13 +31,7 @@ export default function EarlyAccessPage() {
 
   async function updateStatus(id: string, status: string) {
     try {
-      const { error } = await supabase
-        .from('early_access_signups')
-        .update({ status })
-        .eq('id', id)
-
-      if (error) throw error
-
+      await updateEarlyAccessSignupStatus(id, status)
       setSignups(signups.map(s => s.id === id ? { ...s, status } : s))
       alert('Status updated successfully')
     } catch (error) {
@@ -76,13 +44,7 @@ export default function EarlyAccessPage() {
     if (!confirm('Are you sure you want to delete this signup?')) return
 
     try {
-      const { error } = await supabase
-        .from('early_access_signups')
-        .delete()
-        .eq('id', id)
-
-      if (error) throw error
-
+      await deleteEarlyAccessSignup(id)
       setSignups(signups.filter(s => s.id !== id))
       alert('Signup deleted successfully')
     } catch (error) {

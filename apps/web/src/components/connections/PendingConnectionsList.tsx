@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getPendingConnectionRequests, acceptConnectionRequest, rejectConnectionRequest } from '@/lib/api/connections';
 import { Button } from '@/components/ui';
-import { getPublicUrl } from '@/lib/supabase/storage';
+// Removed Supabase storage import - using direct URLs
 
 export function PendingConnectionsList() {
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
@@ -88,7 +88,7 @@ export function PendingConnectionsList() {
             <Link href={`/me/${request.requester.profile_slug}`} className="flex-shrink-0">
               {request.requester.profile_photo_url ? (
                 <Image
-                  src={getPublicUrl(request.requester.profile_photo_url) || '/default-avatar.png'}
+                  src={request.requester.profile_photo_url || '/default-avatar.png'}
                   alt={request.requester.full_name}
                   width={48}
                   height={48}

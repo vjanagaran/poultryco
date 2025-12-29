@@ -2,22 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getContentPillars, type ContentPillar } from '@/lib/api/marketing';
 
-interface ContentPillar {
-  id: string;
-  title: string;
-  slug: string | null;
-  description: string | null;
-  pillar_type: string;
-  research_question: string | null;
-  key_insights: string[];
-  status: string;
-  priority_score: number;
-  content_pieces_created: number;
-  estimated_pieces: number | null;
-  created_at: string;
-}
+// Types imported from API
 
 const STATUS_COLORS: Record<string, string> = {
   ideation: 'bg-gray-100 text-gray-800 border-gray-200',
@@ -48,8 +35,6 @@ export default function ContentPillarsPage() {
   const [pillarTags, setPillarTags] = useState<Record<string, string[]>>({});
   const [pillarCampaigns, setPillarCampaigns] = useState<Record<string, string>>({});
 
-  const supabase = createClient();
-
   useEffect(() => {
     fetchPillars();
     fetchFilters();
@@ -57,46 +42,31 @@ export default function ContentPillarsPage() {
 
   async function fetchPillars() {
     try {
-      const { data, error } = await supabase
-        .from('content_pillars')
-        .select('*')
-        .order('priority_score', { ascending: false });
+      setLoading(true);
+      const data = await getContentPillars();
+      
+      // Sort by priority_score descending
+      const sortedData = (data || []).sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0));
+      setPillars(sortedData);
 
-      if (error) throw error;
-      setPillars(data || []);
+      // Extract tag and campaign assignments from pillar data
+      if (sortedData && sortedData.length > 0) {
+        const tagMap: Record<string, string[]> = {};
+        const campaignMap: Record<string, string> = {};
 
-      // Fetch tag and campaign assignments
-      if (data && data.length > 0) {
-        const pillarIds = data.map((p) => p.id);
+        sortedData.forEach((pillar) => {
+          // If API returns tagIds array, use it
+          if (pillar.tagIds && Array.isArray(pillar.tagIds)) {
+            tagMap[pillar.id] = pillar.tagIds;
+          }
+          // If API returns campaignId, use it
+          if (pillar.campaignId) {
+            campaignMap[pillar.id] = pillar.campaignId;
+          }
+        });
 
-        // Fetch tags
-        const { data: tagData } = await supabase
-          .from('pillar_tag_assignments')
-          .select('pillar_id, tag_id')
-          .in('pillar_id', pillarIds);
-
-        if (tagData) {
-          const tagMap: Record<string, string[]> = {};
-          tagData.forEach((item) => {
-            if (!tagMap[item.pillar_id]) tagMap[item.pillar_id] = [];
-            tagMap[item.pillar_id].push(item.tag_id);
-          });
-          setPillarTags(tagMap);
-        }
-
-        // Fetch campaigns
-        const { data: campaignData } = await supabase
-          .from('pillar_campaign_assignments')
-          .select('pillar_id, campaign_id')
-          .in('pillar_id', pillarIds);
-
-        if (campaignData) {
-          const campaignMap: Record<string, string> = {};
-          campaignData.forEach((item) => {
-            campaignMap[item.pillar_id] = item.campaign_id;
-          });
-          setPillarCampaigns(campaignMap);
-        }
+        setPillarTags(tagMap);
+        setPillarCampaigns(campaignMap);
       }
     } catch (error) {
       console.error('Error fetching pillars:', error);
@@ -107,13 +77,9 @@ export default function ContentPillarsPage() {
 
   async function fetchFilters() {
     try {
-      const [tagsRes, campaignsRes] = await Promise.all([
-        supabase.from('content_tags').select('id, name, color').order('name'),
-        supabase.from('content_campaigns').select('id, name, color').order('name'),
-      ]);
-
-      if (tagsRes.data) setTags(tagsRes.data);
-      if (campaignsRes.data) setCampaigns(campaignsRes.data);
+      // TODO: Fetch tags and campaigns when API supports it
+      setTags([]);
+      setCampaigns([]);
     } catch (error) {
       console.error('Error fetching filters:', error);
     }
@@ -121,7 +87,7 @@ export default function ContentPillarsPage() {
 
   const filteredPillars = pillars.filter((pillar) => {
     if (filterStatus !== 'all' && pillar.status !== filterStatus) return false;
-    if (filterType !== 'all' && pillar.pillar_type !== filterType) return false;
+    if (filterType !== 'all' && (pillar.pillar_type || pillar.pillar_type_id) !== filterType) return false;
     if (filterTag !== 'all') {
       const tags = pillarTags[pillar.id] || [];
       if (!tags.includes(filterTag)) return false;
@@ -265,7 +231,7 @@ export default function ContentPillarsPage() {
             Total Content
           </div>
           <div className="text-2xl font-bold text-green-900">
-            {pillars.reduce((sum, p) => sum + p.content_pieces_created, 0)}
+            {pillars.reduce((sum, p) => sum + (p.content_pieces_created ?? 0), 0)}
           </div>
         </div>
       </div>
@@ -304,7 +270,7 @@ export default function ContentPillarsPage() {
                   {/* Header */}
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-3xl">
-                      {TYPE_ICONS[pillar.pillar_type] || '📄'}
+                      {TYPE_ICONS[pillar.pillar_type || ''] || '📄'}
                     </span>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -316,14 +282,14 @@ export default function ContentPillarsPage() {
                           {pillar.status.replace('_', ' ')}
                         </span>
                         <span className="text-xs text-gray-500 capitalize">
-                          {pillar.pillar_type.replace('_', ' ')}
+                          {(pillar.pillar_type || '').replace('_', ' ')}
                         </span>
                         <div className="flex items-center gap-1">
                           {[...Array(10)].map((_, i) => (
                             <div
                               key={i}
                               className={`w-1.5 h-1.5 rounded-full ${
-                                i < pillar.priority_score
+                                i < (pillar.priority_score ?? 0)
                                   ? 'bg-amber-400'
                                   : 'bg-gray-200'
                               }`}
@@ -385,7 +351,7 @@ export default function ContentPillarsPage() {
                     <div>
                       <span className="text-gray-600">Content Created: </span>
                       <span className="font-semibold text-gray-900">
-                        {pillar.content_pieces_created}
+                        {pillar.content_pieces_created ?? 0}
                       </span>
                       {pillar.estimated_pieces && (
                         <span className="text-gray-500">
@@ -400,8 +366,8 @@ export default function ContentPillarsPage() {
                             className="bg-poultryco-green h-2 rounded-full"
                             style={{
                               width: `${Math.min(
-                                (pillar.content_pieces_created /
-                                  pillar.estimated_pieces) *
+                                ((pillar.content_pieces_created ?? 0) /
+                                  (pillar.estimated_pieces ?? 1)) *
                                   100,
                                 100
                               )}%`,

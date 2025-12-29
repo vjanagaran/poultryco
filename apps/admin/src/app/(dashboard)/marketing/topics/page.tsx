@@ -2,22 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getContentTopics, getNdpCategories, type ContentTopic } from '@/lib/api/marketing';
 
-interface ContentTopic {
-  id: string;
-  title: string;
-  description: string | null;
-  ndp_category_id: string;
-  target_outcome: string | null;
-  key_message: string | null;
-  is_active: boolean;
-  created_at: string;
-  ndp_categories?: {
-    name: string;
-    description: string | null;
-  };
-}
+// Types imported from API
 
 export default function NDPTopicsPage() {
   const [topics, setTopics] = useState<ContentTopic[]>([]);
@@ -26,29 +13,19 @@ export default function NDPTopicsPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [ndpCategories, setNdpCategories] = useState<any[]>([]);
 
-  const supabase = createClient();
-
   useEffect(() => {
     fetchData();
   }, []);
 
   async function fetchData() {
     try {
+      setLoading(true);
       // Fetch NDP categories
-      const { data: categoriesData } = await supabase
-        .from('ndp_categories')
-        .select('*')
-        .order('name');
-
-      if (categoriesData) setNdpCategories(categoriesData);
+      const categoriesData = await getNdpCategories();
+      setNdpCategories(categoriesData);
 
       // Fetch topics
-      const { data, error } = await supabase
-        .from('content_topics')
-        .select('*, ndp_categories(name, description)')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      const data = await getContentTopics();
       setTopics(data || []);
     } catch (error) {
       console.error('Error fetching topics:', error);

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { getBlogPostById, updateBlogPost, getBlogCategories, type BlogPost, type BlogCategory } from '@/lib/api/content'
+import { apiClient } from '@/lib/api/client'
 import RichTextEditor from '@/components/RichTextEditor'
 import TagInput from '@/components/TagInput'
 import ImageUpload from '@/components/ImageUpload'
@@ -40,7 +41,7 @@ export default function EditBlogPostPage() {
   const router = useRouter()
   const params = useParams()
   const postId = params.id as string
-  const supabase = createClient()
+  // Using API client
 
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
@@ -73,27 +74,14 @@ export default function EditBlogPostPage() {
     try {
       setFetching(true)
       
-      // Fetch post
-      const { data: post, error: postError } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .eq('id', postId)
-        .single()
-
-      if (postError) throw postError
+      // Fetch post via API
+      const post = await getBlogPostById(postId)
+      
       if (!post) {
         alert('Post not found')
         router.push('/blog')
         return
       }
-
-      // Fetch post tags
-      const { data: postTags, error: tagsError } = await supabase
-        .from('blog_post_tags')
-        .select('tag_id')
-        .eq('post_id', postId)
-
-      if (tagsError) throw tagsError
 
       // Set form data
       setFormData({
@@ -103,14 +91,14 @@ export default function EditBlogPostPage() {
         content: post.content || '',
         category_id: post.category_id || '',
         status: post.status || 'draft',
-        scheduled_for: post.scheduled_for ? new Date(post.scheduled_for).toISOString().slice(0, 16) : '',
-        meta_title: post.meta_title || '',
-        meta_description: post.meta_description || '',
-        featured_image: post.featured_image || '',
-        featured_image_alt: post.featured_image_alt || '',
+        scheduled_for: post.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : '',
+        meta_title: post.metaTitle || '',
+        meta_description: post.metaDescription || '',
+        featured_image: post.featuredImage || '',
+        featured_image_alt: post.featuredImageAlt || '',
       })
 
-      setSelectedTags(postTags?.map(pt => pt.tag_id) || [])
+      setSelectedTags(post.tagIds || [])
     } catch (error) {
       console.error('Error fetching post:', error)
       alert(error instanceof Error ? error.message : 'Failed to load post')
@@ -122,14 +110,8 @@ export default function EditBlogPostPage() {
 
   async function fetchCategories() {
     try {
-      const { data, error } = await supabase
-        .from('blog_categories')
-        .select('id, name, slug')
-        .eq('is_active', true)
-        .order('name')
-
-      if (error) throw error
-      setCategories(data || [])
+      const categories = await getBlogCategories()
+      setCategories(categories || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
     }
@@ -137,36 +119,19 @@ export default function EditBlogPostPage() {
 
   async function fetchTags() {
     try {
-      const { data, error } = await supabase
-        .from('blog_tags')
-        .select('id, name, slug')
-        .order('name')
-
-      if (error) throw error
-      setTags(data || [])
+      // TODO: Implement getBlogTags API endpoint
+      const tags = await apiClient.get<Tag[]>('/admin/blog/tags')
+      setTags(tags || [])
     } catch (error) {
       console.error('Error fetching tags:', error)
     }
   }
 
   async function createTag(name: string): Promise<Tag> {
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-
-    const { data, error } = await supabase
-      .from('blog_tags')
-      .insert([{ name, slug }])
-      .select()
-      .single()
-
-    if (error) throw error
-
-    // Refresh tags list
+    // TODO: Implement createBlogTag API endpoint
+    const tag = await apiClient.post<Tag>('/admin/blog/tags', { name })
     fetchTags()
-
-    return data
+    return tag
   }
 
   async function handleImageUploadForEditor(): Promise<string> {
@@ -185,17 +150,16 @@ export default function EditBlogPostPage() {
           const fileExt = file.name.split('.').pop()
           const fileName = `blog/content/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
 
-          const { data, error } = await supabase.storage
-            .from('cdn-poultryco')
-            .upload(fileName, file)
-
-          if (error) throw error
-
-          const { data: { publicUrl } } = supabase.storage
-            .from('cdn-poultryco')
-            .getPublicUrl(data.path)
-
-          resolve(publicUrl)
+          // Upload via API
+          const formData = new FormData()
+          formData.append('file', file)
+          formData.append('folder', 'blog/content')
+          
+          const result = await apiClient.post<{ url: string }>('/admin/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          })
+          
+          resolve(result.url)
         } catch (error) {
           console.error('Upload error:', error)
           resolve('')
@@ -221,67 +185,36 @@ export default function EditBlogPostPage() {
     setLoading(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Not authenticated')
-
       const now = new Date().toISOString()
-      let status = formData.status
-      let published_at = null
+      let status: 'draft' | 'published' | 'scheduled' | 'archived' = formData.status as 'draft' | 'published' | 'scheduled' | 'archived'
+      let publishedAt = null
 
       if (action === 'publish') {
         status = 'published'
-        published_at = now
+        publishedAt = now
       } else if (action === 'schedule') {
         status = 'scheduled'
-        published_at = null
+        publishedAt = null
       } else {
         status = 'draft'
       }
 
-      const postData = {
+      // Update post via API
+      await updateBlogPost(postId, {
         title: formData.title,
         slug: formData.slug,
         excerpt: formData.excerpt || null,
         content: formData.content,
-        category_id: formData.category_id || null,
+        categoryId: formData.category_id || null,
         status,
-        published_at,
-        scheduled_for: action === 'schedule' ? formData.scheduled_for : null,
-        meta_title: formData.meta_title || null,
-        meta_description: formData.meta_description || null,
-        featured_image: formData.featured_image || null,
-        featured_image_alt: formData.featured_image_alt || null,
-        word_count: formData.content.split(/\s+/).length,
-        reading_time_minutes: Math.ceil(formData.content.split(/\s+/).length / 200),
-      }
-
-      const { error: postError } = await supabase
-        .from('blog_posts')
-        .update(postData)
-        .eq('id', postId)
-
-      if (postError) throw postError
-
-      // Update tags
-      // First, delete existing tags
-      await supabase
-        .from('blog_post_tags')
-        .delete()
-        .eq('post_id', postId)
-
-      // Then insert new tags
-      if (selectedTags.length > 0) {
-        const tagLinks = selectedTags.map(tagId => ({
-          post_id: postId,
-          tag_id: tagId,
-        }))
-
-        const { error: tagsError } = await supabase
-          .from('blog_post_tags')
-          .insert(tagLinks)
-
-        if (tagsError) throw tagsError
-      }
+        publishedAt,
+        scheduledFor: action === 'schedule' ? formData.scheduled_for : null,
+        metaTitle: formData.meta_title || null,
+        metaDescription: formData.meta_description || null,
+        featuredImage: formData.featured_image || null,
+        featuredImageAlt: formData.featured_image_alt || null,
+        tagIds: selectedTags,
+      })
 
       alert(`Post ${action === 'publish' ? 'published' : action === 'schedule' ? 'scheduled' : 'updated'} successfully!`)
       router.push('/blog')

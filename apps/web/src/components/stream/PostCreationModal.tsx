@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import * as socialApi from '@/lib/api/social';
+import * as uploadApi from '@/lib/api/upload';
 import { useAuth } from '@/contexts/AuthContext';
-import { uploadPostImage, searchUsers, parseContent, ensureHashtag } from '@/lib/streamUtils';
+import { searchUsers, parseContent } from '@/lib/streamUtils';
 import { addPendingPost, cacheMention } from '@/lib/streamOfflineService';
 import { createMentionNotifications } from '@/lib/notificationService';
 import Image from 'next/image';
@@ -141,19 +142,19 @@ export function PostCreationModal({
 
     setUploadingImages(files);
 
-    for (const file of files) {
-      const result = await uploadPostImage(file, user?.id || '');
+    try {
+      // Upload images via API
+      const uploadResults = await uploadApi.uploadPostMedia(files);
       
-      if (result.success && result.url) {
-        setImages((prev) => [...prev, result.url!]);
-      } else {
-        setError(result.error || 'Failed to upload image');
+      const uploadedUrls = uploadResults.map((result) => result.url || result.cdnUrl || '');
+      setImages((prev) => [...prev, ...uploadedUrls]);
+    } catch (error: any) {
+      setError(error.message || 'Failed to upload images');
+    } finally {
+      setUploadingImages([]);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
-    }
-
-    setUploadingImages([]);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
     }
   };
 
@@ -203,55 +204,42 @@ export function PostCreationModal({
         return;
       }
 
-      const supabase = createClient();
-
       // Parse content for mentions and hashtags
       const parsed = parseContent(content);
 
-      // Create post
-      const postData: any = {
-        author_id: user?.id,
+      // Upload images first if any
+      let mediaUrls: string[] = [];
+      if (uploadingImages.length > 0) {
+        const uploadResults = await uploadApi.uploadPostMedia(uploadingImages);
+        mediaUrls = uploadResults.map((result) => result.url || result.cdnUrl || '');
+      }
+
+      // Create post via API
+      const postDataForApi: any = {
         content: content.trim(),
+        visibility: visibility,
+        media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
         post_type: images.length > 0 && postType === 'update' ? 'photo' : postType,
-        media_urls: images,
-        media_type: images.length > 0 ? 'image' : null,
-        visibility,
       };
 
       // Add type-specific fields
       if (postType === 'problem') {
-        postData.problem_category = problemCategory;
-        postData.problem_urgency = problemUrgency;
+        postDataForApi.problem_category = problemCategory;
+        postDataForApi.problem_urgency = problemUrgency;
       }
 
       if (postType === 'article') {
-        postData.article_title = articleTitle.trim();
-        postData.article_cover_image = images[0] || null;
+        postDataForApi.article_title = articleTitle.trim();
+        postDataForApi.article_cover_image = mediaUrls[0] || null;
       }
 
-      const { data: post, error: postError } = await supabase
-        .from('posts')
-        .insert(postData)
-        .select()
-        .single();
-
-      if (postError) throw postError;
-
-      // Extract and save hashtags
-      if (parsed.hashtags.length > 0) {
-        for (const hashtag of parsed.hashtags) {
-          const tagId = await ensureHashtag(hashtag.tag);
-          
-          if (tagId) {
-            await supabase
-              .from('posts_tags')
-              .insert({
-                post_id: post.id,
-                tag_id: tagId,
-              });
-          }
-        }
+      // Extract hashtags from content
+      const hashtags = parsed.hashtags.map((h) => h.tag);
+      if (hashtags.length > 0) {
+        postDataForApi.tags = hashtags;
       }
+
+      const post = await socialApi.createPost(postDataForApi);
 
       // Cache mentions used
       for (const mention of parsed.mentions) {

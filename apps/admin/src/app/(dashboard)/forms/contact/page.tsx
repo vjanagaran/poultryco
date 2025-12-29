@@ -1,28 +1,14 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getContactSubmissions, updateContactSubmissionStatus, type ContactSubmission } from '@/lib/api/forms'
 
-interface ContactSubmission {
-  id: string
-  full_name: string
-  email: string
-  phone: string | null
-  company_name: string | null
-  subject: string
-  message: string
-  inquiry_type: string | null
-  status: string
-  priority: string
-  created_at: string
-}
+// Types imported from API
 
 export default function ContactSubmissionsPage() {
   const [submissions, setSubmissions] = useState<ContactSubmission[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
-
-  const supabase = createClient()
 
   useEffect(() => {
     fetchSubmissions()
@@ -32,17 +18,8 @@ export default function ContactSubmissionsPage() {
   async function fetchSubmissions() {
     try {
       setLoading(true)
-      let query = supabase
-        .from('contact_submissions')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter)
-      }
-
-      const { data, error } = await query
-      if (error) throw error
+      const status = statusFilter !== 'all' ? statusFilter : undefined
+      const data = await getContactSubmissions(status)
       setSubmissions(data || [])
     } catch (error) {
       console.error('Error:', error)
@@ -53,12 +30,7 @@ export default function ContactSubmissionsPage() {
 
   async function updateStatus(id: string, status: string) {
     try {
-      const { error } = await supabase
-        .from('contact_submissions')
-        .update({ status })
-        .eq('id', id)
-
-      if (error) throw error
+      await updateContactSubmissionStatus(id, status)
       setSubmissions(submissions.map(s => s.id === id ? { ...s, status } : s))
     } catch (error) {
       console.error('Error:', error)

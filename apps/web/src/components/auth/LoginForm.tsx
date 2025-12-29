@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { signIn, signInWithOAuth } from '@/lib/auth/cognito';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -14,24 +14,13 @@ export default function LoginForm() {
     password: '',
   });
 
-  const handleSocialAuth = async (provider: 'google' | 'linkedin_oidc') => {
+  const handleSocialAuth = async (provider: 'google' | 'linkedin') => {
     setLoading(true);
     setError(null);
 
     try {
-      const supabase = createClient();
-      const redirectTo = typeof window !== 'undefined' 
-        ? `${window.location.origin}/auth/callback?next=${searchParams.get('next') || '/dashboard'}`
-        : `/auth/callback?next=${searchParams.get('next') || '/dashboard'}`;
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo,
-        },
-      });
-
-      if (error) throw error;
+      await signInWithOAuth(provider);
+      // OAuth redirect will happen, no need to handle response here
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
@@ -44,20 +33,14 @@ export default function LoginForm() {
     setError(null);
 
     try {
-      const supabase = createClient();
-
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      await signIn({
         email: formData.email,
         password: formData.password,
       });
 
-      if (signInError) throw signInError;
-
-      if (data.user) {
-        // Redirect to intended page or dashboard
-        const nextUrl = searchParams.get('next');
-        router.push(nextUrl || '/dashboard');
-      }
+      // Redirect to intended page or dashboard
+      const nextUrl = searchParams.get('next');
+      router.push(nextUrl || '/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid email or password');
     } finally {
@@ -105,7 +88,7 @@ export default function LoginForm() {
 
         <button
           type="button"
-          onClick={() => handleSocialAuth('linkedin_oidc')}
+          onClick={() => handleSocialAuth('linkedin')}
           disabled={loading}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -177,4 +160,3 @@ export default function LoginForm() {
     </div>
   );
 }
-

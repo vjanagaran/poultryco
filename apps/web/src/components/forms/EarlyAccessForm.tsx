@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button, Input } from "@/components/ui";
-import { supabase } from "@/lib/supabase";
+import { apiClient } from "@/lib/api/client";
 
 interface FormData {
   fullName: string;
@@ -39,20 +39,17 @@ export function EarlyAccessForm() {
     setError("");
 
     try {
-      const { error: insertError } = await supabase
-        .from('early_access_signups')
-        .insert([{
-          full_name: formData.fullName,
-          email: formData.email,
-          phone: formData.phone || null,
-          role: formData.role,
-          company_name: formData.organization || null,
-          country: formData.country,
-          source: 'early-access-page',
-          referrer: typeof window !== 'undefined' ? document.referrer : null,
-        }])
-
-      if (insertError) throw insertError;
+      // Submit via API
+      await apiClient.post('/forms/early-access', {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone || null,
+        role: formData.role,
+        companyName: formData.organization || null,
+        country: formData.country,
+        source: 'early-access-page',
+        referrer: typeof window !== 'undefined' ? document.referrer : null,
+      });
       
       setIsSuccess(true);
       

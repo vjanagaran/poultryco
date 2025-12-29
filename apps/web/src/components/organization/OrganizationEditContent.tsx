@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { getOrganizationBySlug } from '@/lib/api/organizations';
+import { apiClient } from '@/lib/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 import Image from 'next/image';
 
 interface OrganizationEditContentProps {
@@ -11,6 +13,7 @@ interface OrganizationEditContentProps {
 
 export function OrganizationEditContent({ slug }: OrganizationEditContentProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [organization, setOrganization] = useState<any>(null);
@@ -33,48 +36,35 @@ export function OrganizationEditContent({ slug }: OrganizationEditContentProps) 
   useEffect(() => {
     async function fetchOrganization() {
       try {
-        const supabase = createClient();
-        
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           router.push('/login');
           return;
         }
 
-        // Fetch organization
-        const { data: orgData, error } = await supabase
-          .from('organizations')
-          .select(`
-            *,
-            contact:organizations_contact(*)
-          `)
-          .eq('organization_slug', slug)
-          .single();
-
-        if (error) throw error;
+        // Fetch organization via API
+        const orgData = await getOrganizationBySlug(slug);
 
         // Check if user is owner
-        if (orgData.owner_id !== user.id) {
+        if (orgData.ownerId !== user.id) {
           router.push(`/org/${slug}`);
           return;
         }
 
         setOrganization(orgData);
         setFormData({
-          organization_name: orgData.organization_name || '',
-          organization_type: orgData.organization_type || '',
+          organization_name: orgData.name || '',
+          organization_type: orgData.organizationTypeId || '',
           about: orgData.about || '',
           mission: orgData.mission || '',
           vision: orgData.vision || '',
-          founded_year: orgData.founded_year?.toString() || '',
-          website_url: orgData.website_url || '',
-          headquarters_address: orgData.contact?.headquarters_address || '',
-          headquarters_city: orgData.contact?.headquarters_city || '',
-          headquarters_state: orgData.contact?.headquarters_state || '',
-          country: orgData.contact?.country || 'India',
-          phone: orgData.contact?.phone || '',
-          email: orgData.contact?.email || '',
+          founded_year: orgData.foundedYear?.toString() || '',
+          website_url: orgData.websiteUrl || '',
+          headquarters_address: '', // TODO: Get from contact
+          headquarters_city: '',
+          headquarters_state: '',
+          country: 'India',
+          phone: '',
+          email: '',
         });
       } catch (error) {
         console.error('Error fetching organization:', error);
@@ -85,47 +75,32 @@ export function OrganizationEditContent({ slug }: OrganizationEditContentProps) 
     }
 
     fetchOrganization();
-  }, [slug, router]);
+  }, [slug, router, user]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const supabase = createClient();
-
-      // Update organization
-      const { error: orgError } = await supabase
-        .from('organizations')
-        .update({
-          organization_name: formData.organization_name,
-          organization_type: formData.organization_type,
-          about: formData.about || null,
-          mission: formData.mission || null,
-          vision: formData.vision || null,
-          founded_year: formData.founded_year ? parseInt(formData.founded_year) : null,
-          website_url: formData.website_url || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', organization.id);
-
-      if (orgError) throw orgError;
-
-      // Update contact info
-      const { error: contactError } = await supabase
-        .from('organizations_contact')
-        .upsert({
-          organization_id: organization.id,
-          headquarters_address: formData.headquarters_address || null,
-          headquarters_city: formData.headquarters_city || null,
-          headquarters_state: formData.headquarters_state || null,
+      // Update organization via API
+      await apiClient.put(`/organizations/${organization.id}`, {
+        name: formData.organization_name,
+        organizationTypeId: formData.organization_type,
+        about: formData.about || null,
+        mission: formData.mission || null,
+        vision: formData.vision || null,
+        foundedYear: formData.founded_year ? parseInt(formData.founded_year) : null,
+        websiteUrl: formData.website_url || null,
+        contact: {
+          headquartersAddress: formData.headquarters_address || null,
+          headquartersCity: formData.headquarters_city || null,
+          headquartersState: formData.headquarters_state || null,
           country: formData.country,
           phone: formData.phone || null,
           email: formData.email || null,
-        });
-
-      if (contactError) throw contactError;
+        },
+      });
 
       // Redirect back to profile
-      router.push(`/org/${organization.organization_slug}`);
+      router.push(`/org/${organization.slug}`);
     } catch (error: any) {
       console.error('Error saving organization:', error);
       alert(error.message || 'Failed to save changes');

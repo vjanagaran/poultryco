@@ -68,8 +68,8 @@ export default function TagManagementPage() {
     try {
       if (editingTag) {
         await updateTag.mutateAsync({
-          tagId: editingTag.id,
-          updates: formData,
+          id: editingTag.id,
+          data: formData,
         });
       } else {
         // Auto-generate slug from name if not provided
@@ -131,7 +131,7 @@ export default function TagManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {tags?.reduce((sum, tag) => sum + tag.usage_count, 0) || 0}
+              {tags?.reduce((sum, tag) => sum + (tag.usage_count ?? tag.usageCount ?? 0), 0) || 0}
             </div>
           </CardContent>
         </Card>
@@ -143,7 +143,7 @@ export default function TagManagementPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {tags?.filter(tag => tag.usage_count === 0).length || 0}
+              {tags?.filter(tag => (tag.usage_count ?? tag.usageCount ?? 0) === 0).length || 0}
             </div>
           </CardContent>
         </Card>
@@ -179,7 +179,7 @@ export default function TagManagementPage() {
                       </span>
                     )}
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {tag.usage_count} uses
+                      {tag.usage_count ?? tag.usageCount ?? 0} uses
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
@@ -194,7 +194,7 @@ export default function TagManagementPage() {
                       variant="ghost"
                       size="sm"
                       onClick={() => handleDelete(tag.id)}
-                      disabled={tag.usage_count > 0}
+                      disabled={(tag.usage_count ?? tag.usageCount ?? 0) > 0}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

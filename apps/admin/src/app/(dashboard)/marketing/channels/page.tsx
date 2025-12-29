@@ -2,22 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { getMarketingChannels, type MarketingChannel } from '@/lib/api/marketing';
 
-interface MarketingChannel {
-  id: string;
-  platform: string;
-  channel_type: string;
-  name: string;
-  handle: string | null;
-  url: string | null;
-  description: string | null;
-  is_active: boolean;
-  target_posts_per_week: number;
-  current_followers: number;
-  current_subscribers: number;
-  created_at: string;
-}
+// Types imported from API
 
 const PLATFORM_COLORS: Record<string, string> = {
   linkedin: 'bg-blue-600 text-white',
@@ -46,20 +33,15 @@ export default function MarketingChannelsPage() {
   const [loading, setLoading] = useState(true);
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
 
-  const supabase = createClient();
-
   useEffect(() => {
     fetchChannels();
   }, []);
 
   async function fetchChannels() {
     try {
-      const { data, error } = await supabase
-        .from('marketing_channels')
-        .select('*')
-        .order('platform', { ascending: true });
+      setLoading(true);
+      const data = await getMarketingChannels();
 
-      if (error) throw error;
       setChannels(data || []);
     } catch (error) {
       console.error('Error fetching channels:', error);
@@ -149,7 +131,7 @@ export default function MarketingChannelsPage() {
           </div>
           <div className="text-2xl font-bold text-purple-900">
             {channels
-              .reduce((sum, c) => sum + c.current_followers, 0)
+              .reduce((sum, c) => sum + (c.current_followers ?? 0), 0)
               .toLocaleString()}
           </div>
         </div>
@@ -158,7 +140,7 @@ export default function MarketingChannelsPage() {
             Weekly Posts Target
           </div>
           <div className="text-2xl font-bold text-amber-900">
-            {channels.reduce((sum, c) => sum + c.target_posts_per_week, 0)}
+            {channels.reduce((sum, c) => sum + (c.target_posts_per_week ?? 0), 0)}
           </div>
         </div>
       </div>
@@ -203,7 +185,7 @@ export default function MarketingChannelsPage() {
                             <div className="w-2 h-2 bg-gray-400 rounded-full" />
                           )}
                           <span className="text-xs text-gray-500 capitalize">
-                            {channel.channel_type}
+                            {channel.platform}
                           </span>
                         </div>
                         <h3 className="font-semibold text-gray-900 leading-tight">
@@ -229,7 +211,7 @@ export default function MarketingChannelsPage() {
                           Followers
                         </div>
                         <div className="text-lg font-semibold text-gray-900">
-                          {channel.current_followers.toLocaleString()}
+                          {(channel.current_followers ?? 0).toLocaleString()}
                         </div>
                       </div>
                       <div>
@@ -273,7 +255,7 @@ export default function MarketingChannelsPage() {
                       <div className="w-2 h-2 bg-gray-400 rounded-full" />
                     )}
                     <span className="text-xs text-gray-500 capitalize">
-                      {channel.channel_type}
+                       {channel.platform}
                     </span>
                   </div>
                   <h3 className="font-semibold text-gray-900 leading-tight">
@@ -295,7 +277,7 @@ export default function MarketingChannelsPage() {
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Followers</div>
                   <div className="text-lg font-semibold text-gray-900">
-                    {channel.current_followers.toLocaleString()}
+                    {(channel.current_followers ?? 0).toLocaleString()}
                   </div>
                 </div>
                 <div>

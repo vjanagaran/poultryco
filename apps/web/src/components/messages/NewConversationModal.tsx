@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { getConnections, createConversation } from '@/lib/api/messaging';
+import { getOrCreateConversation } from '@/lib/messagingUtils';
 import Image from 'next/image';
 
 interface NewConversationModalProps {
@@ -13,10 +14,11 @@ interface NewConversationModalProps {
 
 interface Connection {
   id: string;
-  full_name: string;
-  profile_slug: string;
-  profile_photo_url: string | null;
-  headline: string | null;
+  firstName: string;
+  lastName: string;
+  slug: string;
+  profilePhoto?: string | null;
+  headline?: string | null;
 }
 
 export function NewConversationModal({ isOpen, onClose }: NewConversationModalProps) {
@@ -27,7 +29,6 @@ export function NewConversationModal({ isOpen, onClose }: NewConversationModalPr
   const [filteredConnections, setFilteredConnections] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const supabase = createClient();
 
   useEffect(() => {
     if (isOpen && user) {
@@ -39,7 +40,7 @@ export function NewConversationModal({ isOpen, onClose }: NewConversationModalPr
     if (searchQuery.trim()) {
       const filtered = connections.filter(
         (conn) =>
-          conn.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          `${conn.firstName} ${conn.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
           conn.headline?.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredConnections(filtered);
@@ -53,25 +54,22 @@ export function NewConversationModal({ isOpen, onClose }: NewConversationModalPr
 
     setLoading(true);
     try {
-      // Get all connections (2-way approved connections)
-      const { data, error } = await supabase
-        .from('connections')
-        .select(`
-          connected_user:profiles!connections_connected_user_id_fkey(
-            id,
-            full_name,
-            profile_slug,
-            profile_photo_url,
-            headline
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'accepted')
-        .order('created_at', { ascending: false });
+      // Get all accepted connections
+      const allConnections = await getConnections({ status: 'accepted' });
+      
+      // Transform to match expected format
+      const connList = allConnections.map((conn: any) => {
+        const otherUser = conn.otherUser || (conn.requesterId === user.id ? conn.addressee : conn.requester);
+        return {
+          id: otherUser?.id || conn.addresseeId || conn.requesterId,
+          firstName: otherUser?.firstName || '',
+          lastName: otherUser?.lastName || '',
+          slug: otherUser?.slug || '',
+          profilePhoto: otherUser?.profilePhoto,
+          headline: otherUser?.headline,
+        };
+      }).filter((conn: any) => conn.id && conn.id !== user.id);
 
-      if (error) throw error;
-
-      const connList = data?.map((item: any) => item.connected_user) || [];
       setConnections(connList);
       setFilteredConnections(connList);
     } catch (error) {
@@ -86,74 +84,15 @@ export function NewConversationModal({ isOpen, onClose }: NewConversationModalPr
 
     setCreating(true);
     try {
-      // Check if conversation already exists
-      const { data: existingConv } = await supabase
-        .from('conversation_participants')
-        .select('conversation_id, conversations!inner(*)')
-        .eq('user_id', user.id)
-        .then(async (result) => {
-          if (result.error) throw result.error;
-
-          // Filter for 1-on-1 conversations with this user
-          const userConversations = result.data || [];
-          for (const participant of userConversations) {
-            const { data: otherParticipants } = await supabase
-              .from('conversation_participants')
-              .select('user_id')
-              .eq('conversation_id', participant.conversation_id)
-              .neq('user_id', user.id);
-
-            if (
-              otherParticipants &&
-              otherParticipants.length === 1 &&
-              otherParticipants[0].user_id === connectionId
-            ) {
-              return { data: participant.conversation_id };
-            }
-          }
-          return { data: null };
-        });
-
-      if (existingConv && existingConv.data) {
-        // Navigate to existing conversation
-        router.push(`/messages?conversation=${existingConv.data}`);
+      // Use getOrCreateConversation utility
+      const conversationId = await getOrCreateConversation(user.id, connectionId);
+      
+      if (conversationId) {
+        router.push(`/messages?conversation=${conversationId}`);
         onClose();
-        return;
+      } else {
+        throw new Error('Failed to create conversation');
       }
-
-      // Create new conversation
-      const { data: newConv, error: convError } = await supabase
-        .from('conversations')
-        .insert({
-          is_group: false,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-
-      if (convError) throw convError;
-
-      // Add participants
-      const { error: participantsError } = await supabase
-        .from('conversation_participants')
-        .insert([
-          {
-            conversation_id: newConv.id,
-            user_id: user.id,
-            is_admin: true,
-          },
-          {
-            conversation_id: newConv.id,
-            user_id: connectionId,
-            is_admin: false,
-          },
-        ]);
-
-      if (participantsError) throw participantsError;
-
-      // Navigate to new conversation
-      router.push(`/messages?conversation=${newConv.id}`);
-      onClose();
     } catch (error) {
       console.error('Error starting conversation:', error);
       alert('Failed to start conversation. Please try again.');
@@ -240,17 +179,17 @@ export function NewConversationModal({ isOpen, onClose }: NewConversationModalPr
                 >
                   {/* Avatar */}
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex-shrink-0 overflow-hidden">
-                    {connection.profile_photo_url ? (
+                    {connection.profilePhoto ? (
                       <Image
-                        src={connection.profile_photo_url}
-                        alt={connection.full_name}
+                        src={connection.profilePhoto}
+                        alt={`${connection.firstName} ${connection.lastName}`}
                         width={48}
                         height={48}
                         className="w-full h-full object-cover"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-white font-bold text-lg">
-                        {connection.full_name.charAt(0)}
+                        {connection.firstName.charAt(0)}
                       </div>
                     )}
                   </div>
@@ -258,7 +197,7 @@ export function NewConversationModal({ isOpen, onClose }: NewConversationModalPr
                   {/* Info */}
                   <div className="flex-1 text-left min-w-0">
                     <div className="font-medium text-gray-900 truncate">
-                      {connection.full_name}
+                      {connection.firstName} {connection.lastName}
                     </div>
                     {connection.headline && (
                       <div className="text-sm text-gray-500 truncate">
@@ -284,4 +223,3 @@ export function NewConversationModal({ isOpen, onClose }: NewConversationModalPr
     </div>
   );
 }
-

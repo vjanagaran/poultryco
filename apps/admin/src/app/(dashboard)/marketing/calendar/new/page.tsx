@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
+import { createContentSchedule, type ContentSchedule } from '@/lib/api/marketing';
 
 export default function NewSchedulePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const contentIdFromQuery = searchParams.get('content');
 
-  const supabase = createClient();
+  // Using API client
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState<any[]>([]);
   const [channels, setChannels] = useState<any[]>([]);
@@ -28,22 +29,14 @@ export default function NewSchedulePage() {
 
   async function fetchLookupData() {
     try {
-      const [contentRes, channelsRes] = await Promise.all([
-        supabase
-          .from('content')
-          .select('id, title, content_types(name), status')
-          .in('status', ['approved', 'published'])
-          .order('title'),
-        supabase
-          .from('marketing_channels')
-          .select('*')
-          .eq('is_active', true)
-          .order('platform')
-          .order('name'),
+      // TODO: Implement API endpoints for these lookups
+      const [contentData, channelsData] = await Promise.all([
+        apiClient.get<any[]>('/admin/content?status=approved,published'),
+        apiClient.get<any[]>('/admin/marketing-channels?active=true'),
       ]);
 
-      if (contentRes.data) setContent(contentRes.data);
-      if (channelsRes.data) setChannels(channelsRes.data);
+      setContent(Array.isArray(contentData) ? contentData : []);
+      setChannels(Array.isArray(channelsData) ? channelsData : []);
     } catch (error) {
       console.error('Error fetching lookup data:', error);
     }
@@ -54,23 +47,16 @@ export default function NewSchedulePage() {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from('content_schedule')
-        .insert({
-          content_id: contentId,
-          channel_id: channelId,
-          scheduled_date: scheduledDate,
-          scheduled_time: scheduledTime || null,
-          status,
-          notes: notes || null,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      router.push(`/marketing/calendar/${data.id}`);
-    } catch (error) {
-      console.error('Error creating schedule:', error);
+      const schedule = await createContentSchedule({
+        content_id: contentId,
+        channel_id: channelId,
+        scheduled_for: scheduledDate + (scheduledTime ? `T${scheduledTime}` : ''),
+        status,
+      });
+      
+      router.push(`/marketing/calendar/${schedule.id}`);
+    } catch (_error) {
+      console.error('Error creating schedule:', _error);
       alert('Failed to schedule content. Please try again.');
     } finally {
       setLoading(false);

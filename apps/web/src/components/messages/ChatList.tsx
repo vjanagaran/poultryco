@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Conversation, formatConversationTime } from '@/lib/messagingUtils';
+import { getConversations, type Conversation } from '@/lib/api/messaging';
+import { formatConversationTime } from '@/lib/messagingUtils';
 import { NewConversationModal } from './NewConversationModal';
 import { GroupCreationModal } from './GroupCreationModal';
 import Image from 'next/image';
@@ -24,146 +24,64 @@ export function ChatList({ selectedConversationId, onSelectConversation }: ChatL
 
   useEffect(() => {
     if (!user) return;
-
     fetchConversations();
-    const unsubscribe = subscribeToConversations();
-
-    return () => {
-      unsubscribe?.();
-    };
+    // TODO: Set up Socket.io subscription for real-time updates
   }, [user, activeTab]);
 
   const fetchConversations = async () => {
     if (!user) return;
 
-    const supabase = createClient();
     setLoading(true);
-
     try {
-      // Get user's conversations with participants
-      const { data: participants, error: participantsError } = await supabase
-        .from('conversation_participants')
-        .select(`
-          *,
-          conversations!inner(*)
-        `)
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('last_message_at', {
-          ascending: false,
-          nullsFirst: false,
-          foreignTable: 'conversations',
-        });
-
-      if (participantsError) {
-        console.error('Error fetching conversation participants:', participantsError);
-        setConversations([]);
-        return;
-      }
-
-      if (!participants) {
-        setConversations([]);
-        return;
-      }
+      const allConversations = await getConversations();
 
       // Filter by active tab
-      let filteredConversations = participants.map(p => p.conversations);
+      let filteredConversations = allConversations;
       
       if (activeTab === 'chats') {
-        filteredConversations = filteredConversations.filter(c => !c.is_group);
+        filteredConversations = filteredConversations.filter(c => c.conversationType === 'direct');
       } else if (activeTab === 'groups') {
-        filteredConversations = filteredConversations.filter(c => c.is_group);
+        filteredConversations = filteredConversations.filter(c => c.conversationType === 'group');
       }
 
-      // For one-on-one chats, get the other participant's info
-      const conversationsWithInfo = await Promise.all(
-        filteredConversations.map(async (conv) => {
-          const participant = participants.find(p => p.conversation_id === conv.id);
-          
-          if (!conv.is_group) {
-            // Get other participant
-            const { data: otherParticipants, error: otherParticipantsError } = await supabase
-              .from('conversation_participants')
-              .select(`
-                *,
-                user:profiles!conversation_participants_user_id_fkey(
-                  id,
-                  full_name,
-                  profile_slug,
-                  profile_photo_url,
-                  headline
-                )
-              `)
-              .eq('conversation_id', conv.id)
-              .neq('user_id', user.id)
-              .maybeSingle();
+      // Transform to match expected format
+      const transformed = filteredConversations.map((conv) => {
+        // Find other participant for direct chats
+        const otherParticipant = conv.participants?.find(
+          (p: any) => p.profileId !== user.id
+        );
 
-            if (otherParticipantsError) {
-              console.error('Error fetching other participant:', otherParticipantsError);
-            }
+        return {
+          id: conv.id,
+          is_group: conv.conversationType !== 'direct',
+          group_name: conv.name,
+          group_photo_url: conv.avatarUrl,
+          last_message_at: conv.lastMessageAt,
+          last_message_preview: null, // TODO: Get from last message
+          created_at: conv.createdAt,
+          unread_count: conv.unreadCount || 0,
+          is_muted: false, // TODO: Get from participant
+          other_participant: otherParticipant?.profile ? {
+            id: otherParticipant.profile.id,
+            full_name: `${otherParticipant.profile.firstName} ${otherParticipant.profile.lastName}`,
+            profile_slug: otherParticipant.profile.slug,
+            profile_photo_url: otherParticipant.profile.profilePhoto,
+            headline: otherParticipant.profile.headline,
+          } : undefined,
+          participants: conv.participants,
+        };
+      });
 
-            return {
-              ...conv,
-              other_participant: otherParticipants?.user,
-              unread_count: participant?.unread_count || 0,
-              is_muted: participant?.is_muted || false,
-            };
-          }
-
-          return {
-            ...conv,
-            unread_count: participant?.unread_count || 0,
-            is_muted: participant?.is_muted || false,
-          };
-        })
-      );
-
-      setConversations(conversationsWithInfo as Conversation[]);
+      setConversations(transformed as any);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+      setConversations([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const subscribeToConversations = () => {
-    if (!user) return;
-
-    const supabase = createClient();
-
-    // Subscribe to conversation updates
-    const channel = supabase
-      .channel('conversations-list')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'conversations',
-        },
-        () => {
-          fetchConversations();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages',
-        },
-        () => {
-          fetchConversations();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      channel.unsubscribe();
-    };
-  };
-
-  const filteredConversations = conversations.filter((conv) => {
+  const filteredConversations = conversations.filter((conv: any) => {
     if (!searchQuery) return true;
 
     const query = searchQuery.toLowerCase();
@@ -297,7 +215,7 @@ export function ChatList({ selectedConversationId, onSelectConversation }: ChatL
             </p>
           </div>
         ) : (
-          filteredConversations.map((conversation) => (
+          filteredConversations.map((conversation: any) => (
             <button
               key={conversation.id}
               onClick={() => onSelectConversation(conversation.id)}
@@ -384,4 +302,3 @@ export function ChatList({ selectedConversationId, onSelectConversation }: ChatL
     </div>
   );
 }
-

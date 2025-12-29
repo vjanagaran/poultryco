@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
+import { searchMembers } from '@/lib/api/discovery';
 
 interface InviteTeamMemberModalProps {
   isOpen: boolean;
@@ -49,25 +50,24 @@ export function InviteTeamMemberModal({
 
       setSearching(true);
       try {
-        const supabase = createClient();
-
-        // Search for users by name or email
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, full_name, profile_slug, headline, profile_photo_url, email')
-          .or(`full_name.ilike.%${searchQuery}%,profile_slug.ilike.%${searchQuery}%`)
-          .limit(10);
-
-        if (error) throw error;
-
-        // Filter out users who are already team members
-        const { data: existingMembers } = await supabase
-          .from('business_team_members')
-          .select('profile_id')
-          .eq('business_profile_id', businessId);
-
-        const existingIds = new Set(existingMembers?.map((m) => m.profile_id) || []);
-        const filteredResults = data?.filter((user) => !existingIds.has(user.id)) || [];
+        // Search for users via API
+        const result = await searchMembers({ query: searchQuery, limit: 10 });
+        
+        // Get existing team members to filter
+        const existingMembers = await apiClient.get(`/businesses/${businessId}/team`);
+        const existingIds = new Set(existingMembers.map((m: any) => m.profileId || m.profile?.id) || []);
+        
+        // Transform and filter results
+        const filteredResults = result.data
+          .filter((user: any) => !existingIds.has(user.id))
+          .map((user: any) => ({
+            id: user.id,
+            full_name: `${user.firstName} ${user.lastName}`,
+            profile_slug: user.slug,
+            headline: user.headline,
+            profile_photo_url: user.profilePhoto,
+            email: null, // Email not in search results
+          }));
 
         setSearchResults(filteredResults);
       } catch (error) {
@@ -89,26 +89,19 @@ export function InviteTeamMemberModal({
 
     setLoading(true);
     try {
-      const supabase = createClient();
-
-      // Add team member
-      const { error: memberError } = await supabase
-        .from('business_team_members')
-        .insert({
-          business_profile_id: businessId,
-          profile_id: selectedUser.id,
-          role_title: formData.role_title,
-          department: formData.department || null,
-          employment_type: formData.employment_type,
-          is_admin: formData.is_admin,
-          can_post_updates: formData.can_post_updates,
-          can_manage_products: formData.can_manage_products,
-          can_manage_jobs: formData.can_manage_jobs,
-          can_view_analytics: formData.can_view_analytics,
-          show_on_page: formData.show_on_page,
-        });
-
-      if (memberError) throw memberError;
+      // Add team member via API
+      await apiClient.post(`/businesses/${businessId}/team`, {
+        profileId: selectedUser.id,
+        roleTitle: formData.role_title,
+        department: formData.department || null,
+        employmentType: formData.employment_type,
+        isAdmin: formData.is_admin,
+        canPostUpdates: formData.can_post_updates,
+        canManageProducts: formData.can_manage_products,
+        canManageJobs: formData.can_manage_jobs,
+        canViewAnalytics: formData.can_view_analytics,
+        showOnPage: formData.show_on_page,
+      });
 
       // TODO: Send notification to user
       // await createNotification(selectedUser.id, 'team_invitation', { businessId, businessName });

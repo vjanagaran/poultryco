@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { getBusinessBySlug } from '@/lib/api/businesses';
+import { apiClient } from '@/lib/api/client';
 import { Container } from '@/components/ui';
 import { BusinessHeader } from './sections/BusinessHeader';
 import { BusinessAboutSection } from './sections/BusinessAboutSection';
@@ -140,21 +141,10 @@ export function BusinessProfileView({ businessSlug }: BusinessProfileViewProps) 
 
   useEffect(() => {
     const fetchBusiness = async () => {
-      const supabase = createClient();
-      
       try {
-        // Step 1: Fetch basic business profile first
-        const { data: businessData, error: businessError } = await supabase
-          .from('business_profiles')
-          .select('*')
-          .eq('business_slug', businessSlug)
-          .single();
-
-        if (businessError) {
-          console.error('Business profile error:', businessError);
-          throw businessError;
-        }
-
+        // Fetch business by slug from API
+        const businessData = await getBusinessBySlug(businessSlug);
+        
         if (!businessData) {
           console.log('No business found with slug:', businessSlug);
           setBusiness(null);
@@ -162,64 +152,36 @@ export function BusinessProfileView({ businessSlug }: BusinessProfileViewProps) 
           return;
         }
 
-        console.log('Business data loaded:', businessData);
-
-        // Step 2: Fetch related data
-        const [
-          { data: contactData },
-          { data: locationsData },
-          { data: teamData },
-          { data: contactPersonsData },
-          { data: productsData },
-          { data: certificationsData },
-          { data: farmDetailsData },
-          { data: supplierDetailsData },
-          { data: ownerData }
-        ] = await Promise.all([
-          supabase.from('business_profiles_contact').select('*').eq('business_profile_id', businessData.id).single(),
-          supabase.from('business_locations').select('*').eq('business_profile_id', businessData.id),
-          supabase.from('business_team_members').select('*, profile:profiles(id, full_name, profile_photo_url, headline)').eq('business_profile_id', businessData.id),
-          supabase.from('business_contact_persons').select('*, profile:profiles(id, full_name, profile_photo_url, profile_slug)').eq('business_profile_id', businessData.id),
-          supabase.from('business_products').select('id, product_name, description, category, price_range, images:product_images(image_url, is_primary)').eq('business_profile_id', businessData.id),
-          supabase.from('business_certifications').select('*').eq('business_profile_id', businessData.id),
-          supabase.from('business_farm_details').select('*').eq('business_profile_id', businessData.id).single(),
-          supabase.from('business_supplier_details').select('*').eq('business_profile_id', businessData.id).single(),
-          supabase.from('profiles').select('id, full_name, profile_photo_url').eq('id', businessData.owner_id).single()
-        ]);
-
-        // Combine all data
+        // Transform API response to match expected format
         const completeBusinessData = {
           ...businessData,
-          contact: contactData,
-          locations: locationsData || [],
-          team: teamData || [],
-          contact_persons: contactPersonsData || [],
-          products: productsData || [],
-          certifications: certificationsData || [],
-          farm_details: farmDetailsData,
-          supplier_details: supplierDetailsData,
-          owner: ownerData
+          business_name: businessData.name,
+          business_slug: businessData.slug,
+          logo_url: businessData.logoUrl,
+          cover_photo_url: businessData.coverPhotoUrl,
+          business_type: businessData.businessTypeId || '',
+          // TODO: Fetch related data (contact, locations, team, etc.) from API
+          // These should be included in the business endpoint response
+          contact: null,
+          locations: [],
+          team: [],
+          contact_persons: [],
+          products: [],
+          certifications: [],
+          farm_details: null,
+          supplier_details: null,
+          owner: null,
         };
 
-        console.log('Complete business data:', completeBusinessData);
         setBusiness(completeBusinessData as BusinessProfile);
         
-        // Check if current user is the owner or admin
-        if (user && businessData.owner_id === user.id) {
+        // Check if current user is the owner
+        if (user && businessData.ownerId === user.id) {
           setIsOwner(true);
-        } else if (user && teamData && teamData.length > 0) {
-          const isAdmin = teamData.some(
-            (member: any) => member.profile.id === user.id && member.is_admin
-          );
-          setIsOwner(isAdmin);
         }
       } catch (error) {
         console.error('Error fetching business:', error);
-        // Show detailed error in development
-        if (process.env.NODE_ENV === 'development') {
-          alert(`Error loading business: ${JSON.stringify(error)}`);
-        }
-        setBusiness(null); // Explicitly set to null to show "not found" message
+        setBusiness(null);
       } finally {
         setLoading(false);
       }

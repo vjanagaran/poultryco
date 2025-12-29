@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { BasicInfoStep } from './steps/BasicInfoStep';
 import { ContactStep } from './steps/ContactStep';
 import { PhotosStep } from './steps/PhotosStep';
@@ -10,6 +11,7 @@ import { ReviewStep } from './steps/ReviewStep';
 
 export function OrganizationCreationWizard() {
   const router = useRouter();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -59,14 +61,13 @@ export function OrganizationCreationWizard() {
   };
 
   const handleSubmit = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
     setLoading(true);
     try {
-      const supabase = createClient();
-      
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
       // Upload photos if provided
       let logoUrl = null;
       let coverUrl = null;
@@ -83,41 +84,29 @@ export function OrganizationCreationWizard() {
         if (result.success) coverUrl = result.url;
       }
 
-      // Create organization
-      const { data: orgData, error: orgError } = await supabase
-        .from('organizations')
-        .insert({
-          organization_name: formData.organization_name,
-          organization_type: formData.organization_type,
-          about: formData.about || null,
-          mission: formData.mission || null,
-          vision: formData.vision || null,
-          founded_year: formData.founded_year ? parseInt(formData.founded_year) : null,
-          website_url: formData.website_url || null,
-          logo_url: logoUrl,
-          cover_photo_url: coverUrl,
-          owner_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (orgError) throw orgError;
-
-      // Create contact info
-      if (formData.headquarters_address || formData.phone || formData.email) {
-        await supabase.from('organizations_contact').insert({
-          organization_id: orgData.id,
-          headquarters_address: formData.headquarters_address || null,
-          headquarters_city: formData.headquarters_city || null,
-          headquarters_state: formData.headquarters_state || null,
+      // Create organization via API
+      const orgData = await apiClient.post('/organizations', {
+        name: formData.organization_name,
+        organizationTypeId: formData.organization_type,
+        about: formData.about || null,
+        mission: formData.mission || null,
+        vision: formData.vision || null,
+        foundedYear: formData.founded_year ? parseInt(formData.founded_year) : null,
+        websiteUrl: formData.website_url || null,
+        logoUrl: logoUrl,
+        coverPhotoUrl: coverUrl,
+        contact: {
+          headquartersAddress: formData.headquarters_address || null,
+          headquartersCity: formData.headquarters_city || null,
+          headquartersState: formData.headquarters_state || null,
           country: formData.country,
           phone: formData.phone || null,
           email: formData.email || null,
-        });
-      }
+        },
+      });
 
       // Redirect to organization profile
-      router.push(`/org/${orgData.organization_slug}`);
+      router.push(`/org/${orgData.slug}`);
     } catch (error: any) {
       console.error('Error creating organization:', error);
       alert(error.message || 'Failed to create organization');

@@ -1,11 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { 
+  getBlogPostBySlug, 
+  incrementBlogPostView, 
+  getRelatedPosts,
+  getAdjacentPosts 
+} from '@/lib/api/blog'
 
 interface BlogPost {
   id: string
@@ -37,148 +38,86 @@ interface Tag {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const { data: post } = await supabase
-    .from('blog_posts')
-    .select('title, meta_title, meta_description, excerpt, featured_image')
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .single()
+  
+  try {
+    const post = await getBlogPostBySlug(slug)
 
-  if (!post) {
+    if (!post) {
+      return {
+        title: 'Post Not Found - PoultryCo Blog',
+      }
+    }
+
+    return {
+      title: post.metaTitle || `${post.title} - PoultryCo Blog`,
+      description: post.metaDescription || post.excerpt || undefined,
+      openGraph: {
+        title: post.metaTitle || post.title,
+        description: post.metaDescription || post.excerpt || undefined,
+        images: post.featuredImage ? [post.featuredImage] : [],
+      },
+    }
+  } catch (error) {
     return {
       title: 'Post Not Found - PoultryCo Blog',
     }
   }
+}
 
+// Helper to transform API response
+function transformBlogPost(post: any): BlogPost {
   return {
-    title: post.meta_title || `${post.title} - PoultryCo Blog`,
-    description: post.meta_description || post.excerpt || undefined,
-    openGraph: {
-      title: post.meta_title || post.title,
-      description: post.meta_description || post.excerpt || undefined,
-      images: post.featured_image ? [post.featured_image] : [],
-    },
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    content: post.content,
+    excerpt: post.excerpt,
+    featured_image: post.featuredImage,
+    featured_image_alt: post.featuredImageAlt,
+    published_at: post.publishedAt,
+    reading_time_minutes: post.readingTimeMinutes,
+    view_count: post.viewCount || 0,
+    author_name: post.authorName,
+    category_id: post.categoryId,
+    meta_title: post.metaTitle,
+    meta_description: post.metaDescription,
+    blog_categories: post.category ? {
+      name: post.category.name,
+      slug: post.category.slug,
+      color: post.category.color,
+    } : null,
   }
-}
-
-async function getPost(slug: string) {
-  const { data, error } = await supabase
-    .from('blog_posts')
-    .select(`
-      *,
-      blog_categories (
-        name,
-        slug,
-        color
-      )
-    `)
-    .eq('slug', slug)
-    .eq('status', 'published')
-    .lte('published_at', new Date().toISOString())
-    .single()
-
-  if (error || !data) return null
-
-  // Increment view count
-  await supabase
-    .from('blog_posts')
-    .update({ view_count: (data.view_count || 0) + 1 })
-    .eq('id', data.id)
-
-  return data as BlogPost
-}
-
-async function getPostTags(postId: string) {
-  const { data, error } = await supabase
-    .from('blog_post_tags')
-    .select(`
-      blog_tags (
-        id,
-        name,
-        slug
-      )
-    `)
-    .eq('post_id', postId)
-
-  if (error || !data) return []
-  return data.map(item => item.blog_tags).flat().filter(Boolean) as Tag[]
-}
-
-async function getNextPost(publishedAt: string, currentPostId: string) {
-  const { data, error } = await supabase
-    .from('blog_posts')
-    .select('title, slug, featured_image')
-    .eq('status', 'published')
-    .lt('published_at', publishedAt)
-    .neq('id', currentPostId)
-    .order('published_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (error || !data) return null
-  return data
-}
-
-async function getPreviousPost(publishedAt: string, currentPostId: string) {
-  const { data, error } = await supabase
-    .from('blog_posts')
-    .select('title, slug, featured_image')
-    .eq('status', 'published')
-    .gt('published_at', publishedAt)
-    .neq('id', currentPostId)
-    .order('published_at', { ascending: true })
-    .limit(1)
-    .single()
-
-  if (error || !data) return null
-  return data
-}
-
-async function getRelatedPosts(categoryId: string | null, currentPostId: string) {
-  if (!categoryId) return []
-
-  const { data, error } = await supabase
-    .from('blog_posts')
-    .select(`
-      id,
-      title,
-      slug,
-      excerpt,
-      featured_image,
-      featured_image_alt,
-      published_at,
-      reading_time_minutes,
-      blog_categories (
-        name,
-        slug,
-        color
-      )
-    `)
-    .eq('status', 'published')
-    .eq('category_id', categoryId)
-    .neq('id', currentPostId)
-    .lte('published_at', new Date().toISOString())
-    .order('published_at', { ascending: false })
-    .limit(3)
-
-  if (error || !data) return []
-  return data
 }
 
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const post = await getPost(slug)
+  
+  try {
+    const postData = await getBlogPostBySlug(slug)
 
-  if (!post) {
-    notFound()
-  }
+    if (!postData) {
+      notFound()
+    }
 
-  const [tags, nextPost, previousPost, relatedPosts] = await Promise.all([
-    getPostTags(post.id),
-    getNextPost(post.published_at, post.id),
-    getPreviousPost(post.published_at, post.id),
-    getRelatedPosts(post.category_id, post.id),
-  ])
+    // Increment view count (fire and forget)
+    incrementBlogPostView(postData.id).catch(console.error)
+
+    const post = transformBlogPost(postData)
+
+    // Get related data
+    const [adjacentPosts, relatedPostsData] = await Promise.all([
+      post.published_at ? getAdjacentPosts(post.published_at, post.id) : Promise.resolve({ next: null, previous: null }),
+      post.category_id ? getRelatedPosts(post.category_id, post.id) : Promise.resolve([]),
+    ])
+
+    const nextPost = adjacentPosts.next ? transformBlogPost(adjacentPosts.next) : null
+    const previousPost = adjacentPosts.previous ? transformBlogPost(adjacentPosts.previous) : null
+    const relatedPosts = (relatedPostsData || []).map(transformBlogPost)
+    const tags = (postData.tags || []).map((tag: any) => ({
+      id: tag.id,
+      name: tag.name,
+      slug: tag.slug,
+    }))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -405,6 +344,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         </div>
       </div>
     </div>
-  )
+    )
+  } catch (error) {
+    console.error('Error fetching blog post:', error)
+    notFound()
+  }
 }
 

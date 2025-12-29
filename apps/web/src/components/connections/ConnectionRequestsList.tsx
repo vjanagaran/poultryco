@@ -4,7 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { getPendingConnectionRequests, acceptConnectionRequestById, rejectConnectionRequest } from '@/lib/api/connections';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/Button';
 import { formatDistanceToNow } from 'date-fns';
@@ -27,7 +28,7 @@ interface ConnectionRequest {
 }
 
 export function ConnectionRequestsList() {
-  const supabase = createClient();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
@@ -36,112 +37,48 @@ export function ConnectionRequestsList() {
   const { data: receivedRequests = [], isLoading: loadingReceived } = useQuery({
     queryKey: ['connectionRequests', 'received'],
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return [];
+      if (!user) return [];
       
-      // Get connections where current user is profile_id_1 or profile_id_2 and status is pending
-      // and requested_by is NOT the current user (these are received requests)
-      const { data, error } = await supabase
-        .from('connections')
-        .select(`
-          id,
-          created_at,
-          connection_message,
-          requested_by,
-          profile_id_1,
-          profile_id_2
-        `)
-        .or(`profile_id_1.eq.${user.user.id},profile_id_2.eq.${user.user.id}`)
-        .eq('status', 'pending')
-        .neq('requested_by', user.user.id)
-        .order('created_at', { ascending: false });
+      const result = await getPendingConnectionRequests();
+      if (!result.success || !result.data) return [];
       
-      if (error) throw error;
-      
-      // Fetch requester profiles
-      const requesterIds = data?.map(d => d.requested_by) || [];
-      if (requesterIds.length === 0) return [];
-      
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, profile_slug, headline, profile_photo_url, location_city, location_state')
-        .in('id', requesterIds);
-      
-      // Map profiles to requests
-      return (data || []).map(item => ({
+      // Map API response to ConnectionRequest type
+      return result.data.map((item: any) => ({
         id: item.id,
-        created_at: item.created_at,
-        message: item.connection_message,
-        requester: profiles?.find(p => p.id === item.requested_by) || {
-          id: item.requested_by,
-          full_name: 'Unknown User',
-          profile_slug: 'unknown',
+        created_at: item.createdAt || item.created_at,
+        message: item.message || item.connection_message,
+        requester: item.requester || {
+          id: item.requesterId,
+          full_name: `${item.requester?.firstName || ''} ${item.requester?.lastName || ''}`.trim() || 'Unknown User',
+          profile_slug: item.requester?.slug || 'unknown',
+          headline: item.requester?.headline,
+          profile_photo_url: item.requester?.profilePhoto,
         }
       })) as ConnectionRequest[];
-    }
+    },
+    enabled: !!user,
   });
   
   // Fetch sent connection requests
   const { data: sentRequests = [], isLoading: loadingSent } = useQuery({
     queryKey: ['connectionRequests', 'sent'],
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return [];
+      if (!user) return [];
       
-      // Get connections where current user is the requester
-      const { data, error } = await supabase
-        .from('connections')
-        .select(`
-          id,
-          created_at,
-          connection_message,
-          requested_by,
-          profile_id_1,
-          profile_id_2
-        `)
-        .eq('requested_by', user.user.id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Get the target profile IDs (the other person in the connection)
-      const targetIds = (data || []).map(item => 
-        item.profile_id_1 === user.user.id ? item.profile_id_2 : item.profile_id_1
-      );
-      
-      if (targetIds.length === 0) return [];
-      
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, profile_slug, headline, profile_photo_url, location_city, location_state')
-        .in('id', targetIds);
-      
-      // Map profiles to requests
-      return (data || []).map(item => {
-        const targetId = item.profile_id_1 === user.user.id ? item.profile_id_2 : item.profile_id_1;
-        return {
-          id: item.id,
-          created_at: item.created_at,
-          message: item.connection_message,
-          requester: profiles?.find(p => p.id === targetId) || {
-            id: targetId,
-            full_name: 'Unknown User',
-            profile_slug: 'unknown',
-          }
-        };
-      }) as ConnectionRequest[];
-    }
+      // TODO: Implement API endpoint for sent requests
+      // For now, return empty array
+      return [] as ConnectionRequest[];
+    },
+    enabled: !!user,
   });
   
   // Accept connection request
   const acceptMutation = useMutation({
-    mutationFn: async (requesterId: string) => {
-      const { error } = await supabase.rpc('accept_connection_request', {
-        requester_profile_id: requesterId
-      });
-      
-      if (error) throw error;
+    mutationFn: async (connectionId: string) => {
+      const result = await acceptConnectionRequestById(connectionId);
+      if (!result.success) {
+        throw new Error('Failed to accept connection request');
+      }
     },
     onSuccess: (_, requesterId) => {
       toast({
@@ -164,11 +101,10 @@ export function ConnectionRequestsList() {
   // Reject connection request
   const rejectMutation = useMutation({
     mutationFn: async (requesterId: string) => {
-      const { error } = await supabase.rpc('reject_connection_request', {
-        requester_profile_id: requesterId
-      });
-      
-      if (error) throw error;
+      const result = await rejectConnectionRequest(requesterId);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to reject connection request');
+      }
     },
     onSuccess: () => {
       toast({
@@ -189,21 +125,9 @@ export function ConnectionRequestsList() {
   // Withdraw sent request
   const withdrawMutation = useMutation({
     mutationFn: async (targetId: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-      
-      const minId = user.id < targetId ? user.id : targetId;
-      const maxId = user.id < targetId ? targetId : user.id;
-      
-      const { error } = await supabase
-        .from('connections')
-        .delete()
-        .eq('profile_id_1', minId)
-        .eq('profile_id_2', maxId)
-        .eq('requested_by', user.id)
-        .eq('status', 'pending');
-      
-      if (error) throw error;
+      // TODO: Implement API endpoint for withdrawing connection request
+      // await withdrawConnectionRequest(targetId);
+      throw new Error('Withdraw functionality not yet implemented in API');
     },
     onSuccess: () => {
       toast({
@@ -221,13 +145,7 @@ export function ConnectionRequestsList() {
     }
   });
   
-  const { data: currentUser } = useQuery({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getUser();
-      return data.user;
-    }
-  });
+  const { user: currentUser } = useAuth();
   
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -327,7 +245,7 @@ export function ConnectionRequestsList() {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => acceptMutation.mutate(request.requester.id)}
+                            onClick={() => acceptMutation.mutate(request.id)}
                             disabled={acceptMutation.isPending || rejectMutation.isPending}
                           >
                             Accept
@@ -335,7 +253,7 @@ export function ConnectionRequestsList() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => rejectMutation.mutate(request.requester.id)}
+                            onClick={() => rejectMutation.mutate(request.id)}
                             disabled={acceptMutation.isPending || rejectMutation.isPending}
                           >
                             Ignore

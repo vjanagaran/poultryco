@@ -49,18 +49,11 @@ export function ZoneTable({ zones }: Props) {
 
     setDeleting(id);
     try {
-      const response = await fetch(`/api/admin/necc/zones/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        router.refresh();
-      } else {
-        const error = await response.json();
-        alert(`Failed to delete zone: ${error.error}`);
-      }
-    } catch (_error) {
-      alert('Failed to delete zone');
+      const { deleteZone } = await import('@/lib/api/necc');
+      await deleteZone(id);
+      router.refresh();
+    } catch (error: any) {
+      alert(`Failed to delete zone: ${error.message || 'Unknown error'}`);
     } finally {
       setDeleting(null);
     }

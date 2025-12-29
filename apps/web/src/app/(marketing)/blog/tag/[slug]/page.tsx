@@ -1,11 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabase = createClient(supabaseUrl, supabaseKey)
+import { getBlogTagBySlug, getTagPosts } from '@/lib/api/blog'
 
 const POSTS_PER_PAGE = 12
 
@@ -40,89 +36,41 @@ interface BlogPost {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
-  const { data: tag } = await supabase
-    .from('blog_tags')
-    .select('name')
-    .eq('slug', slug)
-    .single()
+  
+  try {
+    const tag = await getBlogTagBySlug(slug)
 
-  if (!tag) {
+    if (!tag) {
+      return { title: 'Tag Not Found - PoultryCo Blog' }
+    }
+
+    return {
+      title: `#${tag.name} - PoultryCo Blog`,
+      description: `Browse all posts tagged with #${tag.name} on PoultryCo Blog`,
+    }
+  } catch (error) {
     return { title: 'Tag Not Found - PoultryCo Blog' }
   }
-
-  return {
-    title: `#${tag.name} - PoultryCo Blog`,
-    description: `Browse all posts tagged with #${tag.name} on PoultryCo Blog`,
-  }
 }
 
-async function getTag(slug: string) {
-  const { data, error } = await supabase
-    .from('blog_tags')
-    .select('*')
-    .eq('slug', slug)
-    .single()
-
-  if (error || !data) return null
-  return data as Tag
-}
-
-async function getTagPosts(tagId: string, page: number = 1) {
-  const from = (page - 1) * POSTS_PER_PAGE
-  const to = from + POSTS_PER_PAGE - 1
-
-  // First get post IDs from blog_post_tags
-  const { data: postTags, error: postTagsError } = await supabase
-    .from('blog_post_tags')
-    .select('post_id')
-    .eq('tag_id', tagId)
-
-  if (postTagsError || !postTags) {
-    return { posts: [], totalPages: 0 }
-  }
-
-  const postIds = postTags.map(pt => pt.post_id)
-
-  if (postIds.length === 0) {
-    return { posts: [], totalPages: 0 }
-  }
-
-  // Then get posts
-  const { data, error, count } = await supabase
-    .from('blog_posts')
-    .select(`
-      id,
-      title,
-      slug,
-      excerpt,
-      featured_image,
-      featured_image_alt,
-      published_at,
-      reading_time_minutes,
-      author_name,
-      category_id,
-      blog_categories (
-        name,
-        slug,
-        color
-      )
-    `, { count: 'exact' })
-    .in('id', postIds)
-    .eq('status', 'published')
-    .lte('published_at', new Date().toISOString())
-    .order('published_at', { ascending: false })
-    .range(from, to)
-
-  if (error) {
-    console.error('Error:', error)
-    return { posts: [], totalPages: 0 }
-  }
-
-  const totalPages = count ? Math.ceil(count / POSTS_PER_PAGE) : 0
-
+// Helper to transform API response
+function transformBlogPost(post: any): BlogPost {
   return {
-    posts: data as BlogPost[],
-    totalPages,
+    id: post.id,
+    title: post.title,
+    slug: post.slug,
+    excerpt: post.excerpt,
+    featured_image: post.featuredImage,
+    featured_image_alt: post.featuredImageAlt,
+    published_at: post.publishedAt,
+    reading_time_minutes: post.readingTimeMinutes,
+    author_name: post.authorName,
+    category_id: post.categoryId,
+    blog_categories: post.category ? {
+      name: post.category.name,
+      slug: post.category.slug,
+      color: post.category.color,
+    } : null,
   }
 }
 
@@ -135,14 +83,19 @@ export default async function TagPage({
 }) {
   const { slug } = await params
   const { page: pageParam } = await searchParams
-  const tag = await getTag(slug)
+  
+  try {
+    const tag = await getBlogTagBySlug(slug)
 
-  if (!tag) {
-    notFound()
-  }
+    if (!tag) {
+      notFound()
+    }
 
-  const page = parseInt(pageParam || '1')
-  const { posts, totalPages } = await getTagPosts(tag.id, page)
+    const page = parseInt(pageParam || '1')
+    const postsData = await getTagPosts(tag.id, { page, limit: POSTS_PER_PAGE })
+    
+    const posts = (postsData.posts || []).map(transformBlogPost)
+    const totalPages = postsData.totalPages
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -294,6 +247,10 @@ export default async function TagPage({
         )}
       </div>
     </div>
-  )
+    )
+  } catch (error) {
+    console.error('Error fetching tag:', error)
+    notFound()
+  }
 }
 

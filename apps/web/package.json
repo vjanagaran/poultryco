@@ -10,7 +10,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
+    "@aws-amplify/ui-react": "^6.13.1",
+    "amazon-cognito-identity-js": "^6.3.16",
+    "aws-amplify": "^6.15.8",
     "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.0",
     "idb": "^8.0.3",
@@ -21,6 +23,7 @@
     "react-dom": "18.3.1",
     "react-intersection-observer": "^9.16.0",
     "recharts": "^3.4.1",
+    "socket.io-client": "^4.8.3",
     "styled-jsx": "^5.1.2",
     "tailwind-merge": "^2.5.0",
     "use-debounce": "^10.0.6"

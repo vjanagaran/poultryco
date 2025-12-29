@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
+import { getCurrentProfile } from '@/lib/api/users';
 import Link from 'next/link';
 
 export default function DashboardContent() {
@@ -14,24 +15,26 @@ export default function DashboardContent() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
+      try {
+        // Get current user and profile from API
+        const result = await apiClient.get<{ user: { id: string; email: string; profile: any } }>('/auth/me');
+        const userData = result.user;
+        
+        if (!userData) {
+          router.push('/login');
+          return;
+        }
+
+        // Get profile
+        const profileData = await getCurrentProfile();
+
+        setUser({ id: userData.id, email: userData.email, user_metadata: { full_name: profileData.full_name } });
+        setProfile(profileData);
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
         router.push('/login');
-        return;
       }
-
-      // Fetch profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      setUser(user);
-      setProfile(profileData);
-      setLoading(false);
     };
 
     fetchData();

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import Link from 'next/link';
 
 const TEMPLATE_CATEGORIES = [
@@ -205,27 +205,20 @@ export default function NewEmailTemplatePage() {
 
     try {
       setLoading(true);
-      const supabase = createClient();
-
-      // Prepare data for insertion
-      const templateData = {
+      
+      // Create template via API
+      await apiClient.post('/admin/email-templates', {
         name: formData.name,
         subject: formData.subject,
         description: formData.description || null,
-        html_body: formData.html_body,
-        text_body: formData.text_body,
+        htmlBody: formData.html_body,
+        textBody: formData.text_body,
         category: formData.category,
-        min_profile_strength: formData.min_profile_strength ? parseInt(formData.min_profile_strength) : null,
-        max_profile_strength: formData.max_profile_strength ? parseInt(formData.max_profile_strength) : null,
-        user_segment: formData.user_segment.length > 0 ? formData.user_segment : null,
-        is_active: formData.is_active,
-      };
-
-      const { error } = await supabase
-        .from('email_templates')
-        .insert(templateData);
-
-      if (error) throw error;
+        minProfileStrength: formData.min_profile_strength ? parseInt(formData.min_profile_strength) : null,
+        maxProfileStrength: formData.max_profile_strength ? parseInt(formData.max_profile_strength) : null,
+        userSegment: formData.user_segment.length > 0 ? formData.user_segment : null,
+        isActive: formData.is_active,
+      });
 
       router.push('/email-campaigns/templates');
     } catch (error) {

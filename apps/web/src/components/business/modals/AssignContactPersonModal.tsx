@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 
 interface AssignContactPersonModalProps {
   isOpen: boolean;
@@ -58,34 +58,19 @@ export function AssignContactPersonModal({
 
     setLoading(true);
     try {
-      const supabase = createClient();
-
-      // If setting as primary, unset all other primary contacts
-      if (formData.is_primary) {
-        await supabase
-          .from('business_contact_persons')
-          .update({ is_primary: false })
-          .eq('business_profile_id', businessId);
-      }
-
-      // Add contact person
-      const { error } = await supabase
-        .from('business_contact_persons')
-        .insert({
-          business_profile_id: businessId,
-          profile_id: selectedMember.profile.id,
-          contact_type: formData.contact_type,
-          designation: formData.designation || null,
-          department: formData.department || null,
-          is_primary: formData.is_primary,
-          phone: formData.phone || null,
-          email: formData.email || null,
-          whatsapp: formData.whatsapp || null,
-          available_hours: formData.available_hours || null,
-          languages: formData.languages ? formData.languages.split(',').map(l => l.trim()) : null,
-        });
-
-      if (error) throw error;
+      // Add contact person via API
+      await apiClient.post(`/businesses/${businessId}/contact-persons`, {
+        profileId: selectedMember.profile.id,
+        contactType: formData.contact_type,
+        designation: formData.designation || null,
+        department: formData.department || null,
+        isPrimary: formData.is_primary,
+        phone: formData.phone || null,
+        email: formData.email || null,
+        whatsapp: formData.whatsapp || null,
+        availableHours: formData.available_hours || null,
+        languages: formData.languages ? formData.languages.split(',').map(l => l.trim()) : null,
+      });
 
       onContactAssigned();
       onClose();

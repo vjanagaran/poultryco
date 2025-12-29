@@ -78,9 +78,12 @@ function RatePageContent() {
   // Calculate monthly averages for each zone
   const zoneAverages = zones.map(zone => {
     const zonePrices = monthPrices.filter(p => p.zone_id === zone.id && p.suggested_price !== null);
-    const avg = zonePrices.length > 0
-      ? Math.round(zonePrices.reduce((sum, p) => sum + (p.suggested_price || 0), 0) / zonePrices.length)
-      : null;
+    if (zonePrices.length === 0) {
+      return { zone, average: null };
+    }
+    // Calculate sum and divide by count, then floor to get whole number
+    const sum = zonePrices.reduce((acc, p) => acc + (p.suggested_price || 0), 0);
+    const avg = Math.floor(sum / zonePrices.length);
     return { zone, average: avg };
   });
 
@@ -96,7 +99,8 @@ function RatePageContent() {
   });
 
   const monthName = MONTH_NAMES[selectedMonth - 1];
-  const years = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i);
+  // Years from 2009 to 2026 (in reverse order, most recent first)
+  const years = Array.from({ length: 2026 - 2009 + 1 }, (_, i) => 2009 + i).reverse();
   const months = Array.from({ length: 12 }, (_, i) => ({ value: i + 1, name: MONTH_NAMES[i] }));
 
   return (
@@ -241,12 +245,12 @@ function RatePageContent() {
                           );
                         })}
                         <td className="border border-gray-300 px-2 py-2 text-center font-semibold bg-gray-50">
-                          {zoneAvg !== null ? zoneAvg.toFixed(2) : '-'}
+                          {zoneAvg !== null && zoneAvg !== undefined ? `${Math.floor(Number(zoneAvg))}.00` : '-'}
                         </td>
                       </>
                     ) : (
                       <td className="border border-gray-300 px-4 py-2 text-center font-semibold">
-                        {zoneAvg !== null ? zoneAvg.toFixed(2) : '-'}
+                        {zoneAvg !== null && zoneAvg !== undefined ? `${Math.floor(Number(zoneAvg))}.00` : '-'}
                       </td>
                     )}
                   </tr>

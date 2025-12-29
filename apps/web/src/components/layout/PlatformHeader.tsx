@@ -32,9 +32,12 @@ export function PlatformHeader() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href);
 
   const handleSignOut = async () => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    // TODO: Implement sign out via API
+    // Clear auth token from cookies/localStorage
+    if (typeof window !== 'undefined') {
+      document.cookie = 'admin_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      localStorage.removeItem('auth_token');
+    }
     router.push('/');
   };
 

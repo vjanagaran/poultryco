@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/Dialog';
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { getConnectionStatus, sendConnectionRequest, acceptConnectionRequest, rejectConnectionRequest, removeConnection, followUser, unfollowUser } from '@/lib/api/connections';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface ConnectionButtonProps {
@@ -39,7 +40,7 @@ export function ConnectionButton({
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const supabase = createClient();
+  const { user } = useAuth();
   const [showMessageDialog, setShowMessageDialog] = useState(false);
   const [message, setMessage] = useState('');
   
@@ -49,31 +50,16 @@ export function ConnectionButton({
     queryFn: async () => {
       if (!currentUserId || currentUserId === targetProfileId) return 'none';
       
-      // Use the get_connection_status RPC function
-      const { data: status, error } = await supabase.rpc('get_connection_status', {
-        p_user_id: currentUserId,
-        p_other_user_id: targetProfileId
-      });
+      const result = await getConnectionStatus(targetProfileId);
+      if (!result.success || !result.data) return 'none' as ConnectionStatus;
       
-      if (error) {
-        console.error('Error getting connection status:', error);
-        return 'none' as ConnectionStatus;
-      }
+      const status = result.data.status;
       
-      // Map the database status to our component status
+      // Map the API status to our component status
       if (status === 'connected') return 'connected' as ConnectionStatus;
       if (status === 'pending_sent') return 'pending_sent' as ConnectionStatus;
       if (status === 'pending_received') return 'pending_received' as ConnectionStatus;
-      
-      // Check if following
-      const { data: following } = await supabase
-        .from('follows')
-        .select('id')
-        .eq('follower_id', currentUserId)
-        .eq('following_id', targetProfileId)
-        .single();
-      
-      if (following) return 'following' as ConnectionStatus;
+      if (status === 'following') return 'following' as ConnectionStatus;
       
       return 'none' as ConnectionStatus;
     },
@@ -83,17 +69,13 @@ export function ConnectionButton({
   // Send connection request
   const sendConnectionMutation = useMutation({
     mutationFn: async (message?: string) => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      const { data, error } = await supabase.rpc('send_connection_request', {
-        p_requester_id: user.id,
-        p_target_id: targetProfileId,
-        p_message: message || null
-      });
-      
-      if (error) throw error;
-      return data;
+      const result = await sendConnectionRequest(targetProfileId, message || undefined);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send connection request');
+      }
+      return result.data;
     },
     onSuccess: () => {
       toast({
@@ -116,12 +98,17 @@ export function ConnectionButton({
   // Accept/Reject connection request
   const handleConnectionResponse = useMutation({
     mutationFn: async (action: 'accept' | 'reject') => {
-      const rpcFunction = action === 'accept' ? 'accept_connection_request' : 'reject_connection_request';
-      const { error } = await supabase.rpc(rpcFunction, {
-        requester_profile_id: targetProfileId
-      });
-      
-      if (error) throw error;
+      if (action === 'accept') {
+        const result = await acceptConnectionRequest(targetProfileId);
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to accept connection request');
+        }
+      } else {
+        const result = await rejectConnectionRequest(targetProfileId);
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to reject connection request');
+        }
+      }
     },
     onSuccess: (_, action) => {
       toast({
@@ -145,20 +132,12 @@ export function ConnectionButton({
   // Remove connection or withdraw request
   const removeConnectionMutation = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Get the connection ID to delete
-      const minId = user.id < targetProfileId ? user.id : targetProfileId;
-      const maxId = user.id < targetProfileId ? targetProfileId : user.id;
-      
-      const { error } = await supabase
-        .from('connections')
-        .delete()
-        .eq('profile_id_1', minId)
-        .eq('profile_id_2', maxId);
-      
-      if (error) throw error;
+      const result = await removeConnection(targetProfileId);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to remove connection');
+      }
     },
     onSuccess: () => {
       const title = connectionStatus === 'pending_sent' ? 'Request withdrawn' : 'Connection removed';

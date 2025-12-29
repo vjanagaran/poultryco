@@ -57,18 +57,11 @@ export function PriceTable({ prices, zones }: Props) {
 
     setDeleting(id);
     try {
-      const response = await fetch(`/api/admin/necc/prices/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        router.refresh();
-      } else {
-        const data = await response.json();
-        alert(`Failed to delete: ${data.error || 'Unknown error'}`);
-      }
-    } catch (_error) {
-      alert('Failed to delete price');
+      const { deletePrice } = await import('@/lib/api/necc');
+      await deletePrice(id);
+      router.refresh();
+    } catch (error: any) {
+      alert(`Failed to delete: ${error.message || 'Unknown error'}`);
     } finally {
       setDeleting(null);
     }

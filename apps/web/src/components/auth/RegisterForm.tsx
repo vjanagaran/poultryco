@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { signUp, signInWithOAuth } from '@/lib/auth/cognito';
+import { apiClient } from '@/lib/api/client';
 
 // Generate unique slug from name
 function generateSlug(fullName: string): string {
@@ -25,20 +26,13 @@ export default function RegisterForm() {
     confirmPassword: '',
   });
 
-  const handleSocialAuth = async (provider: 'google' | 'linkedin_oidc') => {
+  const handleSocialAuth = async (provider: 'google' | 'linkedin') => {
     setLoading(true);
     setError(null);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/welcome`,
-        },
-      });
-
-      if (error) throw error;
+      await signInWithOAuth(provider);
+      // OAuth redirect will happen
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       setLoading(false);
@@ -64,65 +58,21 @@ export default function RegisterForm() {
     }
 
     try {
-      const supabase = createClient();
-
-      // Sign up user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      // Sign up with Cognito
+      const signUpResult = await signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=/welcome`,
-        },
+        fullName: formData.fullName,
       });
 
-      if (signUpError) throw signUpError;
-
-      if (authData.user) {
-        // Generate unique slug
-        const baseSlug = generateSlug(formData.fullName);
-        let slug = baseSlug;
-        let counter = 1;
-
-        // Check if slug already exists and make it unique
-        while (true) {
-          const { data: existing } = await supabase
-            .from('profiles')
-            .select('profile_slug')
-            .eq('profile_slug', slug)
-            .single();
-
-          if (!existing) break; // Slug is unique
-          
-          slug = `${baseSlug}-${counter}`;
-          counter++;
-        }
-
-        // Create profile using RPC function (bypasses RLS issues)
-        const { data: profileData, error: profileError } = await supabase
-          .rpc('create_profile_for_user', {
-            p_user_id: authData.user.id,
-            p_full_name: formData.fullName,
-            p_email: formData.email,
-            p_slug: slug,
-          });
-
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          throw new Error('Failed to create profile. Please contact support.');
-        }
-
-        // Check if profile creation was successful
-        if (!profileData || profileData.success === false) {
-          console.error('Profile creation failed:', profileData);
-          throw new Error(profileData?.error || 'Failed to create profile');
-        }
-
-        // Redirect to welcome screen
-        router.push('/welcome');
+      if (!signUpResult.success) {
+        throw new Error(signUpResult.error || 'Registration failed');
       }
+
+      // After successful signup, user needs to verify email
+      // For now, redirect to login with a message
+      // In production, you'd show a verification message
+      router.push('/login?message=Please check your email to verify your account');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during registration');
     } finally {
@@ -170,7 +120,7 @@ export default function RegisterForm() {
 
         <button
           type="button"
-          onClick={() => handleSocialAuth('linkedin_oidc')}
+          onClick={() => handleSocialAuth('linkedin')}
           disabled={loading}
           className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -186,7 +136,7 @@ export default function RegisterForm() {
           <div className="w-full border-t border-gray-300"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white text-gray-500">Or register with email</span>
+          <span className="px-2 bg-white text-gray-500">Or sign up with email</span>
         </div>
       </div>
 
@@ -197,11 +147,11 @@ export default function RegisterForm() {
         </div>
       )}
 
-      {/* Email Registration Form */}
+      {/* Registration Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name *
+            Full Name
           </label>
           <input
             id="fullName"
@@ -210,15 +160,14 @@ export default function RegisterForm() {
             required
             value={formData.fullName}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
-            placeholder="Rajesh Kumar"
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors text-base"
+            placeholder="John Doe"
           />
-          <p className="mt-1 text-xs text-gray-500">Your professional name</p>
         </div>
 
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-            Email Address *
+            Email Address
           </label>
           <input
             id="email"
@@ -227,15 +176,14 @@ export default function RegisterForm() {
             required
             value={formData.email}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors text-base"
             placeholder="you@example.com"
           />
-          <p className="mt-1 text-xs text-gray-500">We&apos;ll never spam you. Promise.</p>
         </div>
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password *
+            Password
           </label>
           <input
             id="password"
@@ -244,15 +192,15 @@ export default function RegisterForm() {
             required
             value={formData.password}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors text-base"
             placeholder="••••••••"
           />
-          <p className="mt-1 text-xs text-gray-500">At least 8 characters</p>
+          <p className="mt-1 text-xs text-gray-500">Must be at least 8 characters</p>
         </div>
 
         <div>
           <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-            Confirm Password *
+            Confirm Password
           </label>
           <input
             id="confirmPassword"
@@ -261,7 +209,7 @@ export default function RegisterForm() {
             required
             value={formData.confirmPassword}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-colors"
+            className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-colors text-base"
             placeholder="••••••••"
           />
         </div>
@@ -269,26 +217,11 @@ export default function RegisterForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-3 px-4 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Creating your account...' : 'Create My Account →'}
+          {loading ? 'Creating Account...' : 'Create Account →'}
         </button>
-
-        <p className="text-xs text-gray-500 text-center mt-4">
-          By joining, you agree to our{' '}
-          <a href="/terms" className="text-green-600 hover:text-green-500">
-            Terms
-          </a>{' '}
-          and{' '}
-          <a href="/privacy" className="text-green-600 hover:text-green-500">
-            Privacy Policy
-          </a>
-          .
-          <br />
-          100% free. Cancel anytime.
-        </p>
       </form>
     </div>
   );
 }
-

@@ -1,19 +1,18 @@
-import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { PriceForm } from "@/components/necc/prices/PriceForm";
+import { getAllZones } from "@/lib/api/necc";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function NewPricePage() {
-  const supabase = await createClient();
-
-  const { data: zones } = await supabase
-    .from('necc_zones')
-    .select('id, name')
-    .eq('status', true)
-    .order('name');
+  const zones = await getAllZones().then(zones => 
+    zones
+      .filter(z => z.is_active)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(z => ({ id: z.id, name: z.name }))
+  );
 
   return (
     <div className="space-y-6">

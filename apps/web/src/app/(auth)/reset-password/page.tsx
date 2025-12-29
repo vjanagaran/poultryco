@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   description: 'Set a new password for your PoultryCo account.',
 };
 
+// Disable static generation for this page (requires runtime params)
+export const dynamic = 'force-dynamic';
+
 export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

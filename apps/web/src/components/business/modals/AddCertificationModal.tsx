@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { uploadToStorage } from '@/lib/storageUtils';
 
 interface AddCertificationModalProps {
@@ -65,7 +65,6 @@ export function AddCertificationModal({
     setLoading(true);
 
     try {
-      const supabase = createClient();
       let certificateFileUrl = null;
 
       // Upload file if selected
@@ -78,22 +77,17 @@ export function AddCertificationModal({
         setUploadingFile(false);
       }
 
-      // Add certification
-      const { error } = await supabase
-        .from('business_certifications')
-        .insert({
-          business_profile_id: businessId,
-          certification_name: formData.certification_name,
-          certification_type: formData.certification_type,
-          issuing_authority: formData.issuing_authority || null,
-          certificate_number: formData.certificate_number || null,
-          issue_date: formData.issue_date || null,
-          expiry_date: formData.expiry_date || null,
-          description: formData.description || null,
-          certificate_file_url: certificateFileUrl,
-        });
-
-      if (error) throw error;
+      // Add certification via API
+      await apiClient.post(`/businesses/${businessId}/certifications`, {
+        name: formData.certification_name,
+        certificationType: formData.certification_type,
+        issuingAuthority: formData.issuing_authority || null,
+        certificateNumber: formData.certificate_number || null,
+        issueDate: formData.issue_date || null,
+        expiryDate: formData.expiry_date || null,
+        description: formData.description || null,
+        certificateFileUrl: certificateFileUrl,
+      });
 
       onCertificationAdded();
       onClose();

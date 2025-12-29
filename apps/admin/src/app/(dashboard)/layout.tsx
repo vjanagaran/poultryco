@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { DashboardNav } from "@/components/DashboardNav";
 import { Providers } from "@/components/Providers";
 
@@ -11,12 +11,37 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Get token from cookies (Next.js 15 requires await)
+  const cookieStore = await cookies();
+  const token = cookieStore.get('admin_token')?.value;
 
-  if (!session) {
+  if (!token) {
+    redirect("/login");
+  }
+
+  // Fetch user info from API
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3002/v1';
+  let user = null;
+  
+  try {
+    const response = await fetch(`${apiUrl}/admin/auth/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      redirect("/login");
+    }
+
+    const data = await response.json();
+    user = data.user;
+  } catch (_error) {
+    redirect("/login");
+  }
+
+  if (!user) {
     redirect("/login");
   }
 
@@ -44,13 +69,13 @@ export default async function DashboardLayout({
             <div className="p-4 border-t border-gray-200">
               <div className="flex items-center gap-3 px-4 py-3">
                 <div className="w-8 h-8 bg-poultryco-green rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                  {session.user.email?.[0].toUpperCase()}
+                  {user.email[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
-                    {session.user.email}
+                    {user.email}
                   </p>
-                  <p className="text-xs text-gray-500">Admin</p>
+                  <p className="text-xs text-gray-500 capitalize">{user.role?.slug?.replace('_', ' ') || 'Admin'}</p>
                 </div>
               </div>
             </div>
@@ -67,4 +92,3 @@ export default async function DashboardLayout({
     </Providers>
   );
 }
-

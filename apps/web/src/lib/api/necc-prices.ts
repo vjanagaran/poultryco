@@ -1,5 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
-import { cookies } from 'next/headers';
+import { apiClient } from './client';
 
 export interface NECCPrice {
   id: string;
@@ -19,7 +18,7 @@ export interface NECCPrice {
   suggested_price: number | null;
   prevailing_price: number | null;
   source: 'scraped' | 'manual' | 'imported';
-  mode: 'CRON' | 'MANUAL' | null;
+  scraper_mode: 'CRON' | 'MANUAL' | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,88 +42,27 @@ export interface PriceStats {
  * Get today's prices for all zones
  */
 export async function getTodayPrices(): Promise<NECCPrice[]> {
-  const supabase = await createClient(await cookies());
-  const today = new Date().toISOString().split('T')[0];
-  
-  const { data, error } = await supabase
-    .from('necc_prices')
-    .select(`
-      *,
-      zone:necc_zones(id, name, slug, zone_type, state, city)
-    `)
-    .eq('date', today);
-
-  if (error) throw error;
-  
-  // Sort by zone name on the client side
-  const sorted = (data || []).sort((a, b) => {
-    const nameA = a.zone?.name || '';
-    const nameB = b.zone?.name || '';
-    return nameA.localeCompare(nameB);
-  });
-  
-  return sorted;
+  return apiClient.get<NECCPrice[]>('/necc/prices/today');
 }
 
 /**
  * Get yesterday's prices for all zones
  */
 export async function getYesterdayPrices(): Promise<NECCPrice[]> {
-  const supabase = await createClient(await cookies());
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
-  
-  const { data, error } = await supabase
-    .from('necc_prices')
-    .select(`
-      *,
-      zone:necc_zones(id, name, slug, zone_type, state, city)
-    `)
-    .eq('date', yesterdayStr);
-
-  if (error) throw error;
-  
-  // Sort by zone name on the client side
-  const sorted = (data || []).sort((a, b) => {
-    const nameA = a.zone?.name || '';
-    const nameB = b.zone?.name || '';
-    return nameA.localeCompare(nameB);
-  });
-  
-  return sorted;
+  return apiClient.get<NECCPrice[]>('/necc/prices/yesterday');
 }
 
 /**
  * Get prices for a specific date
  */
 export async function getPricesByDate(date: string): Promise<NECCPrice[]> {
-  const supabase = await createClient(await cookies());
-  const { data, error } = await supabase
-    .from('necc_prices')
-    .select(`
-      *,
-      zone:necc_zones(id, name, slug, zone_type, state, city)
-    `)
-    .eq('date', date);
-
-  if (error) throw error;
-  
-  // Sort by zone name on the client side
-  const sorted = (data || []).sort((a, b) => {
-    const nameA = a.zone?.name || '';
-    const nameB = b.zone?.name || '';
-    return nameA.localeCompare(nameB);
-  });
-  
-  return sorted;
+  return apiClient.get<NECCPrice[]>(`/necc/prices/date/${date}`);
 }
 
 /**
  * Get prices for a specific date with previous day price (for missing data handling)
  */
 export async function getPricesByDateWithPrevious(date: string): Promise<PriceWithPrevious[]> {
-  const supabase = await createClient(await cookies());
   const prices = await getPricesByDate(date);
   
   // For each price, get previous day if current is missing
@@ -136,20 +74,24 @@ export async function getPricesByDateWithPrevious(date: string): Promise<PriceWi
       }
       
       // If missing, get previous day price
-      const { data: previous } = await supabase
-        .from('necc_prices')
-        .select('date, suggested_price, prevailing_price')
-        .eq('zone_id', price.zone_id)
-        .lt('date', date)
-        .or('suggested_price.not.is.null,prevailing_price.not.is.null')
-        .order('date', { ascending: false })
-        .limit(1)
-        .single();
-      
-      return {
-        ...price,
-        previous_price: previous || undefined,
-      } as PriceWithPrevious;
+      try {
+        const zonePrices = await getZonePrices(price.zone_id, undefined, date, 1);
+        const previous = zonePrices.find(p => 
+          p.date < date && 
+          (p.suggested_price !== null || p.prevailing_price !== null)
+        );
+        
+        return {
+          ...price,
+          previous_price: previous ? {
+            date: previous.date,
+            suggested_price: previous.suggested_price,
+            prevailing_price: previous.prevailing_price,
+          } : undefined,
+        } as PriceWithPrevious;
+      } catch {
+        return price as PriceWithPrevious;
+      }
     })
   );
   
@@ -165,89 +107,27 @@ export async function getZonePrices(
   endDate?: string,
   limit?: number
 ): Promise<NECCPrice[]> {
-  const supabase = await createClient(await cookies());
-  let query = supabase
-    .from('necc_prices')
-    .select(`
-      *,
-      zone:necc_zones(id, name, slug, zone_type, state, city)
-    `)
-    .eq('zone_id', zoneId)
-    .order('date', { ascending: false });
-
-  if (startDate) {
-    query = query.gte('date', startDate);
-  }
-  if (endDate) {
-    query = query.lte('date', endDate);
-  }
-  if (limit) {
-    query = query.limit(limit);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-  return data || [];
+  const params = new URLSearchParams();
+  if (startDate) params.append('startDate', startDate);
+  if (endDate) params.append('endDate', endDate);
+  if (limit) params.append('limit', limit.toString());
+  
+  const query = params.toString();
+  return apiClient.get<NECCPrice[]>(`/necc/prices/zone/${zoneId}${query ? `?${query}` : ''}`);
 }
 
 /**
  * Get prices for a specific month
  */
 export async function getMonthPrices(year: number, month: number): Promise<NECCPrice[]> {
-  const supabase = await createClient(await cookies());
-  const { data, error } = await supabase
-    .from('necc_prices')
-    .select(`
-      *,
-      zone:necc_zones(id, name, slug, zone_type, state, city)
-    `)
-    .eq('year', year)
-    .eq('month', month)
-    .order('date', { ascending: true })
-    .limit(2000); // Support up to ~60 zones * 31 days = 1860 max
-
-  if (error) throw error;
-  
-  // Sort by date first, then zone name
-  const sorted = (data || []).sort((a, b) => {
-    if (a.date !== b.date) {
-      return a.date.localeCompare(b.date);
-    }
-    const nameA = a.zone?.name || '';
-    const nameB = b.zone?.name || '';
-    return nameA.localeCompare(nameB);
-  });
-  
-  return sorted;
+  return apiClient.get<NECCPrice[]>(`/necc/prices/month?year=${year}&month=${month}`);
 }
 
 /**
  * Get prices for a specific year
  */
 export async function getYearPrices(year: number): Promise<NECCPrice[]> {
-  const supabase = await createClient(await cookies());
-  const { data, error } = await supabase
-    .from('necc_prices')
-    .select(`
-      *,
-      zone:necc_zones(id, name, slug, zone_type, state, city)
-    `)
-    .eq('year', year)
-    .order('date', { ascending: true });
-
-  if (error) throw error;
-  
-  // Sort by date first, then zone name
-  const sorted = (data || []).sort((a, b) => {
-    if (a.date !== b.date) {
-      return a.date.localeCompare(b.date);
-    }
-    const nameA = a.zone?.name || '';
-    const nameB = b.zone?.name || '';
-    return nameA.localeCompare(nameB);
-  });
-  
-  return sorted;
+  return apiClient.get<NECCPrice[]>(`/necc/prices/year/${year}`);
 }
 
 /**
@@ -258,57 +138,28 @@ export async function getPriceStats(
   endDate: string,
   zoneId?: string
 ): Promise<PriceStats> {
-  const supabase = await createClient(await cookies());
-  let query = supabase
-    .from('necc_prices')
-    .select('suggested_price')
-    .gte('date', startDate)
-    .lte('date', endDate)
-    .not('suggested_price', 'is', null);
-
-  if (zoneId) {
-    query = query.eq('zone_id', zoneId);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
-  if (!data || data.length === 0) {
-    return { average: 0, min: 0, max: 0, count: 0 };
-  }
-
-  const prices = data.map((p) => p.suggested_price!).filter((p) => p !== null);
-  const sum = prices.reduce((a, b) => a + b, 0);
-  const average = Math.round(sum / prices.length);
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-
-  return {
-    average,
-    min,
-    max,
-    count: prices.length,
-  };
+  const params = new URLSearchParams();
+  params.append('startDate', startDate);
+  params.append('endDate', endDate);
+  if (zoneId) params.append('zoneId', zoneId);
+  
+  return apiClient.get<PriceStats>(`/necc/prices/stats?${params.toString()}`);
 }
 
 /**
  * Get today's average price across all zones
  */
 export async function getTodayAverage(): Promise<number | null> {
-  const today = new Date().toISOString().split('T')[0];
-  const stats = await getPriceStats(today, today);
-  return stats.count > 0 ? stats.average : null;
+  const result = await apiClient.get<{ average: number | null }>('/necc/prices/average/today');
+  return result.average;
 }
 
 /**
  * Get yesterday's average price across all zones
  */
 export async function getYesterdayAverage(): Promise<number | null> {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
-  const stats = await getPriceStats(yesterdayStr, yesterdayStr);
-  return stats.count > 0 ? stats.average : null;
+  const result = await apiClient.get<{ average: number | null }>('/necc/prices/average/yesterday');
+  return result.average;
 }
 
 /**
@@ -318,30 +169,7 @@ export async function getPricesByDateRange(
   startDate: string,
   endDate: string
 ): Promise<NECCPrice[]> {
-  const supabase = await createClient(await cookies());
-  const { data, error } = await supabase
-    .from('necc_prices')
-    .select(`
-      *,
-      zone:necc_zones(id, name, slug, zone_type, state, city)
-    `)
-    .gte('date', startDate)
-    .lte('date', endDate)
-    .order('date', { ascending: true });
-
-  if (error) throw error;
-  
-  // Sort by date first, then zone name
-  const sorted = (data || []).sort((a, b) => {
-    if (a.date !== b.date) {
-      return a.date.localeCompare(b.date);
-    }
-    const nameA = a.zone?.name || '';
-    const nameB = b.zone?.name || '';
-    return nameA.localeCompare(nameB);
-  });
-  
-  return sorted;
+  return apiClient.get<NECCPrice[]>(`/necc/prices/range?startDate=${startDate}&endDate=${endDate}`);
 }
 
 // =====================================================
@@ -356,12 +184,17 @@ export interface MonthlyAverage {
   month: string; // 'YYYY-MM-01' format
   year: number;
   month_number: number;
-  avg_price: number;
-  min_price: number;
-  max_price: number;
-  data_points: number;
-  first_date: string;
-  last_date: string;
+  avg_suggested_price: number;
+  avg_prevailing_price: number | null;
+  min_suggested_price: number;
+  max_suggested_price: number;
+  min_prevailing_price: number | null;
+  max_prevailing_price: number | null;
+  days_count: number;
+  period_start: string;
+  period_end: string;
+  // For compatibility with API response
+  avg_price?: number;
 }
 
 /**
@@ -380,33 +213,14 @@ export async function getMonthlyAverages(
   endMonth?: string,
   limit?: number
 ): Promise<MonthlyAverage[]> {
-  const supabase = await createClient(await cookies());
+  const params = new URLSearchParams();
+  if (zoneId) params.append('zoneId', zoneId);
+  if (startMonth) params.append('startMonth', startMonth);
+  if (endMonth) params.append('endMonth', endMonth);
+  if (limit) params.append('limit', limit.toString());
   
-  let query = supabase
-    .from('necc_monthly_averages')
-    .select('*')
-    .order('month', { ascending: true });
-
-  if (zoneId) {
-    query = query.eq('zone_id', zoneId);
-  }
-  
-  if (startMonth) {
-    query = query.gte('month', startMonth);
-  }
-  
-  if (endMonth) {
-    query = query.lte('month', endMonth);
-  }
-  
-  if (limit) {
-    query = query.limit(limit);
-  }
-
-  const { data, error } = await query;
-  
-  if (error) throw error;
-  return data || [];
+  const query = params.toString();
+  return apiClient.get<MonthlyAverage[]>(`/necc/monthly-averages${query ? `?${query}` : ''}`);
 }
 
 /**
@@ -418,7 +232,12 @@ export async function getZoneMonthlyAverages(
   startMonth?: string,
   endMonth?: string
 ): Promise<MonthlyAverage[]> {
-  return getMonthlyAverages(zoneId, startMonth, endMonth);
+  const params = new URLSearchParams();
+  if (startMonth) params.append('startMonth', startMonth);
+  if (endMonth) params.append('endMonth', endMonth);
+  
+  const query = params.toString();
+  return apiClient.get<MonthlyAverage[]>(`/necc/monthly-averages/zone/${zoneId}${query ? `?${query}` : ''}`);
 }
 
 /**
@@ -430,27 +249,17 @@ export async function getMonthlyAverageStats(
   startMonth?: string,
   endMonth?: string
 ): Promise<PriceStats> {
-  const monthlyData = await getMonthlyAverages(zoneId, startMonth, endMonth);
+  const params = new URLSearchParams();
+  if (zoneId) params.append('zoneId', zoneId);
+  if (startMonth) params.append('startMonth', startMonth);
+  if (endMonth) params.append('endMonth', endMonth);
   
-  if (monthlyData.length === 0) {
-    return { average: 0, min: 0, max: 0, count: 0 };
-  }
-  
-  const avgPrices = monthlyData.map(m => m.avg_price);
-  const average = Math.round(avgPrices.reduce((a, b) => a + b, 0) / avgPrices.length);
-  const min = Math.min(...avgPrices);
-  const max = Math.max(...avgPrices);
-  
-  return {
-    average,
-    min,
-    max,
-    count: monthlyData.length
-  };
+  const query = params.toString();
+  return apiClient.get<PriceStats>(`/necc/monthly-averages/stats${query ? `?${query}` : ''}`);
 }
 
 // =====================================================
-// YEAR-OVER-YEAR ANALYSIS (Materialized View)
+// YEAR-OVER-YEAR ANALYSIS (Database Functions)
 // =====================================================
 
 /**
@@ -495,16 +304,7 @@ export async function getZoneYoYData(
   zoneId: string,
   minYears: number = 2
 ): Promise<YoYDataPoint[]> {
-  const supabase = await createClient(await cookies());
-  
-  const { data, error } = await supabase
-    .rpc('get_zone_yoy_data', {
-      p_zone_id: zoneId,
-      p_min_years: minYears
-    }) as { data: YoYDataPoint[] | null; error: any };
-
-  if (error) throw error;
-  return data || [];
+  return apiClient.get<YoYDataPoint[]>(`/necc/yoy/zone/${zoneId}?minYears=${minYears}`);
 }
 
 /**
@@ -515,49 +315,5 @@ export async function getZoneYoYData(
  * @returns YoY statistics object
  */
 export async function getZoneYoYStats(zoneId: string): Promise<YoYStats> {
-  const supabase = await createClient(await cookies());
-  
-  const { data, error } = await supabase
-    .rpc('get_zone_yoy_stats', {
-      p_zone_id: zoneId
-    }) as { data: Array<{ stat_name: string; stat_value: any }> | null; error: any };
-
-  if (error) throw error;
-  
-  if (!data || data.length === 0) {
-    return {
-      highest_price_day: null,
-      lowest_price_day: null,
-      avg_by_year: {},
-      years: []
-    };
-  }
-
-  // Parse the results from the function
-  const stats: YoYStats = {
-    highest_price_day: null,
-    lowest_price_day: null,
-    avg_by_year: {},
-    years: []
-  };
-
-  data.forEach((row: { stat_name: string; stat_value: any }) => {
-    switch (row.stat_name) {
-      case 'highest_price_day':
-        stats.highest_price_day = row.stat_value;
-        break;
-      case 'lowest_price_day':
-        stats.lowest_price_day = row.stat_value;
-        break;
-      case 'avg_by_year':
-        stats.avg_by_year = row.stat_value;
-        break;
-      case 'years':
-        stats.years = row.stat_value;
-        break;
-    }
-  });
-
-  return stats;
+  return apiClient.get<YoYStats>(`/necc/yoy/zone/${zoneId}/stats`);
 }
-

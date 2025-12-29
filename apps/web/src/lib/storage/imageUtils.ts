@@ -1,9 +1,9 @@
 /**
  * Image Utilities for Profile Photos
- * Handles image validation, conversion to WebP, resizing, and upload to Supabase Storage
+ * Handles image validation, conversion to WebP, resizing, and upload to S3 via API
  */
 
-import { createClient } from '@/lib/supabase/client';
+import { uploadProfilePhoto, uploadCoverPhoto } from '@/lib/api/upload';
 
 // Constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -131,7 +131,7 @@ export async function convertToWebP(
 }
 
 /**
- * Upload avatar to Supabase Storage
+ * Upload avatar to S3 via API
  */
 export async function uploadAvatar(
   file: File,
@@ -146,33 +146,15 @@ export async function uploadAvatar(
 
     // Convert to WebP
     const webpBlob = await convertToWebP(file, AVATAR_SIZE);
+    
+    // Convert blob to File
+    const webpFile = new File([webpBlob], 'avatar.webp', { type: 'image/webp' });
 
-    // Upload to Supabase
-    const supabase = createClient();
-    const path = `profiles/${userId}/avatar.webp`;
-
-    // Delete old avatar if exists
-    await supabase.storage.from('cdn-poultryco').remove([path]);
-
-    // Upload new avatar
-    const { error: uploadError } = await supabase.storage
-      .from('cdn-poultryco')
-      .upload(path, webpBlob, {
-        contentType: 'image/webp',
-        upsert: true,
-      });
-
-    if (uploadError) {
-      return { success: false, error: uploadError.message };
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('cdn-poultryco')
-      .getPublicUrl(path);
-
+    // Upload via API
+    const result = await uploadProfilePhoto(webpFile);
+    
     // Add timestamp to bust cache
-    const url = `${publicUrl}?t=${Date.now()}`;
+    const url = `${result.cdnUrl || result.url}?t=${Date.now()}`;
 
     return { success: true, url };
   } catch (error) {
@@ -184,7 +166,7 @@ export async function uploadAvatar(
 }
 
 /**
- * Upload cover photo to Supabase Storage
+ * Upload cover photo to S3 via API
  */
 export async function uploadCover(
   file: File,
@@ -199,33 +181,15 @@ export async function uploadCover(
 
     // Convert to WebP
     const webpBlob = await convertToWebP(file, COVER_WIDTH, COVER_HEIGHT);
+    
+    // Convert blob to File
+    const webpFile = new File([webpBlob], 'cover.webp', { type: 'image/webp' });
 
-    // Upload to Supabase
-    const supabase = createClient();
-    const path = `profiles/${userId}/cover.webp`;
-
-    // Delete old cover if exists
-    await supabase.storage.from('cdn-poultryco').remove([path]);
-
-    // Upload new cover
-    const { error: uploadError } = await supabase.storage
-      .from('cdn-poultryco')
-      .upload(path, webpBlob, {
-        contentType: 'image/webp',
-        upsert: true,
-      });
-
-    if (uploadError) {
-      return { success: false, error: uploadError.message };
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('cdn-poultryco')
-      .getPublicUrl(path);
-
+    // Upload via API
+    const result = await uploadCoverPhoto(webpFile);
+    
     // Add timestamp to bust cache
-    const url = `${publicUrl}?t=${Date.now()}`;
+    const url = `${result.cdnUrl || result.url}?t=${Date.now()}`;
 
     return { success: true, url };
   } catch (error) {
@@ -237,19 +201,15 @@ export async function uploadCover(
 }
 
 /**
- * Delete a photo from Supabase Storage
+ * Delete a photo (via API if upload ID is provided, otherwise just return success)
+ * Note: For now, we'll rely on the API to handle deletions via upload ID
  */
 export async function deletePhoto(
-  path: string
+  uploadId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient();
-    const { error } = await supabase.storage.from('cdn-poultryco').remove([path]);
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
+    const { deleteFile } = await import('@/lib/api/upload');
+    await deleteFile(uploadId);
     return { success: true };
   } catch (error) {
     return {
@@ -261,25 +221,21 @@ export async function deletePhoto(
 
 /**
  * Get avatar URL for a user
+ * Note: This is now handled by the API/CDN, so we return a placeholder
+ * The actual URL should come from the profile data
  */
 export function getAvatarUrl(userId: string): string {
-  const supabase = createClient();
-  const { data: { publicUrl } } = supabase.storage
-    .from('cdn-poultryco')
-    .getPublicUrl(`profiles/${userId}/avatar.webp`);
-  
-  return publicUrl;
+  // Return placeholder - actual URL should come from profile data
+  return `/api/placeholder/avatar/${userId}`;
 }
 
 /**
  * Get cover URL for a user
+ * Note: This is now handled by the API/CDN, so we return a placeholder
+ * The actual URL should come from the profile data
  */
 export function getCoverUrl(userId: string): string {
-  const supabase = createClient();
-  const { data: { publicUrl } } = supabase.storage
-    .from('cdn-poultryco')
-    .getPublicUrl(`profiles/${userId}/cover.webp`);
-  
-  return publicUrl;
+  // Return placeholder - actual URL should come from profile data
+  return `/api/placeholder/cover/${userId}`;
 }
 

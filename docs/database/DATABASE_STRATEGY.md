@@ -378,7 +378,178 @@ organization_event_agenda           → Merge into evt_sessions
 
 ## 📁 File Organization
 
-### **Drizzle Schema Structure**
+### **SQL Schema Structure (Logical Grouping)**
+
+```
+/aws/database/
+│
+├── schema/                     # SQL schema files (numbered by dependency)
+│   │
+│   ├── 00_extensions.sql              (~50 lines)
+│   │   # PostgreSQL extensions (uuid-ossp, pg_trgm, etc.)
+│   │
+│   ├── 01_core_and_ref.sql           (~300 lines)
+│   │   # Core: profiles
+│   │   # Reference: ref_countries, ref_states, ref_business_types,
+│   │   #            ref_organization_types, ref_event_types, ref_job_categories,
+│   │   #            ref_skills, ref_notification_types
+│   │
+│   ├── 10_usr_core.sql               (~250 lines)
+│   │   # usr_profile_roles, usr_privacy_settings, usr_verifications
+│   │
+│   ├── 11_usr_roles.sql              (~200 lines)
+│   │   # usr_farmer_details, usr_veterinarian_details, usr_supplier_details,
+│   │   # usr_consultant_details, usr_researcher_details
+│   │
+│   ├── 12_usr_professional.sql       (~200 lines)
+│   │   # usr_experiences, usr_education, usr_certifications
+│   │
+│   ├── 13_usr_skills.sql             (~150 lines)
+│   │   # usr_profile_skills, usr_skill_endorsements
+│   │
+│   ├── 14_usr_engagement.sql         (~150 lines)
+│   │   # usr_badges, usr_completeness_checks, usr_stats,
+│   │   # usr_preferences, usr_activity
+│   │
+│   ├── 20_biz_core.sql               (~250 lines)
+│   │   # biz_profiles, biz_contact_info, biz_locations, biz_service_areas
+│   │
+│   ├── 21_biz_details.sql            (~200 lines)
+│   │   # biz_team_members, biz_contact_persons, biz_farm_details,
+│   │   # biz_supplier_details, biz_certifications, biz_stats
+│   │
+│   ├── 30_org_core.sql               (~250 lines)
+│   │   # org_profiles, org_contact_info, org_offices, org_leadership
+│   │
+│   ├── 31_org_membership.sql         (~200 lines)
+│   │   # org_membership_tiers, org_members, org_membership_applications,
+│   │   # org_member_invitations, org_membership_history
+│   │
+│   ├── 32_org_structure.sql          (~200 lines)
+│   │   # org_committees, org_committee_members, org_roles,
+│   │   # org_resources, org_announcements, org_stats
+│   │
+│   ├── 40_soc_posts.sql              (~250 lines)
+│   │   # soc_posts, soc_post_versions, soc_post_tags
+│   │
+│   ├── 41_soc_engagement.sql         (~200 lines)
+│   │   # soc_post_likes, soc_post_comments, soc_comment_likes,
+│   │   # soc_post_shares, soc_post_bookmarks, soc_post_views, soc_post_reports
+│   │
+│   ├── 42_soc_connections.sql        (~150 lines)
+│   │   # soc_connections, soc_connection_suggestions, soc_follows,
+│   │   # soc_blocked_users, soc_share_tracking
+│   │
+│   ├── 50_msg_core.sql               (~200 lines)
+│   │   # msg_conversations, msg_participants, msg_messages,
+│   │   # msg_reactions, msg_read_receipts
+│   │
+│   ├── 60_ntf_core.sql               (~150 lines)
+│   │   # ntf_notifications, ntf_preferences, ntf_templates
+│   │
+│   ├── 70_mkt_core.sql               (~250 lines)
+│   │   # mkt_segments, mkt_content_pillars, mkt_pillar_types, mkt_topics,
+│   │   # mkt_topic_segments, mkt_content_types, mkt_content, mkt_content_ideas
+│   │
+│   ├── 71_mkt_campaigns.sql          (~200 lines)
+│   │   # mkt_content_schedule, mkt_tags, mkt_content_tags, mkt_campaigns,
+│   │   # mkt_campaign_content, mkt_campaign_pillars, mkt_pillar_tags,
+│   │   # mkt_channels, mkt_platform_kpis
+│   │
+│   ├── 80_eml_core.sql               (~250 lines)
+│   │   # eml_queue, eml_templates, eml_template_versions, eml_campaigns,
+│   │   # eml_campaign_recipients, eml_campaign_steps, eml_events
+│   │
+│   ├── 81_eml_config.sql             (~150 lines)
+│   │   # eml_provider_config, eml_senders, eml_domains,
+│   │   # eml_suppressions, eml_ses_events
+│   │
+│   ├── 90_cms_core.sql               (~200 lines)
+│   │   # cms_posts, cms_categories, cms_tags, cms_post_tags,
+│   │   # cms_early_access, cms_newsletter_subscribers, cms_contact_submissions
+│   │
+│   ├── 100_nec_core.sql              (~200 lines)
+│   │   # nec_zones, nec_prices, nec_annotations, nec_annotation_metadata,
+│   │   # nec_predictions, nec_scraper_logs
+│   │
+│   ├── 110_evt_core.sql              (~250 lines)
+│   │   # evt_events, evt_registrations, evt_sessions, evt_speakers,
+│   │   # evt_exhibitors, evt_sponsors, evt_sponsor_tiers
+│   │
+│   ├── 111_evt_details.sql           (~150 lines)
+│   │   # evt_expo_stalls, evt_ticket_types, evt_checkins
+│   │
+│   ├── 120_job_core.sql              (~150 lines)
+│   │   # job_postings
+│   │
+│   ├── 130_prd_core.sql              (~200 lines)
+│   │   # prd_products, prd_images, prd_reviews
+│   │
+│   ├── 140_ana_core.sql              (~150 lines)
+│   │   # ana_feedback_stats, ana_social_kpis, ana_market_prices, ana_ndp_categories
+│   │
+│   ├── 150_sup_core.sql              (~250 lines)
+│   │   # sup_submissions, sup_categories, sup_tags, sup_submission_tags,
+│   │   # sup_comments, sup_attachments, sup_workflows,
+│   │   # sup_response_templates, sup_insights
+│   │
+│   ├── 160_int_core.sql              (~100 lines)
+│   │   # int_credentials, int_invitations
+│   │
+│   ├── 170_adm_core.sql              (~100 lines)
+│   │   # adm_users
+│   │
+│   ├── 180_shr_core.sql              (~150 lines)
+│   │   # shr_entity_likes, shr_entity_comments, shr_entity_shares,
+│   │   # shr_share_templates
+│   │
+│   ├── 190_que_core.sql              (~100 lines)
+│   │   # que_sms, que_whatsapp, que_offline_messages
+│   │
+│   ├── 200_prf_core.sql              (~100 lines)
+│   │   # prf_email_preferences
+│   │
+│   └── 999_functions.sql             (~400 lines)
+│       # PostgreSQL functions:
+│       # - generate_profile_slug()
+│       # - generate_business_slug()
+│       # - generate_organization_slug()
+│       # - update_post_likes_count()
+│       # - update_post_comments_count()
+│       # - update_post_shares_count()
+│       # - cleanup_old_versions()
+│       # - purge_old_deleted_posts()
+│       # - calculate_profile_strength()
+│       # - calculate_engagement_score()
+│
+├── seed/
+│   ├── production/                   # Production seed data (reference tables only)
+│   │   ├── 01_ref_countries.sql
+│   │   ├── 02_ref_states.sql
+│   │   ├── 03_ref_business_types.sql
+│   │   ├── 04_ref_organization_types.sql
+│   │   ├── 05_ref_event_types.sql
+│   │   ├── 06_ref_job_categories.sql
+│   │   ├── 07_ref_skills.sql
+│   │   └── 08_ref_notification_types.sql
+│   │
+│   └── dev/                          # Same as production (no fake data)
+│       └── (same files as production)
+│
+├── scripts/
+│   ├── setup-db.sh                   # Initial database setup
+│   ├── run-schema.sh                 # Execute all schema files in order
+│   ├── run-seed.sh                   # Execute seed data
+│   ├── backup-db.sh                  # Backup database
+│   └── restore-db.sh                 # Restore from backup
+│
+└── migrations/                       # Post-MVP migrations (empty until MVP)
+    └── .gitkeep
+
+Total: ~50 schema files, ~10,000 lines
+```
+
+### **Drizzle Schema Structure (Generated from SQL)**
 
 ```
 apps/api/src/database/schema/
@@ -386,108 +557,133 @@ apps/api/src/database/schema/
 ├── index.ts                    # Export all schemas
 │
 ├── core/
-│   └── profiles.schema.ts      # Core profiles table
+│   └── profiles.schema.ts
 │
-├── usr/                        # 18 files
-│   ├── usr_profiles.schema.ts
-│   ├── usr_roles.schema.ts
-│   ├── usr_experiences.schema.ts
-│   ├── usr_education.schema.ts
-│   ├── usr_skills.schema.ts
+├── ref/
+│   ├── countries.schema.ts
+│   ├── states.schema.ts
+│   ├── business-types.schema.ts
 │   └── ...
 │
-├── biz/                        # 14 files
-│   ├── biz_profiles.schema.ts
-│   ├── biz_products.schema.ts
-│   ├── biz_locations.schema.ts
+├── usr/
+│   ├── profile-roles.schema.ts
+│   ├── farmer-details.schema.ts
+│   ├── experiences.schema.ts
 │   └── ...
 │
-├── org/                        # 16 files
-├── soc/                        # 14 files
-├── msg/                        # 6 files
-├── ntf/                        # 3 files
-├── mkt/                        # 18 files
-├── eml/                        # 12 files
-├── cms/                        # 7 files
-├── nec/                        # 6 files
-├── evt/                        # 10 files
-├── job/                        # 1 file
-├── prd/                        # 3 files
-├── ana/                        # 4 files
-├── sup/                        # 9 files
-├── int/                        # 2 files
-├── adm/                        # 1 file
-├── ref/                        # 12 files
-├── shr/                        # 4 files
-├── que/                        # 3 files
-└── prf/                        # 1 file
+├── biz/
+├── org/
+├── soc/
+├── msg/
+├── ntf/
+├── mkt/
+├── eml/
+├── cms/
+├── nec/
+├── evt/
+├── job/
+├── prd/
+├── ana/
+├── sup/
+├── int/
+├── adm/
+├── shr/
+├── que/
+└── prf/
 
-Total: 28 folders, 161 files
+Total: 28 folders, ~161 TypeScript files (generated from SQL)
 ```
 
 ---
 
 ## 🚀 Implementation Timeline
 
-### **Week 1-2: Schema Generation**
-**Goal:** Create all Drizzle schema files with new names
+### **Week 1: SQL Schema Creation**
+**Goal:** Create all SQL schema files with new naming standards
 
 **Tasks:**
-- [ ] Set up Drizzle project structure
-- [ ] Create folder structure (28 modules)
-- [ ] Generate schema files from Supabase migrations
-- [ ] Apply new naming conventions
+- [ ] Set up `/aws/database/` directory structure
+- [ ] Convert Supabase migrations to numbered SQL files
+- [ ] Apply new naming conventions (prefixes, plurals)
 - [ ] Remove duplicate tables
-- [ ] Add proper indexes and constraints
-- [ ] Test schema compilation
+- [ ] Add engagement count columns + triggers
+- [ ] Add version history tables
+- [ ] Add soft delete fields
+- [ ] Add PostgreSQL functions (999_functions.sql)
+- [ ] Create seed data files (reference tables only)
+- [ ] Test schema execution order
 
-**Deliverable:** Complete Drizzle schema in `apps/api/src/database/schema/`
+**Deliverable:** Complete SQL schema in `/aws/database/schema/` (~50 files)
 
 ---
 
-### **Week 3-4: NestJS Implementation**
-**Goal:** Implement database layer in NestJS
+### **Week 2: AWS Infrastructure Setup**
+**Goal:** Set up AWS infrastructure for database
 
 **Tasks:**
-- [ ] Set up database module
-- [ ] Configure Drizzle connection
+- [ ] Provision RDS Postgres (db.t4g.large)
+- [ ] Configure VPC, security groups
+- [ ] Set up ElastiCache Redis
+- [ ] Create S3 buckets for backups
+- [ ] Configure CloudWatch monitoring
+- [ ] Set up Secrets Manager for credentials
+- [ ] Test database connectivity
+- [ ] Run schema files on RDS
+- [ ] Run seed data
+
+**Deliverable:** Working RDS Postgres with complete schema
+
+---
+
+### **Week 3-4: Drizzle Schema Generation + NestJS**
+**Goal:** Generate TypeScript schemas and implement NestJS services
+
+**Tasks:**
+- [ ] Generate Drizzle schemas from SQL (use drizzle-kit introspect)
+- [ ] Organize into module folders
+- [ ] Set up NestJS database module
+- [ ] Configure Drizzle connection to RDS
 - [ ] Create base repository pattern
-- [ ] Implement services for each module
+- [ ] Implement services for core modules (usr, biz, org, soc)
 - [ ] Add DTOs and validation
 - [ ] Write unit tests
-- [ ] Integration tests
 
 **Deliverable:** Working NestJS API with database access
 
 ---
 
-### **Week 5: Testing & Seed Data**
-**Goal:** Comprehensive testing and seed data
+### **Week 5: Testing & Optimization**
+**Goal:** Comprehensive testing and performance optimization
 
 **Tasks:**
-- [ ] Create seed data scripts
 - [ ] Test all CRUD operations
+- [ ] Test engagement count triggers
+- [ ] Test version history (create, restore)
+- [ ] Test soft delete + trash folder
 - [ ] Test relationships and joins
-- [ ] Performance testing
-- [ ] Load testing (simulate 1K users)
+- [ ] Performance testing (query optimization)
+- [ ] Load testing (simulate 1K concurrent users)
 - [ ] Fix any issues
+- [ ] Optimize slow queries
 
 **Deliverable:** Tested, production-ready API
 
 ---
 
-### **Week 6: Deployment**
-**Goal:** Deploy to AWS infrastructure
+### **Week 6: Deployment & Cutover**
+**Goal:** Deploy to production and migrate from Supabase
 
 **Tasks:**
-- [ ] Deploy RDS Postgres
-- [ ] Run migrations
-- [ ] Deploy NestJS to ECS
+- [ ] Deploy NestJS to ECS Fargate
+- [ ] Configure Application Load Balancer
 - [ ] Deploy frontend to Amplify
+- [ ] Update frontend to use new API
 - [ ] Configure CloudFront
-- [ ] Monitor and optimize
+- [ ] Set up EventBridge for scheduled jobs
+- [ ] Monitor performance
+- [ ] Decommission Supabase
 
-**Deliverable:** Production deployment
+**Deliverable:** Production deployment on AWS
 
 ---
 
@@ -537,22 +733,131 @@ Total: 28 folders, 161 files
 ### **Development Velocity**
 - [ ] New table creation: < 10 minutes
 - [ ] Schema review time: < 15 minutes
+- [ ] SQL file execution: < 5 minutes for all schemas
 - [ ] AI code generation accuracy: > 90%
 
 ### **Code Quality**
 - [ ] Zero naming conflicts in 6 months
 - [ ] 100% adherence to naming standards
 - [ ] All tables properly indexed
+- [ ] All engagement counts updated via triggers
+- [ ] Version history working for all content types
+
+### **Performance**
+- [ ] Query response time: < 200ms (p95)
+- [ ] Engagement count updates: < 10ms
+- [ ] Version restore: < 100ms
+- [ ] Soft delete queries: < 50ms
 
 ### **Team Productivity**
 - [ ] New developer onboarding: < 2 weeks
 - [ ] Team satisfaction with standards: > 8/10
 - [ ] Reduced time in naming discussions: -80%
+- [ ] Schema changes: < 1 hour (add new table)
 
 ### **Scalability**
 - [ ] Support 500 tables without restructuring
 - [ ] Module isolation maintained
 - [ ] Clear ownership for all tables
+- [ ] File organization scales linearly
+
+---
+
+## 🎯 Key Design Decisions
+
+### **1. Engagement Metadata: Columns (Not JSON)**
+**Decision:** Use separate columns with triggers  
+**Rationale:** 10x faster queries, atomic updates, indexable  
+**Implementation:** `likes_count`, `comments_count`, `shares_count` + triggers
+
+### **2. Version History: Current + 2 Previous**
+**Decision:** Keep last 3 versions, simple restore  
+**Rationale:** Covers 99% of use cases, no complex diff UI  
+**Implementation:** `soc_post_versions` table + cleanup trigger
+
+### **3. Soft Delete: 30-Day Trash Folder**
+**Decision:** Hide from active, allow restore for 30 days, auto-purge  
+**Rationale:** Industry standard (Gmail, Slack), user-friendly  
+**Implementation:** `is_deleted`, `deleted_at`, `purge_at` + scheduled job
+
+### **4. Schema Organization: Logical Grouping**
+**Decision:** Group related tables in files (200-300 lines)  
+**Rationale:** Balance file count vs file size, solo-friendly  
+**Implementation:** ~50 SQL files numbered by dependency
+
+### **5. Seed Data: Reference Tables Only**
+**Decision:** No fake data, only master data  
+**Rationale:** Clean production-ready data  
+**Implementation:** Countries, states, business types, skills, etc.
+
+### **6. Database Functions: PostgreSQL**
+**Decision:** Data logic in PostgreSQL, business logic in NestJS  
+**Rationale:** Performance, data integrity, separation of concerns  
+**Implementation:** Slug generation, engagement updates, profile strength
+
+### **7. No Migrations Until MVP**
+**Decision:** Direct schema creation, lock at v1.0  
+**Rationale:** Fast iteration, no migration complexity  
+**Implementation:** All changes via numbered SQL files until MVP
+
+---
+
+## 📝 Content Types Requiring Special Treatment
+
+### **Versioning Required (Current + 2 Previous Versions):**
+
+| Content Type | Table | Reasoning |
+|--------------|-------|-----------|
+| **Posts** | `soc_posts` | User-generated, editable, important content |
+| **Job Descriptions** | `job_postings` | Long-form, legal implications, frequently updated |
+| **Q&A Answers** | `qa_answers` (if implemented) | Knowledge base, needs history |
+| **Business Descriptions** | `biz_profiles` | Marketing content, frequently refined |
+| **Event Descriptions** | `evt_events` | Important details that change |
+
+**Implementation:**
+- Main table: `current_version` column
+- History table: `{table}_versions` with last 3 versions
+- Trigger: Auto-cleanup old versions
+
+### **Soft Delete Required (30-Day Trash):**
+
+| Content Type | Table | Reasoning |
+|--------------|-------|-----------|
+| **Posts** | `soc_posts` | User may want to restore |
+| **Comments** | `soc_post_comments` | Accidental deletion |
+| **Jobs** | `job_postings` | May want to repost |
+| **Events** | `evt_events` | May want to restore |
+| **Business Profiles** | `biz_profiles` | Accidental deletion |
+
+**Implementation:**
+- `is_deleted`, `deleted_at`, `deleted_by`, `purge_at`
+- Scheduled job: Daily purge of content > 30 days old
+- UI: Trash folder for restore
+
+### **Engagement Counts Required:**
+
+| Content Type | Table | Counts Needed |
+|--------------|-------|---------------|
+| **Posts** | `soc_posts` | likes, comments, shares, views |
+| **Comments** | `soc_post_comments` | likes |
+| **Products** | `prd_products` | likes, reviews, views |
+| **Jobs** | `job_postings` | applications, views |
+| **Events** | `evt_events` | registrations, views |
+| **Businesses** | `biz_profiles` | followers, views |
+
+**Implementation:**
+- Denormalized count columns on parent table
+- Triggers on child tables (likes, comments, etc.)
+- Computed `engagement_score` column
+
+### **No Versioning/Soft Delete:**
+
+| Content Type | Table | Reasoning |
+|--------------|-------|-----------|
+| **Profile Bio** | `profiles` | Current state only, not long-form |
+| **Messages** | `msg_messages` | Immutable (edit = new message) |
+| **Notifications** | `ntf_notifications` | Transient data |
+| **Analytics** | `ana_*` | Historical data, never delete |
 
 ---
 
