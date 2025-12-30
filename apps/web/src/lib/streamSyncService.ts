@@ -4,7 +4,8 @@
  * Handles background synchronization of offline posts and actions
  */
 
-import { createClient } from './supabase/client';
+import { createPost } from './api/social';
+import { getProfileBySlug } from './api/users';
 import { uploadPostImage, parseContent, ensureHashtag } from './streamUtils';
 import {
   getPendingPosts,
@@ -78,8 +79,6 @@ export async function syncPendingPosts(userId: string): Promise<{
  */
 async function syncPost(post: any, userId: string): Promise<SyncResult> {
   try {
-    const supabase = createClient();
-    
     // 1. Upload media files first
     const uploadedUrls: string[] = [];
     
@@ -101,71 +100,53 @@ async function syncPost(post: any, userId: string): Promise<SyncResult> {
     // 2. Parse content for mentions and hashtags
     const parsed = parseContent(post.content);
     
-    // 3. Create post
+    // 3. Extract tags from hashtags
+    const tags: string[] = parsed.hashtags.map(h => h.tag.replace('#', ''));
+    
+    // 4. Create post via API
     const postData: any = {
-      author_id: userId,
       content: post.content,
-      post_type: post.post_type,
-      media_urls: uploadedUrls,
-      media_type: uploadedUrls.length > 0 ? 'image' : null,
-      visibility: post.visibility,
+      postType: post.post_type || 'post',
+      mediaUrls: uploadedUrls,
     };
     
     // Add type-specific fields
     if (post.problem_category) {
-      postData.problem_category = post.problem_category;
-      postData.problem_urgency = post.problem_urgency;
+      postData.title = post.problem_category;
+      postData.category = post.problem_category;
+      postData.urgency = post.problem_urgency;
     }
     
     if (post.article_title) {
-      postData.article_title = post.article_title;
-      postData.article_cover_image = uploadedUrls[0] || null;
+      postData.title = post.article_title;
     }
     
-    const { data: createdPost, error: postError } = await supabase
-      .from('posts')
-      .insert(postData)
-      .select()
-      .single();
-    
-    if (postError) {
-      return {
-        success: false,
-        error: postError.message,
-      };
+    if (tags.length > 0) {
+      postData.tags = tags;
     }
     
-    // 4. Handle hashtags
-    if (parsed.hashtags.length > 0) {
-      for (const hashtag of parsed.hashtags) {
-        const tagId = await ensureHashtag(hashtag.tag);
-        
-        if (tagId) {
-          await supabase
-            .from('posts_tags')
-            .insert({
-              post_id: createdPost.id,
-              tag_id: tagId,
-            })
-            .select()
-            .single();
-          
-          // Cache hashtag
-          await cacheHashtag(hashtag.tag);
-        }
-      }
+    const createdPost = await createPost(postData);
+    
+    // 5. Cache hashtags
+    for (const hashtag of parsed.hashtags) {
+      await ensureHashtag(hashtag.tag);
+      await cacheHashtag(hashtag.tag);
     }
     
-    // 5. Cache mentions used
+    // 6. Cache mentions used
     for (const mention of parsed.mentions) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, full_name, profile_slug, profile_photo_url, headline')
-        .eq('profile_slug', mention.username)
-        .single();
-      
-      if (profile) {
-        await cacheMention(profile);
+      try {
+        const profile = await getProfileBySlug(mention.username);
+        await cacheMention({
+          id: profile.id,
+          full_name: profile.full_name,
+          profile_slug: profile.profile_slug,
+          profile_photo_url: profile.profile_photo_url,
+          headline: profile.headline,
+        });
+      } catch (error) {
+        // Profile not found, skip
+        console.warn(`Profile not found for mention: ${mention.username}`);
       }
     }
     

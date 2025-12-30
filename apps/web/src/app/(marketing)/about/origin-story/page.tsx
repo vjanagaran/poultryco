@@ -457,7 +457,7 @@ export default function OriginStoryPage() {
               </p>
 
               <p className="text-lg text-foreground/80 leading-relaxed mb-6">
-                In September 2025, five computer science students from KSR College joined us for a 6-month commitment, along with a junior developer coordinator. We're using AI-first development (Cursor + Claude) and modern technology (Expo, React Native, Next.js, Supabase, AWS SES).
+                In September 2025, five computer science students from KSR College joined us for a 6-month commitment, along with a junior developer coordinator. We're using AI-first development (Cursor + Claude) and modern technology (Expo, React Native, Next.js, AWS ECS, AWS SES).
               </p>
 
               <p className="text-lg text-foreground/80 leading-relaxed mb-6">

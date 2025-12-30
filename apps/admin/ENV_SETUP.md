@@ -40,7 +40,7 @@
 
 - **`.env.example`** - Template file (committed to git)
 - **`.env.local`** - Local development (gitignored)
-- **`.env.production`** - Production (gitignored, set in Vercel)
+- **`.env.production`** - Production (gitignored, set in AWS ECS task definition)
 
 ## Authentication
 
@@ -75,8 +75,8 @@ All database operations now go through the REST API.
 
 ## Production Deployment
 
-For Vercel deployment:
-1. Go to Vercel project settings
+For AWS ECS deployment:
+1. Set environment variables in ECS task definition
 2. Add environment variable: `NEXT_PUBLIC_API_URL`
 3. Set value to production API URL
 4. Redeploy

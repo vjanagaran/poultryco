@@ -264,8 +264,7 @@ export default function TermsPage() {
               We use third-party services to operate the Platform, including:
             </p>
             <ul className="list-disc pl-6 mb-4 text-gray-700 space-y-2">
-              <li><strong>Supabase:</strong> Database, authentication, and storage</li>
-              <li><strong>Vercel:</strong> Hosting and deployment</li>
+              <li><strong>AWS:</strong> Cloud infrastructure, hosting, and storage</li>
               <li><strong>Google Analytics:</strong> Usage analytics</li>
               <li><strong>Email Services:</strong> Transactional and marketing emails</li>
             </ul>

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 /**
  * Cron endpoint to trigger NECC price scraper
- * Called by Vercel Cron every 15 minutes
+ * Can be called by external cron service (e.g., AWS EventBridge, cron-job.org)
  */
 export async function GET(request: Request) {
   // Verify cron secret

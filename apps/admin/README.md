@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **URL:** admin.poultryco.net (production) | http://localhost:3001 (development)  
-**Tech Stack:** Next.js 15 + React 19 + TypeScript + Supabase
+**Tech Stack:** Next.js 15 + React 19 + TypeScript + AWS ECS
 
 ---
 
@@ -78,8 +78,7 @@ apps/admin/
 │   │   └── analytics/         # Charts & graphs
 │   │
 │   ├── lib/
-│   │   ├── supabase/          # Supabase clients
-│   │   ├── api/               # API utilities
+│   │   ├── api/               # REST API clients
 │   │   ├── hooks/             # Custom hooks
 │   │   └── utils/             # Utility functions
 │   │
@@ -214,22 +213,18 @@ See [API Documentation](../../docs/api/) for complete API reference.
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### AWS ECS Fargate (Production)
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy
-vercel
-
-# Set environment variables in Vercel dashboard
+# Build and deploy using deploy script
+cd apps/admin
+./deploy.sh
 ```
 
 ### Custom Domain
-- Point `admin.poultryco.net` to Vercel
-- Configure SSL (automatic on Vercel)
-- Set up redirects if needed
+- Point `admin.poultryco.net` to AWS ALB
+- Configure SSL via ACM (automatic)
+- Set up redirects via ALB listener rules
 
 ---
 
@@ -253,12 +248,12 @@ npm run test:coverage
 ### Error Tracking
 - Sentry for error monitoring
 - LogRocket for session replay
-- Vercel Analytics for performance
+- AWS CloudWatch for performance monitoring
 
 ### Logging
 - All admin actions logged to database
 - Error logs sent to Sentry
-- Performance metrics in Vercel
+- Performance metrics in CloudWatch
 
 ---
 
@@ -298,7 +293,7 @@ Create an issue in GitHub with:
 - [ ] Run development server
 - [ ] Review codebase structure
 - [ ] Understand authentication flow
-- [ ] Familiarize with Supabase schema
+- [ ] Familiarize with database schema
 
 ---
 

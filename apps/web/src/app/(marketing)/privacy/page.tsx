@@ -189,7 +189,7 @@ export default function PrivacyPage() {
             <h3 className="text-xl font-semibold text-gray-900 mb-3">3.3 Service Providers</h3>
             <p className="text-gray-700 mb-3">We share information with trusted third-party service providers who help us operate the Platform:</p>
             <ul className="list-disc pl-6 mb-4 text-gray-700 space-y-2">
-              <li><strong>Supabase:</strong> Database, authentication, and file storage services</li>
+              <li><strong>AWS:</strong> Cloud infrastructure, database, authentication, and file storage services</li>
               <li><strong>CDN Providers:</strong> Content delivery for images and media</li>
               <li><strong>Analytics Services:</strong> Google Analytics and similar tools to understand Platform usage</li>
               <li><strong>Email Services:</strong> Transactional and marketing email delivery</li>
@@ -233,7 +233,7 @@ export default function PrivacyPage() {
               <li><strong>Encryption:</strong> Data is encrypted in transit using SSL/TLS and at rest using industry-standard encryption</li>
               <li><strong>Access Controls:</strong> Limited access to personal information on a need-to-know basis</li>
               <li><strong>Authentication:</strong> Secure password hashing and optional two-factor authentication</li>
-              <li><strong>Infrastructure:</strong> Hosted on secure, SOC 2 compliant infrastructure (Supabase/Vercel)</li>
+              <li><strong>Infrastructure:</strong> Hosted on secure, SOC 2 compliant AWS infrastructure</li>
               <li><strong>Regular Audits:</strong> Periodic security assessments and updates</li>
               <li><strong>Incident Response:</strong> Procedures in place to respond to security breaches</li>
             </ul>

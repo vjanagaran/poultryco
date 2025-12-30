@@ -20,7 +20,7 @@ This is the marketing website for PoultryCo, built with Next.js 14 (App Router),
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
 - **Fonts:** Inter (primary), Poppins (secondary)
-- **Hosting:** Vercel
+- **Hosting:** AWS ECS Fargate
 - **Analytics:** Google Analytics 4 (to be added)
 
 ---
@@ -321,7 +321,7 @@ event({
 Options for blog content management:
 1. **MDX files** (simple, git-based)
 2. **Headless CMS** (Contentful, Sanity, Strapi)
-3. **Database** (Supabase)
+3. **Database** (AWS RDS)
 
 **Recommended for MVP:** MDX files in `/content/blog/`
 
@@ -337,29 +337,24 @@ content/
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### AWS ECS Fargate (Production)
 
 ```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Deploy
-vercel
-
-# Production deployment
-vercel --prod
+# Build and deploy using deploy script
+cd apps/web
+./deploy.sh
 ```
 
-### Environment Variables on Vercel
-Add all `.env.local` variables in Vercel dashboard:
+### Environment Variables
+Set environment variables in AWS ECS task definition:
 - Settings → Environment Variables
 - Add for Production, Preview, Development
 
 ### Custom Domain
-1. Add domain in Vercel dashboard
+1. Configure domain in Route 53 or your DNS provider
 2. Update DNS records:
    - Type: A, Name: @, Value: 76.76.21.21
-   - Type: CNAME, Name: www, Value: cname.vercel-dns.com
+   - Type: A/ALIAS, Name: www, Value: [ALB DNS name]
 
 ---
 
@@ -376,7 +371,7 @@ Add all `.env.local` variables in Vercel dashboard:
 - [ ] Code splitting
 - [ ] Minimize JavaScript
 - [ ] Enable compression
-- [ ] Use CDN (Vercel handles this)
+- [ ] Use CDN (AWS CloudFront)
 - [ ] Implement caching headers
 - [ ] Optimize third-party scripts
 
@@ -492,9 +487,9 @@ import Image from 'next/image'
 ## 🔗 Quick Links
 
 - **Live Site:** https://www.poultryco.net (when deployed)
-- **Preview:** Vercel preview URLs
+- **Deployment:** AWS ECS Fargate
 - **Analytics:** Google Analytics dashboard
-- **Vercel Dashboard:** https://vercel.com
+- **AWS Console:** https://console.aws.amazon.com
 - **Design Figma:** [Link when available]
 
 ---

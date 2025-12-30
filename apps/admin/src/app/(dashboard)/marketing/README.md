@@ -5,11 +5,8 @@
 
 ## Quick Start
 
-1. **Apply Database Migration:**
-   ```bash
-   cd /Users/janagaran/Programs/poultryco
-   supabase db push
-   ```
+1. **Database Migration:**
+   Database migrations are handled by the API. Ensure the API is running and migrations are applied.
 
 2. **Start Admin App:**
    ```bash
@@ -85,7 +82,7 @@ marketing/
 
 ## Database Tables
 
-All tables in `supabase/schema/54_marketing_system.sql`:
+All tables in the marketing system:
 
 - `stakeholder_segments` (11 target audience types)
 - `ndp_categories`
@@ -133,7 +130,7 @@ All tables in `supabase/schema/54_marketing_system.sql`:
 
 - `date-fns` - Date manipulation (already installed)
 - `@tanstack/react-query` - Data fetching (already installed)
-- Supabase client (already configured)
+- REST API client (already configured)
 - shadcn/ui components (already available)
 
 ## Goals

@@ -311,8 +311,6 @@ export async function uploadGroupPhoto(
   file: File,
   groupId: string
 ): Promise<{ url: string; thumbnailUrl: string }> {
-  const supabase = createClient();
-  
   // Validate
   if (!STORAGE_CONFIG.IMAGE_FORMATS.includes(file.type)) {
     throw new Error('Invalid image format');
@@ -326,7 +324,6 @@ export async function uploadGroupPhoto(
   const compressed = await compressImage(file);
   const thumbnail = await generateThumbnail(file);
   
-  // Upload original
   // Upload original via API
   const originalFile = new File([compressed], 'original.webp', { type: 'image/webp' });
   const originalResult = await uploadDocument(originalFile);

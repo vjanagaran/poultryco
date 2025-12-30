@@ -16,15 +16,11 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    domains: ['cekn...supabase.co',          // your Supabase domain
-  'lh3.googleusercontent.com',   // 👈 add this for Google profile pics
-  'avatars.githubusercontent.com'], // Add your Supabase storage domain
+    domains: [
+      'lh3.googleusercontent.com',   // Google profile pics
+      'avatars.githubusercontent.com', // GitHub avatars
+    ],
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
       {
         protocol: 'https',
         hostname: 'cdn.poultryco.net',
