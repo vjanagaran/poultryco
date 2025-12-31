@@ -22,6 +22,7 @@ import { ContentModule } from './modules/content/content.module';
 import { FormsModule } from './modules/forms/forms.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module';
+import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { MarketplaceModule } from './modules/marketplace/marketplace.module';
     FormsModule,
     MarketingModule,
     MarketplaceModule,
+    WhatsAppModule,
   ],
   controllers: [AppController],
   providers: [AppService],

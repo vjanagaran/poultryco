@@ -141,11 +141,43 @@ export interface ContentSchedule {
   id: string;
   content_id: string;
   channel_id: string;
-  scheduled_for: string;
+  // Updated: Separate date and time fields (new schema)
+  scheduled_date: string; // DATE format: 'YYYY-MM-DD'
+  scheduled_time: string | null; // TIME format: 'HH:MM:SS' or null
+  // Legacy support: scheduled_for (will be deprecated)
+  scheduled_for?: string; // TIMESTAMPTZ (for backward compatibility)
   status: string;
   published_url: string | null;
   published_at?: string | null;
+  published_date?: string | null; // Actual publication date/time
+  content_created_date?: string | null; // When content was originally created
+  // Performance tracking
+  views?: number;
+  likes?: number;
+  comments?: number;
+  shares?: number;
+  clicks?: number;
   created_at: string;
+  // Relationships
+  campaign?: {
+    id: string;
+    name: string;
+    color: string;
+    icon?: string | null;
+  } | null;
+  content?: {
+    id: string;
+    title: string;
+    slug?: string;
+    content_types?: {
+      name: string;
+    } | null;
+  } | null;
+  channel?: {
+    id: string;
+    name: string;
+    platform?: string;
+  } | null;
 }
 
 // Dashboard
@@ -308,16 +340,18 @@ export async function deleteMarketingChannel(id: string): Promise<void> {
 
 // Content Schedule
 export async function getContentSchedule(filters?: {
-  startDate?: string;
-  endDate?: string;
+  startDate?: string; // DATE format: 'YYYY-MM-DD'
+  endDate?: string; // DATE format: 'YYYY-MM-DD'
   channelId?: string;
   status?: string;
+  campaignId?: string; // Filter by campaign
 }): Promise<ContentSchedule[]> {
   const params = new URLSearchParams();
   if (filters?.startDate) params.append('startDate', filters.startDate);
   if (filters?.endDate) params.append('endDate', filters.endDate);
   if (filters?.channelId) params.append('channelId', filters.channelId);
   if (filters?.status) params.append('status', filters.status);
+  if (filters?.campaignId) params.append('campaignId', filters.campaignId);
   
   const query = params.toString();
   return apiClient.get<ContentSchedule[]>(`/marketing/schedule${query ? `?${query}` : ''}`);
@@ -327,7 +361,14 @@ export async function getContentScheduleById(id: string): Promise<ContentSchedul
   return apiClient.get<ContentSchedule>(`/marketing/schedule/${id}`);
 }
 
-export async function createContentSchedule(data: Partial<ContentSchedule>): Promise<ContentSchedule> {
+export async function createContentSchedule(data: {
+  content_id: string;
+  channel_id: string;
+  scheduled_date: string; // DATE format: 'YYYY-MM-DD'
+  scheduled_time?: string | null; // TIME format: 'HH:MM:SS' or null
+  // Legacy support
+  scheduled_for?: string; // Will be converted to scheduled_date + scheduled_time
+}): Promise<ContentSchedule> {
   return apiClient.post<ContentSchedule>('/marketing/schedule', data);
 }
 
@@ -337,6 +378,93 @@ export async function updateContentSchedule(id: string, data: Partial<ContentSch
 
 export async function deleteContentSchedule(id: string): Promise<void> {
   await apiClient.delete(`/marketing/schedule/${id}`);
+}
+
+// =====================================================
+// CAMPAIGNS (Top-Level Marketing Strategy)
+// =====================================================
+
+export interface MarketingCampaign {
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  campaign_type?: 'product_launch' | 'awareness' | 'engagement' | 'conversion' | 'retention' | 'other';
+  start_date?: string;
+  end_date?: string;
+  primary_goal?: string;
+  target_metrics?: Record<string, any>; // JSONB
+  budget?: number;
+  status: 'draft' | 'planning' | 'active' | 'paused' | 'completed' | 'cancelled';
+  total_reach?: number;
+  total_engagement?: number;
+  total_conversions?: number;
+  // Relationships (from junction tables - populated by API)
+  segment_ids?: string[];
+  ndp_topic_ids?: string[];
+  pillar_ids?: string[];
+  content_ids?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getMarketingCampaigns(filters?: {
+  status?: string;
+}): Promise<MarketingCampaign[]> {
+  const params = new URLSearchParams();
+  if (filters?.status) params.append('status', filters.status);
+  
+  const query = params.toString();
+  return apiClient.get<MarketingCampaign[]>(`/marketing/campaigns${query ? `?${query}` : ''}`);
+}
+
+export async function getMarketingCampaignById(id: string): Promise<MarketingCampaign> {
+  return apiClient.get<MarketingCampaign>(`/marketing/campaigns/${id}`);
+}
+
+export async function createMarketingCampaign(data: Partial<MarketingCampaign>): Promise<MarketingCampaign> {
+  return apiClient.post<MarketingCampaign>('/marketing/campaigns', data);
+}
+
+export async function updateMarketingCampaign(id: string, data: Partial<MarketingCampaign>): Promise<MarketingCampaign> {
+  return apiClient.patch<MarketingCampaign>(`/marketing/campaigns/${id}`, data);
+}
+
+export async function deleteMarketingCampaign(id: string): Promise<void> {
+  await apiClient.delete(`/marketing/campaigns/${id}`);
+}
+
+// Campaign Relationships
+export async function getCampaignSegments(campaignId: string): Promise<StakeholderSegment[]> {
+  return apiClient.get<StakeholderSegment[]>(`/marketing/campaigns/${campaignId}/segments`);
+}
+
+export async function setCampaignSegments(campaignId: string, segmentIds: string[]): Promise<void> {
+  await apiClient.post(`/marketing/campaigns/${campaignId}/segments`, { segmentIds });
+}
+
+export async function getCampaignNdpTopics(campaignId: string): Promise<ContentTopic[]> {
+  return apiClient.get<ContentTopic[]>(`/marketing/campaigns/${campaignId}/ndp-topics`);
+}
+
+export async function setCampaignNdpTopics(campaignId: string, topicIds: string[]): Promise<void> {
+  await apiClient.post(`/marketing/campaigns/${campaignId}/ndp-topics`, { topicIds });
+}
+
+export async function getCampaignPillars(campaignId: string): Promise<ContentPillar[]> {
+  return apiClient.get<ContentPillar[]>(`/marketing/campaigns/${campaignId}/pillars`);
+}
+
+export async function setCampaignPillars(campaignId: string, pillarIds: string[]): Promise<void> {
+  await apiClient.post(`/marketing/campaigns/${campaignId}/pillars`, { pillarIds });
+}
+
+export async function getCampaignContent(campaignId: string): Promise<Content[]> {
+  return apiClient.get<Content[]>(`/marketing/campaigns/${campaignId}/content`);
+}
+
+export async function setCampaignContent(campaignId: string, contentIds: string[]): Promise<void> {
+  await apiClient.post(`/marketing/campaigns/${campaignId}/content`, { contentIds });
 }
 
 // KPIs

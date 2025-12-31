@@ -50,3 +50,6 @@ export * from './marketing-cms';
 // Marketing Tags
 export * from './marketing-tags';
 
+// WhatsApp Module
+export * from './whatsapp';
+

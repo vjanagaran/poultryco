@@ -24,12 +24,19 @@ export default async function DashboardLayout({
   let user = null;
   
   try {
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    
     const response = await fetch(`${apiUrl}/admin/auth/me`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
       cache: 'no-store',
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       redirect("/login");
@@ -37,7 +44,11 @@ export default async function DashboardLayout({
 
     const data = await response.json();
     user = data.user;
-  } catch (_error) {
+  } catch (error: unknown) {
+    // API unavailable or timeout - redirect to login
+    if (error instanceof Error && error.name !== 'AbortError') {
+      console.error('Error fetching user in layout:', error);
+    }
     redirect("/login");
   }
 

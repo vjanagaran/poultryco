@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppModule } from './app.module';
@@ -13,12 +14,18 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
+  // CORS configuration (needed before WebSocket adapter)
+  const corsOrigin = configService.get('CORS_ORIGIN')?.split(',') || ['http://localhost:3000', 'http://localhost:3001'];
+
+  // WebSocket adapter - CORS is configured in gateway decorators
+  // The IoAdapter automatically attaches Socket.io to the HTTP server
+  app.useWebSocketAdapter(new IoAdapter(app));
+
   // Security
   app.use(helmet());
   app.use(compression());
 
-  // CORS
-  const corsOrigin = configService.get('CORS_ORIGIN')?.split(',') || ['http://localhost:3000'];
+  // CORS (HTTP)
   app.enableCors({
     origin: corsOrigin,
     credentials: true,

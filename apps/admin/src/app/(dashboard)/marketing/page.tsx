@@ -76,6 +76,15 @@ export default async function MarketingDashboard() {
       description: 'Track and analyze marketing performance',
       color: 'bg-indigo-50 border-indigo-200',
     },
+    {
+      title: 'WhatsApp Marketing',
+      count: 0,
+      subtitle: 'integrated',
+      icon: '💬',
+      href: '/marketing/whatsapp',
+      description: 'Manage WhatsApp accounts, groups, and campaigns',
+      color: 'bg-green-50 border-green-200',
+    },
   ];
 
   return (

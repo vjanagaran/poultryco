@@ -147,12 +147,17 @@ FROM adm_menugroups mg WHERE mg.slug = 'necc'
 ON CONFLICT (group_id, path) DO NOTHING;
 
 -- Marketing
-INSERT INTO adm_menus (group_id, name, slug, icon, path, parent_path, display_order, is_active)
+-- First, delete old marketing menus to avoid conflicts
+DELETE FROM adm_menus WHERE group_id IN (SELECT id FROM adm_menugroups WHERE slug = 'marketing');
+
+-- Marketing Dashboard (Main)
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
 SELECT 
   mg.id,
   'Marketing Dashboard',
   'marketing-dashboard',
-  '🎯',
+  '📊',
+  'Overview of all marketing activities',
   '/marketing',
   NULL,
   1,
@@ -160,106 +165,461 @@ SELECT
 FROM adm_menugroups mg WHERE mg.slug = 'marketing'
 ON CONFLICT (group_id, path) DO NOTHING;
 
-INSERT INTO adm_menus (group_id, name, slug, icon, path, parent_path, display_order, is_active)
-SELECT 
-  mg.id,
-  'NDP Topics',
-  'marketing-topics',
-  '💡',
-  '/marketing/topics',
-  '/marketing',
-  2,
-  true
-FROM adm_menugroups mg WHERE mg.slug = 'marketing'
-ON CONFLICT (group_id, path) DO NOTHING;
+-- =====================================================
+-- CORE MARKETING
+-- =====================================================
 
-INSERT INTO adm_menus (group_id, name, slug, icon, path, parent_path, display_order, is_active)
-SELECT 
-  mg.id,
-  'Segments',
-  'marketing-segments',
-  '👥',
-  '/marketing/segments',
-  '/marketing',
-  3,
-  true
-FROM adm_menugroups mg WHERE mg.slug = 'marketing'
-ON CONFLICT (group_id, path) DO NOTHING;
-
-INSERT INTO adm_menus (group_id, name, slug, icon, path, parent_path, display_order, is_active)
-SELECT 
-  mg.id,
-  'Content Pillars',
-  'marketing-pillars',
-  '🏛️',
-  '/marketing/pillars',
-  '/marketing',
-  4,
-  true
-FROM adm_menugroups mg WHERE mg.slug = 'marketing'
-ON CONFLICT (group_id, path) DO NOTHING;
-
-INSERT INTO adm_menus (group_id, name, slug, icon, path, parent_path, display_order, is_active)
+-- Campaigns
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
 SELECT 
   mg.id,
   'Campaigns',
   'marketing-campaigns',
   '🚀',
+  'Top-level marketing campaigns',
   '/marketing/campaigns',
   '/marketing',
-  5,
+  10,
   true
 FROM adm_menugroups mg WHERE mg.slug = 'marketing'
 ON CONFLICT (group_id, path) DO NOTHING;
 
-INSERT INTO adm_menus (group_id, name, slug, icon, path, parent_path, display_order, is_active)
+-- Segments
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
 SELECT 
   mg.id,
-  'Channels',
-  'marketing-channels',
-  '📱',
-  '/marketing/channels',
+  'Segments',
+  'marketing-segments',
+  '👥',
+  'Target audience segments',
+  '/marketing/segments',
   '/marketing',
-  6,
+  11,
   true
 FROM adm_menugroups mg WHERE mg.slug = 'marketing'
 ON CONFLICT (group_id, path) DO NOTHING;
 
-INSERT INTO adm_menus (group_id, name, slug, icon, path, parent_path, display_order, is_active)
+-- NDP Research - Categories
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
 SELECT 
   mg.id,
-  'Calendar',
-  'marketing-calendar',
+  'NDP Categories',
+  'marketing-ndp-categories',
+  '📂',
+  'NDP framework categories',
+  '/marketing/ndp-research/categories',
+  '/marketing',
+  12,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- NDP Research - Topics
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'NDP Topics',
+  'marketing-ndp-topics',
+  '💡',
+  'NDP research topics',
+  '/marketing/ndp-research/topics',
+  '/marketing',
+  13,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Personas
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Personas',
+  'marketing-personas',
+  '🎭',
+  'ICP definition and mapping',
+  '/marketing/personas',
+  '/marketing',
+  14,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- =====================================================
+-- CONTENT SYSTEM
+-- =====================================================
+
+-- Content Pillars
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Content Pillars',
+  'marketing-content-pillars',
+  '🏛️',
+  'Core research topics for content',
+  '/marketing/content/pillars',
+  '/marketing',
+  20,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Content
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Content',
+  'marketing-content',
+  '📄',
+  'Master and repurposed content',
+  '/marketing/content',
+  '/marketing',
+  21,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Content Ideas
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Content Ideas',
+  'marketing-content-ideas',
+  '💭',
+  'Quick capture of content ideas',
+  '/marketing/content/ideas',
+  '/marketing',
+  22,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Content Calendar
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Content Calendar',
+  'marketing-content-calendar',
   '📅',
-  '/marketing/calendar',
+  'Schedule and track content publishing',
+  '/marketing/content/calendar',
   '/marketing',
-  7,
+  23,
   true
 FROM adm_menugroups mg WHERE mg.slug = 'marketing'
 ON CONFLICT (group_id, path) DO NOTHING;
 
-INSERT INTO adm_menus (group_id, name, slug, icon, path, parent_path, display_order, is_active)
+-- Content Tags
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
 SELECT 
   mg.id,
-  'KPIs',
-  'marketing-kpis',
-  '📊',
-  '/marketing/kpis',
-  '/marketing',
-  8,
-  true
-FROM adm_menugroups mg WHERE mg.slug = 'marketing'
-ON CONFLICT (group_id, path) DO NOTHING;
-
-INSERT INTO adm_menus (group_id, name, slug, icon, path, parent_path, display_order, is_active)
-SELECT 
-  mg.id,
-  'Tags',
-  'marketing-tags',
+  'Content Tags',
+  'marketing-content-tags',
   '🏷️',
-  '/marketing/settings/tags',
+  'Content taxonomy',
+  '/marketing/content/tags',
   '/marketing',
-  9,
+  24,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- =====================================================
+-- WHATSAPP
+-- =====================================================
+
+-- WhatsApp Dashboard
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'WhatsApp',
+  'marketing-whatsapp',
+  '💬',
+  'WhatsApp marketing integration',
+  '/marketing/whatsapp',
+  '/marketing',
+  30,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- WhatsApp Accounts
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'WhatsApp Accounts',
+  'marketing-whatsapp-accounts',
+  '📱',
+  'Account management',
+  '/marketing/whatsapp/accounts',
+  '/marketing',
+  31,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- WhatsApp Groups
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'WhatsApp Groups',
+  'marketing-whatsapp-groups',
+  '👥',
+  'Group discovery and management',
+  '/marketing/whatsapp/groups',
+  '/marketing',
+  32,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- WhatsApp Contacts
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'WhatsApp Contacts',
+  'marketing-whatsapp-contacts',
+  '📇',
+  'Contact and persona mapping',
+  '/marketing/whatsapp/contacts',
+  '/marketing',
+  33,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- WhatsApp Messages
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'WhatsApp Messages',
+  'marketing-whatsapp-messages',
+  '💬',
+  'Message tracking',
+  '/marketing/whatsapp/messages',
+  '/marketing',
+  34,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- WhatsApp Analytics
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'WhatsApp Analytics',
+  'marketing-whatsapp-analytics',
+  '📊',
+  'WhatsApp performance metrics',
+  '/marketing/whatsapp/analytics',
+  '/marketing',
+  35,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- =====================================================
+-- SOCIAL MEDIA
+-- =====================================================
+
+-- Social Media Channels
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Social Channels',
+  'marketing-social-channels',
+  '📺',
+  'Social media channel management',
+  '/marketing/social/channels',
+  '/marketing',
+  40,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Social Media Posts
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Social Posts',
+  'marketing-social-posts',
+  '📝',
+  'Social media posts',
+  '/marketing/social/posts',
+  '/marketing',
+  41,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Social Media Schedule
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Social Schedule',
+  'marketing-social-schedule',
+  '📅',
+  'Social media scheduling',
+  '/marketing/social/schedule',
+  '/marketing',
+  42,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Social Media Analytics
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Social Analytics',
+  'marketing-social-analytics',
+  '📊',
+  'Social media performance',
+  '/marketing/social/analytics',
+  '/marketing',
+  43,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- =====================================================
+-- EMAIL
+-- =====================================================
+
+-- Email Campaigns
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Email Campaigns',
+  'marketing-email-campaigns',
+  '📬',
+  'Email marketing campaigns',
+  '/marketing/email/campaigns',
+  '/marketing',
+  50,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Email Templates
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Email Templates',
+  'marketing-email-templates',
+  '📝',
+  'Email templates',
+  '/marketing/email/templates',
+  '/marketing',
+  51,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Email Lists
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Email Lists',
+  'marketing-email-lists',
+  '📋',
+  'Subscriber lists',
+  '/marketing/email/lists',
+  '/marketing',
+  52,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Email Schedule
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Email Schedule',
+  'marketing-email-schedule',
+  '📅',
+  'Email scheduling',
+  '/marketing/email/schedule',
+  '/marketing',
+  53,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Email Analytics
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Email Analytics',
+  'marketing-email-analytics',
+  '📊',
+  'Email performance',
+  '/marketing/email/analytics',
+  '/marketing',
+  54,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- =====================================================
+-- ANALYTICS & KPIS
+-- =====================================================
+
+-- Marketing KPIs
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Marketing KPIs',
+  'marketing-analytics-kpis',
+  '📈',
+  'Overall marketing metrics',
+  '/marketing/analytics/kpis',
+  '/marketing',
+  60,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Performance
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Performance',
+  'marketing-analytics-performance',
+  '📉',
+  'Campaign and content performance',
+  '/marketing/analytics/performance',
+  '/marketing',
+  61,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Reports
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Reports',
+  'marketing-analytics-reports',
+  '📊',
+  'Marketing reports',
+  '/marketing/analytics/reports',
+  '/marketing',
+  62,
+  true
+FROM adm_menugroups mg WHERE mg.slug = 'marketing'
+ON CONFLICT (group_id, path) DO NOTHING;
+
+-- Goals
+INSERT INTO adm_menus (group_id, name, slug, icon, description, path, parent_path, display_order, is_active)
+SELECT 
+  mg.id,
+  'Goals',
+  'marketing-analytics-goals',
+  '🎯',
+  'Marketing goals and targets',
+  '/marketing/analytics/goals',
+  '/marketing',
+  63,
   true
 FROM adm_menugroups mg WHERE mg.slug = 'marketing'
 ON CONFLICT (group_id, path) DO NOTHING;
