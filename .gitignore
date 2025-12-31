@@ -47,3 +47,7 @@ Thumbs.db
 supabase/.branches
 supabase/.temp
 
+# WhatsApp sessions (contain sensitive authentication data)
+apps/api/whatsapp-sessions/
+apps/api/test-session/
+
