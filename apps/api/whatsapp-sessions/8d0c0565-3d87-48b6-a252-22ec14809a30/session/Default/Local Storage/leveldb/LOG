@@ -1,6 +1,0 @@
-2025/12/31-16:52:43.198 b103 Reusing MANIFEST /Users/vjanagaran/Programs/poultryco/apps/api/whatsapp-sessions/8d0c0565-3d87-48b6-a252-22ec14809a30/session/Default/Local Storage/leveldb/MANIFEST-000001
-2025/12/31-16:52:43.198 b103 Recovering log #3
-2025/12/31-16:52:43.198 b103 Reusing old log /Users/vjanagaran/Programs/poultryco/apps/api/whatsapp-sessions/8d0c0565-3d87-48b6-a252-22ec14809a30/session/Default/Local Storage/leveldb/000003.log 
-2025/12/31-16:53:43.741 1e303 Level-0 table #5: started
-2025/12/31-16:53:43.748 1e303 Level-0 table #5: 19341 bytes OK
-2025/12/31-16:53:43.759 1e303 Delete type=0 #3
