@@ -77,7 +77,19 @@ class ApiClient {
         } as ApiError;
       }
 
-      return await response.json();
+      // Handle 204 No Content (no response body)
+      if (response.status === 204 || response.statusText === 'No Content') {
+        return undefined as T;
+      }
+
+      // Check if response has content
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const text = await response.text();
+        return text ? JSON.parse(text) : undefined as T;
+      }
+
+      return undefined as T;
     } catch (error) {
       if (error && typeof error === 'object' && 'statusCode' in error) {
         throw error;

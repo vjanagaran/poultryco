@@ -10,6 +10,8 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  HttpException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { WhatsAppService } from './whatsapp.service';
@@ -19,8 +21,8 @@ import { WhatsAppGroupService } from './whatsapp-group.service';
 import { WhatsAppLoggerService } from './whatsapp-logger.service';
 import { Inject } from '@nestjs/common';
 import { DATABASE_CONNECTION } from '../../database/database.module';
-import { eq } from 'drizzle-orm';
-import { mktWapAccounts, mktWapGroups, mktWapContacts, mktWapMessages } from '../../database/schema/whatsapp';
+import { eq, inArray } from 'drizzle-orm';
+import { mktWapAccounts, mktWapGroups, mktWapContacts, mktWapMessages, mktWapGroupContacts } from '../../database/schema/whatsapp';
 
 @Controller('whatsapp')
 export class WhatsAppController {
@@ -278,8 +280,25 @@ export class WhatsAppController {
   // =====================================================
 
   @Get('groups')
-  async getGroups(@Query() filters: any) {
+  async getGroups(@Query() filters: {
+    accountId?: string;
+    isActive?: boolean;
+    includeHidden?: boolean;
+    limit?: number;
+    offset?: number;
+  }) {
     return this.groupService.getGroups(filters);
+  }
+
+  @Get('accounts/:accountId/groups')
+  async getAccountGroups(
+    @Param('accountId') accountId: string,
+    @Query('includeHidden') includeHidden?: string
+  ) {
+    return this.groupService.getAccountGroups(
+      accountId,
+      includeHidden === 'true'
+    );
   }
 
   @Get('groups/:id')
@@ -287,19 +306,262 @@ export class WhatsAppController {
     return this.groupService.getGroupById(id);
   }
 
+  @Get('groups/:id/contacts')
+  async getGroupContacts(
+    @Param('id') id: string,
+    @Query('includeLeft') includeLeft?: string
+  ) {
+    return this.groupService.getGroupContacts(
+      id,
+      includeLeft === 'true'
+    );
+  }
+
+  @Get('accounts/:accountId/groups/live')
+  async getLiveGroups(@Param('accountId') accountId: string) {
+    try {
+      this.logger.log(`Get live groups request for account ${accountId}`);
+      const result = await this.groupService.getLiveGroups(accountId);
+      this.logger.log(`Successfully retrieved ${result.length} live groups for account ${accountId}`);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`Error getting live groups for account ${accountId}:`, error);
+      this.logger.error(`Error stack:`, error?.stack);
+      this.whatsappLogger.error(`Error getting live groups for account ${accountId}`, error, accountId);
+      
+      const errorMessage = error?.message || 'Unknown error';
+      
+      // If it's already an HttpException, re-throw it
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      // Check if it's a session/connection error - return 503 (Service Unavailable) instead of 500
+      if (errorMessage.includes('not available') || 
+          errorMessage.includes('not connected') || 
+          errorMessage.includes('not ready') ||
+          errorMessage.includes('not initialized') ||
+          errorMessage.includes('reconnect')) {
+        throw new HttpException(
+          {
+            statusCode: 503,
+            message: errorMessage,
+            error: 'Service Unavailable',
+            code: 'WHATSAPP_SESSION_UNAVAILABLE',
+          },
+          HttpStatus.SERVICE_UNAVAILABLE
+        );
+      }
+      
+      // For other errors, return 500
+      throw new HttpException(
+        {
+          statusCode: 500,
+          message: errorMessage,
+          error: 'Internal Server Error',
+          code: 'UNKNOWN_ERROR',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('accounts/:accountId/groups/:whatsappGroupId/save')
+  async saveSingleGroup(
+    @Param('accountId') accountId: string,
+    @Param('whatsappGroupId') whatsappGroupId: string
+  ) {
+    try {
+      this.logger.log(`Save single group request for account ${accountId}, group ${whatsappGroupId}`);
+      const result = await this.groupService.saveSingleGroup(accountId, whatsappGroupId);
+      this.logger.log(`Successfully saved group ${whatsappGroupId} for account ${accountId}`);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`Error saving single group for account ${accountId}:`, error);
+      this.whatsappLogger.error(`Error saving single group for account ${accountId}`, error, accountId);
+      throw {
+        statusCode: 500,
+        message: error?.message || 'Error saving group',
+        error: 'Internal Server Error',
+      };
+    }
+  }
+
   @Post('accounts/:accountId/groups/discover')
   async discoverGroups(@Param('accountId') accountId: string) {
-    return this.groupService.discoverGroups(accountId);
+    try {
+      this.logger.log(`Discover groups request for account ${accountId}`);
+      
+      // Check if database tables exist first
+      const dbCheck = await this.groupService.checkDatabaseTables();
+      if (!dbCheck.exists) {
+        this.logger.error(`Database tables missing: ${dbCheck.error}`);
+        throw {
+          statusCode: 500,
+          message: dbCheck.error || 'Database migration required',
+          error: 'Database Error',
+        };
+      }
+      
+      const result = await this.groupService.discoverGroups(accountId);
+      this.logger.log(`Successfully discovered groups for account ${accountId}`);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`Error discovering groups for account ${accountId}:`, error);
+      this.logger.error(`Error stack:`, error?.stack);
+      this.whatsappLogger.error(`Error discovering groups for account ${accountId}`, error, accountId);
+      
+      // Return detailed error for debugging
+      const errorMessage = error?.message || 'Unknown error';
+      const errorCode = error?.code || 'UNKNOWN_ERROR';
+      
+      this.logger.error(`Error details - message: ${errorMessage}, code: ${errorCode}`);
+      
+      // Re-throw with proper HTTP exception
+      if (error?.statusCode) {
+        throw error;
+      }
+      
+      throw {
+        statusCode: 500,
+        message: errorMessage,
+        error: 'Internal Server Error',
+        code: errorCode,
+      };
+    }
   }
 
   @Put('groups/:id')
-  async updateGroup(@Param('id') id: string, @Body() updates: any) {
+  async updateGroup(@Param('id') id: string, @Body() updates: {
+    name?: string;
+    description?: string;
+    region?: string;
+    state?: string;
+    district?: string;
+    segmentTags?: string[];
+    isActive?: boolean;
+    notes?: string;
+    isHidden?: boolean;
+    isFavorite?: boolean;
+    internalDescription?: string;
+    profilePicUrl?: string;
+  }) {
     return this.groupService.updateGroup(id, updates);
+  }
+
+  @Put('groups/:id/hide')
+  async hideGroup(
+    @Param('id') id: string,
+    @Body() data: { isHidden: boolean }
+  ) {
+    return this.groupService.hideGroup(id, data.isHidden);
+  }
+
+  @Delete('groups/:id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteGroup(@Param('id') id: string) {
+    try {
+      await this.groupService.deleteGroup(id);
+      // Don't return anything for 204 No Content
+    } catch (error: any) {
+      this.logger.error(`Error deleting group ${id}: ${error.message}`, error.stack);
+      throw new HttpException(
+        error.message || 'Failed to delete group',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Get('groups/:id/contacts/live')
+  async getLiveContacts(@Param('id') id: string, @Query('accountId') accountId: string, @Query('whatsappGroupId') whatsappGroupId?: string) {
+    try {
+      this.logger.log(`Get live contacts request for group ${id}, whatsappGroupId: ${whatsappGroupId || 'none'}`);
+      if (!accountId) {
+        throw new BadRequestException('accountId query parameter is required');
+      }
+      // If whatsappGroupId is provided, use it directly (for unsaved groups)
+      // Otherwise, use the database group id (for saved groups)
+      const result = whatsappGroupId 
+        ? await this.groupService.getLiveContactsByWhatsAppGroupId(whatsappGroupId, accountId)
+        : await this.groupService.getLiveContacts(id, accountId);
+      this.logger.log(`Successfully retrieved ${result.length} live contacts for group ${id}`);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`Error getting live contacts for group ${id}:`, error);
+      this.whatsappLogger.error(`Error getting live contacts for group ${id}`, error, accountId);
+      
+      const errorMessage = error?.message || 'Unknown error';
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      if (errorMessage.includes('not available') || 
+          errorMessage.includes('not connected') || 
+          errorMessage.includes('not ready') ||
+          errorMessage.includes('not initialized') ||
+          errorMessage.includes('reconnect')) {
+        throw new HttpException(
+          {
+            statusCode: 503,
+            message: errorMessage,
+            error: 'Service Unavailable',
+            code: 'WHATSAPP_SESSION_UNAVAILABLE',
+          },
+          HttpStatus.SERVICE_UNAVAILABLE
+        );
+      }
+      
+      throw new HttpException(
+        {
+          statusCode: 500,
+          message: errorMessage,
+          error: 'Internal Server Error',
+          code: 'UNKNOWN_ERROR',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   @Post('groups/:id/scrape-contacts')
   async scrapeContacts(@Param('id') groupId: string, @Body() data: { accountId: string }) {
-    return this.groupService.scrapeContactsFromGroup(groupId, data.accountId);
+    try {
+      const result = await this.groupService.scrapeContactsFromGroup(groupId, data.accountId);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`Error scraping contacts for group ${groupId}:`, error);
+      this.whatsappLogger.error(`Error scraping contacts for group ${groupId}`, error, data.accountId);
+      
+      const errorMessage = error?.message || 'Error scraping contacts';
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      if (errorMessage.includes('not available') || 
+          errorMessage.includes('not connected') || 
+          errorMessage.includes('detached Frame')) {
+        throw new HttpException(
+          {
+            statusCode: 503,
+            message: errorMessage,
+            error: 'Service Unavailable',
+            code: 'WHATSAPP_SESSION_UNAVAILABLE',
+          },
+          HttpStatus.SERVICE_UNAVAILABLE
+        );
+      }
+      
+      throw new HttpException(
+        {
+          statusCode: 500,
+          message: errorMessage,
+          error: 'Internal Server Error',
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
   }
 
   // =====================================================
@@ -308,17 +570,41 @@ export class WhatsAppController {
 
   @Get('contacts')
   async getContacts(@Query() filters: any) {
-    let query = this.db.select().from(mktWapContacts);
+    try {
+      if (filters.groupId) {
+        // Filter by group membership - join with group_contacts table
+        // Get contact IDs for this group
+        const groupContactIds = await this.db
+          .select({ contactId: mktWapGroupContacts.contactId })
+          .from(mktWapGroupContacts)
+          .where(eq(mktWapGroupContacts.groupId, filters.groupId));
+        
+        const contactIds = groupContactIds.map((gc: any) => gc.contactId);
+        
+        if (contactIds.length > 0) {
+          const contacts = await this.db
+            .select()
+            .from(mktWapContacts)
+            .where(inArray(mktWapContacts.id, contactIds));
+          return contacts;
+        } else {
+          // No contacts in this group, return empty array
+          return [];
+        }
+      }
 
-    if (filters.groupId) {
-      // Filter by group membership
-      query = query.where(
-        // This would need a proper join or subquery
-        // Simplified for now
+      // Return all contacts if no groupId filter
+      const contacts = await this.db
+        .select()
+        .from(mktWapContacts);
+      return contacts;
+    } catch (error: any) {
+      this.logger.error(`Error fetching contacts: ${error.message}`, error.stack);
+      throw new HttpException(
+        error.message || 'Failed to fetch contacts',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
-
-    return query;
   }
 
   @Get('contacts/:id')
@@ -445,6 +731,10 @@ export class WhatsAppController {
       this.db.select().from(mktWapMessages),
     ]);
 
+    // Count groups that are saved (in DB) and not hidden
+    // All groups in mktWapGroups are saved, so we just need to filter by isHidden
+    const savedNonHiddenGroups = groups.filter((g: any) => !g.isHidden);
+
     return {
       accounts: {
         total: accounts.length,
@@ -452,7 +742,7 @@ export class WhatsAppController {
       },
       groups: {
         total: groups.length,
-        active: groups.filter((g: any) => g.isActive).length,
+        active: savedNonHiddenGroups.length, // Show count of saved, non-hidden groups
       },
       contacts: {
         total: contacts.length,

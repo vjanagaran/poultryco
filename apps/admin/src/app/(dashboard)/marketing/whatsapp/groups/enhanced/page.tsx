@@ -34,11 +34,7 @@ import {
   Pin,
   Bell,
   BellOff,
-  MoreVertical,
-  Filter,
-  CheckCircle2,
 } from 'lucide-react';
-import { useToast, ToastContainer } from '@/components/ui/toast';
 
 type TabType = 'all' | 'selected' | 'featured' | 'hidden';
 
@@ -72,7 +68,6 @@ export default function WhatsAppGroupsEnhancedPage() {
   });
   const [newTag, setNewTag] = useState('');
   const [saving, setSaving] = useState(false);
-  const toast = useToast();
 
   useEffect(() => {
     fetchAccounts();
@@ -116,9 +111,9 @@ export default function WhatsAppGroupsEnhancedPage() {
       const includeHidden = activeTab === 'hidden' || activeTab === 'all';
       const data = await getWhatsAppAccountGroups(selectedAccount, includeHidden);
       setGroups(data);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching groups:', error);
-      toast.error(error?.message || 'Error fetching groups');
+      alert('Error fetching groups');
     } finally {
       setLoading(false);
     }
@@ -163,20 +158,17 @@ export default function WhatsAppGroupsEnhancedPage() {
       setDiscovering(true);
       await discoverWhatsAppGroups(selectedAccount);
       await fetchGroups();
-      toast.success('Groups discovered successfully!');
-    } catch (error: any) {
+      alert('Groups discovered successfully!');
+    } catch (error) {
       console.error('Error discovering groups:', error);
-      toast.error(error?.message || 'Error discovering groups');
+      alert('Error discovering groups');
     } finally {
       setDiscovering(false);
     }
   }
 
   async function handleScrapeContacts() {
-    if (!selectedGroup || !selectedAccount) {
-      toast.warning('Please select a group first');
-      return;
-    }
+    if (!selectedGroup || !selectedAccount) return;
     if (!confirm('Scrape contacts from this group? This may take a few moments.')) return;
 
     try {
@@ -185,9 +177,9 @@ export default function WhatsAppGroupsEnhancedPage() {
       await fetchContacts();
       await fetchGroups();
       alert(`Successfully scraped ${result.scrapedCount} contacts!`);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error scraping contacts:', error);
-      toast.error(error?.message || 'Error scraping contacts');
+      alert('Error scraping contacts');
     } finally {
       setScraping(false);
     }
@@ -197,9 +189,9 @@ export default function WhatsAppGroupsEnhancedPage() {
     try {
       await hideWhatsAppGroup(groupId, !currentHidden);
       await fetchGroups();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error toggling hide status:', error);
-      toast.error(error?.message || 'Error updating group');
+      alert('Error updating group');
     }
   }
 
@@ -210,10 +202,10 @@ export default function WhatsAppGroupsEnhancedPage() {
       setSaving(true);
       await updateWhatsAppGroup(selectedGroup, formData);
       await fetchGroups();
-      toast.success('Group updated successfully!');
-    } catch (error: any) {
+      alert('Group updated successfully!');
+    } catch (error) {
       console.error('Error updating group:', error);
-      toast.error(error?.message || 'Error updating group');
+      alert('Error updating group');
     } finally {
       setSaving(false);
     }
@@ -266,7 +258,6 @@ export default function WhatsAppGroupsEnhancedPage() {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
-      <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
       {/* Top Header - Account Selection */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
@@ -315,8 +306,8 @@ export default function WhatsAppGroupsEnhancedPage() {
 
       {/* Main Three-Column Layout */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Column 1: Groups List (WhatsApp Style) - Narrower like WhatsApp */}
-        <div className="w-[320px] border-r border-gray-200 bg-white flex flex-col flex-shrink-0">
+        {/* Column 1: Groups List (WhatsApp Style) */}
+        <div className="w-80 border-r border-gray-200 bg-white flex flex-col">
           {/* Search Bar */}
           <div className="p-3 border-b border-gray-200">
             <div className="relative">
@@ -455,8 +446,8 @@ export default function WhatsAppGroupsEnhancedPage() {
           </div>
         </div>
 
-        {/* Column 2: Members/Contacts List (WhatsApp Style) - Wider */}
-        <div className="w-[400px] border-r border-gray-200 bg-white flex flex-col flex-shrink-0">
+        {/* Column 2: Members/Contacts List (WhatsApp Style) */}
+        <div className="w-96 border-r border-gray-200 bg-white flex flex-col">
           {selectedGroup ? (
             <>
               {/* Header */}
@@ -487,16 +478,8 @@ export default function WhatsAppGroupsEnhancedPage() {
                     placeholder="Search contacts..."
                     value={contactSearch}
                     onChange={(e) => setContactSearch(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm placeholder-gray-400"
+                    className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
                   />
-                  {contactSearch && (
-                    <button
-                      onClick={() => setContactSearch('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
                 </div>
                 <div className="flex items-center gap-2 mt-2">
                   <button
@@ -539,17 +522,7 @@ export default function WhatsAppGroupsEnhancedPage() {
                             <img
                               src={contact.profilePicUrl}
                               alt={contact.name || contact.phoneNumber}
-                              className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                              onError={(e) => {
-                                // Fallback to initial if image fails to load
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                const parent = target.parentElement;
-                                if (parent) {
-                                  const initial = (contact.name || contact.phoneNumber).charAt(0).toUpperCase();
-                                  parent.innerHTML = `<div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center"><span class="text-gray-600 text-sm font-medium">${initial}</span></div>`;
-                                }
-                              }}
+                              className="w-10 h-10 rounded-full object-cover"
                             />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
@@ -602,8 +575,8 @@ export default function WhatsAppGroupsEnhancedPage() {
           )}
         </div>
 
-        {/* Column 3: Group Details & Metadata Form - Flexible width */}
-        <div className="flex-1 bg-white overflow-y-auto min-w-0">
+        {/* Column 3: Group Details & Metadata Form */}
+        <div className="flex-1 bg-white overflow-y-auto">
           {selectedGroup ? (
             <div className="p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Group Details</h2>

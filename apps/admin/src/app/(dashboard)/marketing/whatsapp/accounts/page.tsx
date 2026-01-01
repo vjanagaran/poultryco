@@ -238,6 +238,14 @@ export default function WhatsAppAccountsPage() {
                       </Button>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Link href={`/marketing/whatsapp/accounts/${account.id}/groups`} className="flex-1">
+                        <Button size="sm" className="w-full">
+                          <Users className="w-4 h-4 mr-2" />
+                          Manage Groups
+                        </Button>
+                      </Link>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Link href={`/marketing/whatsapp/accounts/${account.id}/rate-limits`} className="flex-1">
                         <Button size="sm" variant="outline" className="w-full">
                           <Settings className="w-4 h-4 mr-2" />

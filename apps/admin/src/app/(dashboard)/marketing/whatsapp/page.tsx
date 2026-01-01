@@ -29,8 +29,8 @@ export default async function WhatsAppDashboard() {
     },
     {
       title: 'Groups',
-      count: stats.groups.total,
-      subtitle: `${stats.groups.active} active`,
+      count: stats.groups.active, // Show saved, non-hidden groups count
+      subtitle: `${stats.groups.total} total`,
       icon: '👥',
       href: '/marketing/whatsapp/groups',
       description: 'Discover and manage WhatsApp groups',

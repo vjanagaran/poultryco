@@ -32,12 +32,24 @@ export interface WhatsAppGroup {
   state?: string | null;
   district?: string | null;
   segmentTags?: string[];
-  accountId?: string | null;
+  accountId?: string | null; // Deprecated, use accountId from account access
   profilePicUrl?: string | null;
   notes?: string | null;
+  lastScrapedAt?: string | null;
+  contactsCountAtLastScrape?: number;
+  isHidden?: boolean;
+  isFavorite?: boolean;
+  isAdminOnlyGroup?: boolean;
+  internalDescription?: string | null;
   discoveredAt: string;
   createdAt: string;
   updatedAt: string;
+  // Account access fields (when fetched with accountId filter)
+  isAccountAdmin?: boolean;
+  isAccountSuperAdmin?: boolean;
+  canAddContacts?: boolean;
+  canPostMessages?: boolean;
+  canEditGroupInfo?: boolean;
 }
 
 export interface WhatsAppContact {
@@ -54,6 +66,21 @@ export interface WhatsAppContact {
   notes?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WhatsAppGroupContact {
+  id: string;
+  contactId: string;
+  phoneNumber: string;
+  name?: string | null;
+  profilePicUrl?: string | null;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+  isLeft: boolean;
+  joinedAt?: string | null;
+  leftAt?: string | null;
+  firstScrapedAt: string;
+  lastSeenAt?: string | null;
 }
 
 export interface WhatsAppMessage {
@@ -182,12 +209,14 @@ export async function updateWhatsAppAccountRateLimits(
 export async function getWhatsAppGroups(filters?: {
   accountId?: string;
   isActive?: boolean;
+  includeHidden?: boolean;
   limit?: number;
   offset?: number;
 }): Promise<WhatsAppGroup[]> {
   const params = new URLSearchParams();
   if (filters?.accountId) params.append('accountId', filters.accountId);
   if (filters?.isActive !== undefined) params.append('isActive', String(filters.isActive));
+  if (filters?.includeHidden !== undefined) params.append('includeHidden', String(filters.includeHidden));
   if (filters?.limit) params.append('limit', String(filters.limit));
   if (filters?.offset) params.append('offset', String(filters.offset));
   
@@ -195,12 +224,33 @@ export async function getWhatsAppGroups(filters?: {
   return apiClient.get<WhatsAppGroup[]>(`/whatsapp/groups${query ? `?${query}` : ''}`);
 }
 
+export async function getWhatsAppAccountGroups(
+  accountId: string,
+  includeHidden: boolean = false
+): Promise<WhatsAppGroup[]> {
+  const params = new URLSearchParams();
+  if (includeHidden) params.append('includeHidden', 'true');
+  const query = params.toString();
+  return apiClient.get<WhatsAppGroup[]>(`/whatsapp/accounts/${accountId}/groups${query ? `?${query}` : ''}`);
+}
+
 export async function getWhatsAppGroupById(id: string): Promise<WhatsAppGroup> {
   return apiClient.get<WhatsAppGroup>(`/whatsapp/groups/${id}`);
 }
 
+export async function getLiveWhatsAppGroups(accountId: string): Promise<any[]> {
+  return apiClient.get<any[]>(`/whatsapp/accounts/${accountId}/groups/live`);
+}
+
 export async function discoverWhatsAppGroups(accountId: string): Promise<WhatsAppGroup[]> {
   return apiClient.post<WhatsAppGroup[]>(`/whatsapp/accounts/${accountId}/groups/discover`);
+}
+
+export async function saveSingleWhatsAppGroup(
+  accountId: string,
+  whatsappGroupId: string
+): Promise<WhatsAppGroup> {
+  return apiClient.post<WhatsAppGroup>(`/whatsapp/accounts/${accountId}/groups/${whatsappGroupId}/save`);
 }
 
 export async function updateWhatsAppGroup(
@@ -214,16 +264,65 @@ export async function updateWhatsAppGroup(
     segmentTags?: string[];
     isActive?: boolean;
     notes?: string;
+    isHidden?: boolean;
+    isFavorite?: boolean;
+    internalDescription?: string;
+    profilePicUrl?: string;
   },
 ): Promise<WhatsAppGroup> {
-  return apiClient.patch<WhatsAppGroup>(`/whatsapp/groups/${id}`, updates);
+  return apiClient.put<WhatsAppGroup>(`/whatsapp/groups/${id}`, updates);
+}
+
+export async function hideWhatsAppGroup(
+  id: string,
+  isHidden: boolean,
+): Promise<WhatsAppGroup> {
+  return apiClient.put<WhatsAppGroup>(`/whatsapp/groups/${id}/hide`, { isHidden });
+}
+
+export async function deleteWhatsAppGroup(groupId: string): Promise<void> {
+  return apiClient.delete<void>(`/whatsapp/groups/${groupId}`);
+}
+
+export async function getWhatsAppGroupContacts(
+  groupId: string,
+  includeLeft: boolean = false,
+): Promise<WhatsAppGroupContact[]> {
+  const params = new URLSearchParams();
+  if (includeLeft) params.append('includeLeft', 'true');
+  const query = params.toString();
+  return apiClient.get<WhatsAppGroupContact[]>(`/whatsapp/groups/${groupId}/contacts${query ? `?${query}` : ''}`);
+}
+
+export async function getLiveWhatsAppGroupContacts(
+  groupId: string,
+  accountId: string,
+  whatsappGroupId?: string,
+): Promise<Array<{
+  phoneNumber: string;
+  name: string | null;
+  profilePicUrl: string | null;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
+  isLeft: boolean;
+}>> {
+  const params = new URLSearchParams();
+  params.append('accountId', accountId);
+  if (whatsappGroupId) {
+    params.append('whatsappGroupId', whatsappGroupId);
+  }
+  return apiClient.get(`/whatsapp/groups/${groupId}/contacts/live?${params.toString()}`);
 }
 
 export async function scrapeContactsFromGroup(
   groupId: string,
   accountId: string,
-): Promise<any[]> {
-  return apiClient.post<any[]>(`/whatsapp/groups/${groupId}/scrape-contacts`, { accountId });
+): Promise<{
+  groupId: string;
+  scrapedCount: number;
+  totalContacts: number;
+}> {
+  return apiClient.post(`/whatsapp/groups/${groupId}/scrape-contacts`, { accountId });
 }
 
 // =====================================================
