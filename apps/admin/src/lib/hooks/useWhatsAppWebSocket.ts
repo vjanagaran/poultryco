@@ -68,11 +68,12 @@ export function useWhatsAppWebSocket(accountId: string | null) {
     // The namespace is part of the URL path: http://localhost:3002/whatsapp
     const newSocket = io(`${WS_URL}/whatsapp`, {
       path: '/socket.io',
-      transports: ['polling', 'websocket'], // Try polling first, then upgrade
+      transports: ['websocket', 'polling'], // Prefer websocket, fallback to polling
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 10,
       autoConnect: true,
+      withCredentials: true, // Include credentials for CORS
     });
 
     newSocket.on('connect', () => {

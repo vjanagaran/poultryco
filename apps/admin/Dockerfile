@@ -25,6 +25,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV NEXT_SKIP_PACKAGE_MANAGER_CHECK=1
 
+# Accept build argument for API URL (defaults to production URL)
+ARG NEXT_PUBLIC_API_URL=https://api.poultryco.net/v1
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 # Remove packageManager field from package.json to prevent Next.js from checking
 # This avoids the yarn detection issue
 RUN if [ -f package.json ]; then \
@@ -41,6 +45,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install curl for health checks
+RUN apk add --no-cache curl
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \

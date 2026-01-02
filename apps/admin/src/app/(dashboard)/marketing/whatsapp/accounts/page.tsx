@@ -11,7 +11,8 @@ import {
   getWhatsAppLogs,
   type WhatsAppAccount,
 } from '@/lib/api/whatsapp';
-import { useWhatsAppAccountPolling } from '@/lib/hooks/useWhatsAppAccountPolling';
+import { useWhatsAppWebSocket } from '@/lib/hooks/useWhatsAppWebSocket';
+import { getWhatsAppAccountById } from '@/lib/api/whatsapp';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,12 +48,38 @@ export default function WhatsAppAccountsPage() {
   const [logs, setLogs] = useState<string[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
-  // Polling hook for account status updates (replaces WebSocket to avoid CORS issues)
-  const polling = useWhatsAppAccountPolling({
-    accountId: selectedAccount?.id || null,
-    enabled: qrDialogOpen, // Only poll when QR dialog is open
-    pollInterval: 2000, // Poll every 2 seconds
-  });
+  // WebSocket hook for real-time account status updates
+  const ws = useWhatsAppWebSocket(selectedAccount?.id || null);
+  const [accountStatus, setAccountStatus] = useState<WhatsAppAccount | null>(null);
+
+  // Fetch initial account data when dialog opens
+  useEffect(() => {
+    if (qrDialogOpen && selectedAccount?.id) {
+      getWhatsAppAccountById(selectedAccount.id)
+        .then(data => setAccountStatus(data))
+        .catch(err => console.error('Error fetching account:', err));
+    }
+  }, [qrDialogOpen, selectedAccount?.id]);
+
+  // Update account status from WebSocket
+  useEffect(() => {
+    if (ws.qrCode) {
+      setAccountStatus(prev => prev ? { ...prev, qrCode: ws.qrCode } : null);
+    }
+    if (ws.phoneNumber) {
+      setAccountStatus(prev => prev ? { ...prev, phoneNumber: ws.phoneNumber } : null);
+    }
+    if (ws.status) {
+      setAccountStatus(prev => {
+        if (!prev) return null;
+        // Type assertion for status - ws.status is string, but we need to ensure it matches the union type
+        const validStatus = ['active', 'standby', 'warming', 'banned', 'inactive'].includes(ws.status)
+          ? (ws.status as WhatsAppAccount['status'])
+          : prev.status;
+        return { ...prev, status: validStatus };
+      });
+    }
+  }, [ws.qrCode, ws.phoneNumber, ws.status]);
 
   useEffect(() => {
     fetchAccounts();
@@ -98,23 +125,23 @@ export default function WhatsAppAccountsPage() {
     }
   }
 
-  // Update account when polling receives phone number
+  // Update account when WebSocket receives phone number
   useEffect(() => {
-    if (polling.phoneNumber && selectedAccount) {
+    if (ws.phoneNumber && selectedAccount) {
       fetchAccounts(); // Refresh to get updated phone number
     }
-  }, [polling.phoneNumber, selectedAccount]);
+  }, [ws.phoneNumber, selectedAccount]);
 
   // Close QR dialog when connected
   useEffect(() => {
-    if (polling.status === 'active' && selectedAccount) {
+    if (ws.status === 'active' && selectedAccount) {
       // Wait a moment then close and refresh
       setTimeout(() => {
         setQrDialogOpen(false);
         fetchAccounts();
       }, 2000);
     }
-  }, [polling.status, selectedAccount]);
+  }, [ws.status, selectedAccount]);
 
   async function fetchLogs() {
     try {
@@ -327,20 +354,20 @@ export default function WhatsAppAccountsPage() {
 
             {/* QR Code Display */}
             <div className="flex flex-col items-center space-y-4">
-              {polling.qrCode ? (
+              {ws.qrCode || accountStatus?.qrCode ? (
                 <>
                   <div className="flex justify-center p-4 bg-white rounded-lg border-2 border-gray-200">
                     {/* @ts-expect-error - QRCodeSVG type compatibility issue with React 18/19 */}
-                    <QRCodeSVG value={polling.qrCode} size={256} level="H" />
+                    <QRCodeSVG value={ws.qrCode || accountStatus?.qrCode || ''} size={256} level="H" />
                   </div>
                   
                   {/* Countdown Timer */}
-                  {polling.qrExpiresIn > 0 && (
+                  {ws.qrExpiresIn > 0 && (
                     <div className="text-center">
                       <p className="text-sm font-medium text-gray-700">
                         QR code expires in{' '}
                         <span className="text-green-600 font-bold">
-                          {polling.qrCountdown}
+                          {ws.qrCountdown}
                         </span>
                       </p>
                     </div>
@@ -348,20 +375,20 @@ export default function WhatsAppAccountsPage() {
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                  {polling.loading ? (
+                  {!ws.isConnected ? (
                     <>
-                      <Loader2 className="w-12 h-12 text-green-600 animate-spin mb-4" />
-                      <p className="text-sm text-gray-600">Initializing connection...</p>
+                      <Loader2 className="w-12 h-12 text-yellow-600 animate-spin mb-4" />
+                      <p className="text-sm text-gray-600">Connecting to server...</p>
                     </>
-                  ) : polling.status === 'active' ? (
+                  ) : ws.status === 'active' || accountStatus?.status === 'active' ? (
                     <>
                       <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
                         <span className="text-2xl">✓</span>
                       </div>
                       <p className="text-sm font-medium text-green-600">Connected!</p>
-                      {polling.phoneNumber && (
+                      {(ws.phoneNumber || accountStatus?.phoneNumber) && (
                         <p className="text-xs text-gray-500 mt-1">
-                          Phone: {polling.phoneNumber}
+                          Phone: {ws.phoneNumber || accountStatus?.phoneNumber}
                         </p>
                       )}
                     </>
@@ -371,7 +398,10 @@ export default function WhatsAppAccountsPage() {
                         <span className="text-2xl text-gray-400">📱</span>
                       </div>
                       <p className="text-sm text-gray-600">Waiting for QR code...</p>
-                      <p className="text-xs text-gray-500 mt-1">Status: {polling.status}</p>
+                      <p className="text-xs text-gray-500 mt-1">Status: {ws.status || accountStatus?.status || 'inactive'}</p>
+                      {ws.isConnected && !ws.qrCode && (
+                        <p className="text-xs text-gray-400 mt-1">Initializing...</p>
+                      )}
                     </>
                   )}
                 </div>
@@ -379,22 +409,22 @@ export default function WhatsAppAccountsPage() {
             </div>
 
             {/* Status Display */}
-            {polling.status && polling.status !== 'active' && (
+            {(ws.status || accountStatus?.status) && (ws.status !== 'active' && accountStatus?.status !== 'active') && (
               <div className="text-center">
-                <Badge className={STATUS_COLORS[polling.status] || STATUS_COLORS.inactive}>
-                  {polling.status}
+                <Badge className={STATUS_COLORS[ws.status || accountStatus?.status || 'inactive'] || STATUS_COLORS.inactive}>
+                  {ws.status || accountStatus?.status || 'inactive'}
                 </Badge>
               </div>
             )}
 
             {/* Error Display */}
-            {polling.error && (
+            {ws.error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{polling.error}</p>
+                <p className="text-sm text-red-600">{ws.error}</p>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => polling.clearError()}
+                  onClick={() => ws.clearError()}
                   className="mt-2"
                 >
                   Dismiss
@@ -418,25 +448,19 @@ export default function WhatsAppAccountsPage() {
               Close
             </Button>
             <Button 
-              onClick={() => {
+              onClick={async () => {
                 if (selectedAccount) {
-                  handleInitialize(selectedAccount.id);
-                  polling.refresh(); // Manually refresh polling
+                  await handleInitialize(selectedAccount.id);
+                  // WebSocket will automatically receive the new QR code
+                  // But also fetch current status
+                  getWhatsAppAccountById(selectedAccount.id)
+                    .then(data => setAccountStatus(data))
+                    .catch(err => console.error('Error fetching account:', err));
                 }
               }}
-              disabled={polling.loading}
             >
-              {polling.loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Refresh QR Code
-                </>
-              )}
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh QR Code
             </Button>
           </DialogFooter>
         </DialogContent>

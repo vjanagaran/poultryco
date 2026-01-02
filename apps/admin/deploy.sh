@@ -24,7 +24,10 @@ echo "📦 ECR Repository: ${ECR_URI}"
 echo ""
 echo "📦 Step 1: Building Docker image..."
 cd "$(dirname "$0")/../.."  # Go to repo root
-docker build --platform linux/amd64 -f apps/admin/Dockerfile -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+docker build --platform linux/amd64 \
+  --build-arg NEXT_PUBLIC_API_URL=https://api.poultryco.net/v1 \
+  -f apps/admin/Dockerfile \
+  -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
 docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_URI}:${IMAGE_TAG}
 docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_URI}:latest
 

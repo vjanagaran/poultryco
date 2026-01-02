@@ -12,6 +12,7 @@ import {
   HttpStatus,
   HttpException,
   BadRequestException,
+  NotFoundException,
   Logger,
 } from '@nestjs/common';
 import { WhatsAppService } from './whatsapp.service';
@@ -84,7 +85,22 @@ export class WhatsAppController {
 
   @Get('accounts/:id')
   async getAccount(@Param('id') id: string) {
-    return this.accountService.getAccountStatus(id);
+    try {
+      const account = await this.accountService.getAccountStatus(id);
+      if (!account) {
+        throw new NotFoundException(`Account with ID ${id} not found`);
+      }
+      return account;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(`Error getting account ${id}:`, error);
+      throw new HttpException(
+        `Failed to get account: ${error?.message || 'Unknown error'}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Post('accounts')

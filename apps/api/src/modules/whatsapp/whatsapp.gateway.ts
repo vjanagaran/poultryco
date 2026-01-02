@@ -12,8 +12,10 @@ import { Logger } from '@nestjs/common';
 @WebSocketGateway({
   namespace: '/whatsapp',
   cors: {
-    origin: process.env.ADMIN_URL?.split(',') || ['http://localhost:3001', 'http://localhost:3000'],
+    origin: process.env.ADMIN_URL?.split(',') || ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002'],
     credentials: true,
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
 })
 export class WhatsAppGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -22,10 +24,38 @@ export class WhatsAppGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   private readonly logger = new Logger(WhatsAppGateway.name);
   private connectedClients: Map<string, Set<string>> = new Map(); // accountId -> Set of socketIds
+  private currentQRCodes: Map<string, { qrCode: string; expiresIn: number; timestamp: number }> = new Map(); // Store current QR codes
 
   afterInit(server: Server) {
     this.logger.log('WhatsApp WebSocket Gateway initialized on namespace /whatsapp');
     this.logger.log('WebSocket server ready for connections');
+    
+    // Configure Socket.IO server to handle CORS for polling transport
+    // Note: server.engine might not be available in all Socket.IO versions
+    // CORS is primarily handled by the @WebSocketGateway decorator configuration
+    try {
+      if (server.engine) {
+        server.engine.on('connection_error', (err: any) => {
+          this.logger.error('Socket.IO connection error:', err);
+        });
+        
+        // Ensure CORS headers are set for all transports (including polling)
+        server.engine.on('headers', (headers: any, req: any) => {
+          const origin = req.headers.origin;
+          const allowedOrigins = process.env.ADMIN_URL?.split(',') || ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002'];
+          
+          if (origin && allowedOrigins.includes(origin)) {
+            headers['Access-Control-Allow-Origin'] = origin;
+            headers['Access-Control-Allow-Credentials'] = 'true';
+            headers['Access-Control-Allow-Methods'] = 'GET, POST';
+            headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
+          }
+        });
+      }
+    } catch (error) {
+      this.logger.warn('Could not configure Socket.IO engine CORS handlers:', error);
+      this.logger.log('CORS is configured via @WebSocketGateway decorator');
+    }
   }
 
   handleConnection(client: Socket) {
@@ -44,7 +74,7 @@ export class WhatsAppGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   }
 
   @SubscribeMessage('subscribe:account')
-  handleSubscribeAccount(client: Socket, accountId: string) {
+  async handleSubscribeAccount(client: Socket, accountId: string) {
     if (!this.connectedClients.has(accountId)) {
       this.connectedClients.set(accountId, new Set());
     }
@@ -54,10 +84,26 @@ export class WhatsAppGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     // Join room for this account
     client.join(`account:${accountId}`);
     
-    // Check if there's a current QR code for this account and send it immediately
-    // This handles the case where QR was emitted before subscription
-    // Note: We'd need to store QR codes in the gateway or get from account service
-    // For now, the account service will re-emit on next QR generation
+    // Send current QR code if available
+    const storedQR = this.currentQRCodes.get(accountId);
+    if (storedQR) {
+      // Calculate remaining time
+      const elapsed = Math.floor((Date.now() - storedQR.timestamp) / 1000);
+      const remaining = Math.max(0, storedQR.expiresIn - elapsed);
+      
+      if (remaining > 0) {
+        client.emit('qr:code', {
+          accountId,
+          qrCode: storedQR.qrCode,
+          expiresIn: remaining,
+          timestamp: storedQR.timestamp,
+        });
+        this.logger.log(`Sent current QR code to client ${client.id} for account ${accountId} (${remaining}s remaining)`);
+      } else {
+        // QR expired, remove it
+        this.currentQRCodes.delete(accountId);
+      }
+    }
     
     return { success: true, accountId };
   }
@@ -79,6 +125,13 @@ export class WhatsAppGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   // Emit QR code to all clients subscribed to this account
   emitQRCode(accountId: string, qrCode: string, expiresIn: number = 20) {
+    // Store QR code for new subscribers
+    this.currentQRCodes.set(accountId, {
+      qrCode,
+      expiresIn,
+      timestamp: Date.now(),
+    });
+    
     this.server.to(`account:${accountId}`).emit('qr:code', {
       accountId,
       qrCode,
@@ -97,6 +150,11 @@ export class WhatsAppGateway implements OnGatewayInit, OnGatewayConnection, OnGa
       timestamp: Date.now(),
     });
     this.logger.log(`Status update emitted for account ${accountId}: ${status}`);
+    
+    // Clear QR code when account is ready/connected
+    if (status === 'active' || status === 'ready') {
+      this.currentQRCodes.delete(accountId);
+    }
   }
 
   // Emit connection state change
