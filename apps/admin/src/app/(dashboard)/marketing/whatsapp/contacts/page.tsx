@@ -15,9 +15,7 @@ import {
   Search, 
   Users, 
   ArrowLeft,
-  Phone,
-  User,
-  Loader2,
+  Loader as Loader2,
 } from 'lucide-react';
 import { useToast, ToastContainer } from '@/components/ui/toast';
 
@@ -126,7 +124,7 @@ export default function WhatsAppContactsPage() {
                   {contacts.filter(c => c.name).length}
                 </p>
               </div>
-              <User className="w-8 h-8 text-gray-400" />
+              <Users className="w-8 h-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
@@ -206,7 +204,7 @@ export default function WhatsAppContactsPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
-                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span className="text-gray-400">📱</span>
                       <span className="text-sm text-gray-600">{contact.phoneNumber}</span>
                     </div>
                     {contact.notes && (

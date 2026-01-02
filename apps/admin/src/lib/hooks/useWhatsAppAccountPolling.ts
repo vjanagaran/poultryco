@@ -19,8 +19,8 @@ export function useWhatsAppAccountPolling({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [qrExpiresIn, setQrExpiresIn] = useState<number>(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const qrCountdownRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const qrCountdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const qrGeneratedAtRef = useRef<number | null>(null);
 
   const fetchAccount = useCallback(async () => {

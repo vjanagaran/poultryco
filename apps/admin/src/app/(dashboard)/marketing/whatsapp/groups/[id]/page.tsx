@@ -18,7 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Download, Save, Loader2, Shield, Users } from 'lucide-react';
+import { ArrowLeft, Download, Save, Loader as Loader2, Users } from 'lucide-react';
 
 export default function WhatsAppGroupDetailPage() {
   const params = useParams();
@@ -190,7 +190,7 @@ export default function WhatsAppGroupDetailPage() {
         <div className="flex items-center gap-2">
           {group.isAccountAdmin && (
             <Badge className="bg-purple-100 text-purple-800">
-              <Shield className="w-3 h-3 mr-1" />
+              <span className="text-xs">🛡️</span>
               Admin
             </Badge>
           )}

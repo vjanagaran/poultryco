@@ -50,8 +50,8 @@ export default function NewSchedulePage() {
       const schedule = await createContentSchedule({
         content_id: contentId,
         channel_id: channelId,
-        scheduled_for: scheduledDate + (scheduledTime ? `T${scheduledTime}` : ''),
-        status,
+        scheduled_date: scheduledDate,
+        scheduled_time: scheduledTime || null,
       });
       
       router.push(`/marketing/calendar/${schedule.id}`);

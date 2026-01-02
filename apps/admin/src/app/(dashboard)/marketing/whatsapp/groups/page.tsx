@@ -23,20 +23,12 @@ import {
   Search, 
   RefreshCw, 
   Eye, 
-  EyeOff, 
-  Star, 
   Users, 
-  Shield, 
   Download,
   ArrowLeft,
   Save,
-  Loader2,
-  Pin,
-  Bell,
-  BellOff,
-  MoreVertical,
-  Filter,
-  CheckCircle2,
+  Loader as Loader2,
+  X,
 } from 'lucide-react';
 import { useToast, ToastContainer } from '@/components/ui/toast';
 
@@ -416,7 +408,7 @@ export default function WhatsAppGroupsEnhancedPage() {
                       <div className="flex items-center justify-between mb-1">
                         <h3 className="font-medium text-gray-900 truncate">{group.name}</h3>
                         {group.isHidden && (
-                          <EyeOff className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <Eye className="w-4 h-4 text-gray-400 flex-shrink-0 opacity-50" />
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-500">

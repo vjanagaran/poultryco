@@ -15,7 +15,7 @@ import { useWhatsAppAccountPolling } from '@/lib/hooks/useWhatsAppAccountPolling
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, X, RefreshCw, Loader2, Settings, Users, FileText } from 'lucide-react';
+import { Plus, X, RefreshCw, Loader as Loader2, Settings, Users, FileText } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -330,6 +330,7 @@ export default function WhatsAppAccountsPage() {
               {polling.qrCode ? (
                 <>
                   <div className="flex justify-center p-4 bg-white rounded-lg border-2 border-gray-200">
+                    {/* @ts-expect-error - QRCodeSVG type compatibility issue with React 18/19 */}
                     <QRCodeSVG value={polling.qrCode} size={256} level="H" />
                   </div>
                   

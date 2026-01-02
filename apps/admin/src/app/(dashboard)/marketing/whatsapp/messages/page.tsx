@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { RefreshCw, RotateCw, ExternalLink } from 'lucide-react';
+import { RefreshCw, ExternalLink } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'bg-gray-100 text-gray-800',
@@ -143,7 +143,7 @@ export default function WhatsAppMessagesPage() {
                         variant="outline"
                         onClick={() => handleRetry(message.id)}
                       >
-                        <RotateCw className="w-4 h-4 mr-2" />
+                        <RefreshCw className="w-4 h-4 mr-2" />
                         Retry
                       </Button>
                     )}

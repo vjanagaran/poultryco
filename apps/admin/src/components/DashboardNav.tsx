@@ -50,20 +50,20 @@ export function DashboardNav() {
               const pathParts = menu.path.split('/').filter(Boolean);
               
               // Identify module
-              const module = identifyModuleFromPath(menu.path);
-              if (module) {
-                activeModules.add(module.id);
+              const moduleInfo = identifyModuleFromPath(menu.path);
+              if (moduleInfo) {
+                activeModules.add(moduleInfo.id);
               }
 
               // Identify submodule (level 2)
               if (pathParts.length >= 3) {
-                const submoduleId = `${module?.id || 'unknown'}-${pathParts[1]}-${pathParts[2]}`;
+                const submoduleId = `${moduleInfo?.id || 'unknown'}-${pathParts[1]}-${pathParts[2]}`;
                 activeSubmodules.add(submoduleId);
               }
 
               // Identify sub-sub level (level 3)
               if (pathParts.length >= 4) {
-                const subSubId = `${module?.id || 'unknown'}-${pathParts[1]}-${pathParts[2]}-${pathParts[3]}`;
+                const subSubId = `${moduleInfo?.id || 'unknown'}-${pathParts[1]}-${pathParts[2]}-${pathParts[3]}`;
                 activeSubSubs.add(subSubId);
               }
             }

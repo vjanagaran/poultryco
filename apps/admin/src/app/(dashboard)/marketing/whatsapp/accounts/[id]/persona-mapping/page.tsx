@@ -10,7 +10,7 @@ import { getStakeholderSegments } from '@/lib/api/marketing';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Save, Loader2, Tag, Users } from 'lucide-react';
+import { ArrowLeft, Save, Loader as Loader2, Tag, Users } from 'lucide-react';
 import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
