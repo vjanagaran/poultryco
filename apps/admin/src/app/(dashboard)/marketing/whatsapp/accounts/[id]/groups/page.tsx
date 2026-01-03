@@ -1108,7 +1108,7 @@ export default function WhatsAppAccountGroupsPage() {
               {/* Header */}
               <div className="p-4 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between mb-3">
-                  {selectedGroupData?.isSaved && liveContacts.length > 0 && !contactsSaved && (
+                  {selectedGroupData?.isSaved && liveContacts.length > 0 && (
                     <button
                       onClick={handleSaveContacts}
                       disabled={scraping}
@@ -1494,22 +1494,34 @@ export default function WhatsAppAccountGroupsPage() {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  {/* Save/Update Group Button */}
                   <Button
                     onClick={handleSaveGroup}
                     disabled={saving}
                     className="flex-1 bg-green-600 hover:bg-green-700"
                   >
                     <Save className="w-4 h-4 mr-2" />
-                    {saving ? 'Saving...' : 'Save Group'}
+                    {saving 
+                      ? 'Saving...' 
+                      : selectedGroupData?.isSaved && !selectedGroupData?.isHidden
+                        ? 'Update Group'
+                        : 'Save Group'
+                    }
                   </Button>
-                  <Button
-                    onClick={handleHideGroup}
-                    variant="outline"
-                    className="flex-1"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Hide Group
-                  </Button>
+                  
+                  {/* Hide Group Button - only show if group is NOT saved (so it can save and hide) */}
+                  {!selectedGroupData?.isSaved && (
+                    <Button
+                      onClick={handleHideGroup}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Hide Group
+                    </Button>
+                  )}
+                  
+                  {/* Remove Group Button - show if group is saved (whether hidden or not) */}
                   {selectedGroupData?.isSaved && selectedGroupData.savedGroupId && (
                     <Button
                       onClick={handleRemoveGroup}

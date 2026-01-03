@@ -28,6 +28,14 @@ export class WhatsAppGroupService {
       throw new Error('WhatsApp client not initialized. Please initialize the account first.');
     }
 
+    // Validate client before using it
+    const isValid = await this.accountService.validateClient(accountId);
+    if (!isValid) {
+      this.logger.warn(`Client for account ${accountId} is invalid - cleaning up`);
+      await this.accountService.cleanupInvalidClient(accountId);
+      throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
+    }
+
     // Check if client is ready/connected
     let state: string;
     try {
@@ -47,9 +55,9 @@ export class WhatsAppGroupService {
         stateError.message.includes('Target closed') ||
         stateError.message.includes('Session closed')
       )) {
-        this.logger.error(`WhatsApp client for account ${accountId} has a detached frame - client needs reinitialization`);
-        // Mark the client as needing reinitialization
-        // The account service should handle this, but we'll throw a clear error
+        this.logger.error(`WhatsApp client for account ${accountId} has a detached frame - cleaning up`);
+        // Clean up the invalid client
+        await this.accountService.cleanupInvalidClient(accountId);
         throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
       }
       
@@ -620,6 +628,14 @@ export class WhatsAppGroupService {
       throw new Error('WhatsApp client not initialized');
     }
 
+    // Validate client before using it
+    const isValid = await this.accountService.validateClient(accountId);
+    if (!isValid) {
+      this.logger.warn(`Client for account ${accountId} is invalid - cleaning up`);
+      await this.accountService.cleanupInvalidClient(accountId);
+      throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
+    }
+
     // Check if client is ready/connected
     let clientState: string;
     try {
@@ -639,6 +655,8 @@ export class WhatsAppGroupService {
         stateError.message.includes('Target closed') ||
         stateError.message.includes('Session closed')
       )) {
+        this.logger.warn(`Client for account ${accountId} has detached frame - cleaning up`);
+        await this.accountService.cleanupInvalidClient(accountId);
         throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
       }
       // Re-throw if it's already our error message
@@ -715,6 +733,14 @@ export class WhatsAppGroupService {
       throw new Error('WhatsApp client not initialized');
     }
 
+    // Validate client before using it
+    const isValid = await this.accountService.validateClient(accountId);
+    if (!isValid) {
+      this.logger.warn(`Client for account ${accountId} is invalid - cleaning up`);
+      await this.accountService.cleanupInvalidClient(accountId);
+      throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
+    }
+
     // Check if client is ready/connected
     let state: string;
     try {
@@ -734,6 +760,8 @@ export class WhatsAppGroupService {
         stateError.message.includes('Target closed') ||
         stateError.message.includes('Session closed')
       )) {
+        this.logger.warn(`Client for account ${accountId} has detached frame - cleaning up`);
+        await this.accountService.cleanupInvalidClient(accountId);
         throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
       }
       // Re-throw if it's already our error message

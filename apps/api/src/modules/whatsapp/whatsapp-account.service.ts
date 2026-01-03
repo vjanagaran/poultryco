@@ -514,6 +514,78 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Validate if client is still valid (not detached)
+   * Returns true if client is valid, false if it should be cleaned up
+   */
+  async validateClient(accountId: string): Promise<boolean> {
+    const client = this.clients.get(accountId);
+    if (!client) {
+      return false;
+    }
+
+    try {
+      // Quick check: if client.info doesn't exist, client is not ready
+      if (!client.info) {
+        this.logger.warn(`Client for account ${accountId} has no info - marking as invalid`);
+        return false;
+      }
+
+      // Try to get state - if this fails with detached frame error, client is invalid
+      try {
+        await client.getState();
+        return true;
+      } catch (stateError: any) {
+        // Check if it's a detached frame error
+        if (stateError.message && (
+          stateError.message.includes('detached Frame') ||
+          stateError.message.includes('Target closed') ||
+          stateError.message.includes('Session closed')
+        )) {
+          this.logger.warn(`Client for account ${accountId} has detached frame - marking as invalid`);
+          return false;
+        }
+        // Other errors might be transient, so return true
+        return true;
+      }
+    } catch (error: any) {
+      this.logger.warn(`Error validating client for account ${accountId}: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Clean up invalid client and mark account as inactive
+   */
+  async cleanupInvalidClient(accountId: string): Promise<void> {
+    this.logger.warn(`Cleaning up invalid client for account ${accountId}`);
+    
+    const client = this.clients.get(accountId);
+    if (client) {
+      try {
+        // Try to destroy the client gracefully
+        await client.destroy();
+      } catch (error) {
+        // Ignore errors during cleanup
+        this.logger.debug(`Error destroying invalid client: ${error}`);
+      }
+      this.clients.delete(accountId);
+      this.currentQRCodes.delete(accountId);
+    }
+
+    // Mark account as inactive
+    await this.updateAccountStatus(accountId, 'inactive', {
+      notes: 'Client frame detached - needs reconnection',
+      lastDisconnectedAt: new Date(),
+    }).catch(err => {
+      this.logger.error(`Error updating account status during cleanup:`, err);
+    });
+
+    // Emit disconnected status via WebSocket
+    this.gateway.emitConnectionState(accountId, 'disconnected', { reason: 'Frame detached' });
+    this.gateway.emitStatus(accountId, 'disconnected', { reason: 'Frame detached' });
+  }
+
+  /**
    * Get account status
    */
   async getAccountStatus(accountId: string): Promise<any> {
