@@ -27,6 +27,8 @@ export const mktWapAccounts = pgTable('mkt_wap_accounts', {
 }));
 
 // WhatsApp Groups
+// Global groups - one record per WhatsApp group (identified by groupId/WhatsApp group ID)
+// Account relationships stored in mkt_wap_group_accounts
 export const mktWapGroups = pgTable('mkt_wap_groups', {
   id: uuid('id').primaryKey().defaultRandom(),
   groupId: text('group_id').notNull().unique(), // WhatsApp group ID (unique for deduplication)
@@ -38,14 +40,13 @@ export const mktWapGroups = pgTable('mkt_wap_groups', {
   state: text('state'),
   district: text('district'),
   segmentTags: text('segment_tags').array(), // Array of segment tags
-  accountId: uuid('account_id'), // References mkt_wap_accounts(id) - DEPRECATED: Use mkt_wap_group_account_access
   profilePicUrl: text('profile_pic_url'),
   notes: text('notes'),
   // New columns for group management
   lastScrapedAt: timestamp('last_scraped_at', { withTimezone: true }),
   contactsCountAtLastScrape: integer('contacts_count_at_last_scrape').notNull().default(0),
-  isHidden: boolean('is_hidden').notNull().default(false), // Hide personal/non-relevant groups
-  isFavorite: boolean('is_favorite').notNull().default(false), // Mark group as favorite/featured
+  isHidden: boolean('is_hidden').notNull().default(false), // Hide personal/non-relevant groups (global setting)
+  isFavorite: boolean('is_favorite').notNull().default(false), // Mark group as favorite/featured (global setting)
   isAdminOnlyGroup: boolean('is_admin_only_group').notNull().default(false), // Group is admin-only
   internalDescription: text('internal_description'), // Internal notes/description
   discoveredAt: timestamp('discovered_at', { withTimezone: true }).defaultNow().notNull(),
@@ -53,7 +54,6 @@ export const mktWapGroups = pgTable('mkt_wap_groups', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
   groupIdIdx: index('idx_mkt_wap_groups_group_id').on(table.groupId),
-  accountIdx: index('idx_mkt_wap_groups_account').on(table.accountId),
   hiddenIdx: index('idx_mkt_wap_groups_hidden').on(table.isHidden),
   favoriteIdx: index('idx_mkt_wap_groups_favorite').on(table.isFavorite),
   lastScrapedIdx: index('idx_mkt_wap_groups_last_scraped').on(table.lastScrapedAt),
@@ -79,10 +79,10 @@ export const mktWapContacts = pgTable('mkt_wap_contacts', {
   personaIdx: index('idx_mkt_wap_contacts_persona').on(table.personaContactId),
 }));
 
-// Group-Account Access (Many-to-Many: Accounts ↔ Groups)
+// Group-Account Mapping (Many-to-Many: Accounts ↔ Groups)
 // Tracks which accounts have access to which groups, with permissions
 // Enables deduplication: Same group across multiple accounts
-export const mktWapGroupAccountAccess = pgTable('mkt_wap_group_account_access', {
+export const mktWapGroupAccounts = pgTable('mkt_wap_group_accounts', {
   id: uuid('id').primaryKey().defaultRandom(),
   groupId: uuid('group_id').notNull(), // References mkt_wap_groups(id)
   accountId: uuid('account_id').notNull(), // References mkt_wap_accounts(id)
@@ -101,10 +101,10 @@ export const mktWapGroupAccountAccess = pgTable('mkt_wap_group_account_access', 
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
-  groupIdx: index('idx_mkt_wap_group_account_access_group').on(table.groupId),
-  accountIdx: index('idx_mkt_wap_group_account_access_account').on(table.accountId),
-  adminIdx: index('idx_mkt_wap_group_account_access_admin').on(table.isAccountAdmin),
-  uniqueGroupAccount: unique('mkt_wap_group_account_access_group_account_unique').on(table.groupId, table.accountId),
+  groupIdx: index('idx_mkt_wap_group_accounts_group').on(table.groupId),
+  accountIdx: index('idx_mkt_wap_group_accounts_account').on(table.accountId),
+  adminIdx: index('idx_mkt_wap_group_accounts_admin').on(table.isAccountAdmin),
+  uniqueGroupAccount: unique('mkt_wap_group_accounts_group_account_unique').on(table.groupId, table.accountId),
 }));
 
 // Group-Contact Mapping (Many-to-Many: Groups ↔ Contacts)

@@ -80,9 +80,10 @@ export class WhatsAppGroupService {
   }) {
     let query = this.db.select().from(mktWapGroups);
 
-    if (filters?.accountId) {
-      query = query.where(eq(mktWapGroups.accountId, filters.accountId));
-    }
+    // Note: accountId filter removed - use getAccountGroups() instead which joins with mkt_wap_group_accounts
+    // if (filters?.accountId) {
+    //   query = query.where(eq(mktWapGroups.accountId, filters.accountId));
+    // }
 
     if (filters?.isActive !== undefined) {
       query = query.where(eq(mktWapGroups.isActive, filters.isActive));

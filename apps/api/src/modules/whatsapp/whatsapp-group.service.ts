@@ -6,7 +6,7 @@ import {
   mktWapGroups, 
   mktWapAccounts, 
   mktWapContacts,
-  mktWapGroupAccountAccess,
+  mktWapGroupAccounts,
   mktWapGroupContacts
 } from '../../database/schema/whatsapp';
 import { WhatsAppAccountService } from './whatsapp-account.service';
@@ -31,9 +31,28 @@ export class WhatsAppGroupService {
     // Check if client is ready/connected
     let state: string;
     try {
+      // First check if client.info exists (quick check without accessing Puppeteer)
+      if (!client.info) {
+        this.logger.warn(`WhatsApp client for account ${accountId} has no info - likely not ready`);
+        throw new Error('WhatsApp session is not available. The client may be disconnected. Please reconnect the account.');
+      }
+
+      // Try to get state - this may fail if Puppeteer frame is detached
       state = await client.getState();
       this.logger.debug(`Client state for account ${accountId}: ${state}`);
     } catch (stateError: any) {
+      // Check if it's a detached frame error
+      if (stateError.message && (
+        stateError.message.includes('detached Frame') ||
+        stateError.message.includes('Target closed') ||
+        stateError.message.includes('Session closed')
+      )) {
+        this.logger.error(`WhatsApp client for account ${accountId} has a detached frame - client needs reinitialization`);
+        // Mark the client as needing reinitialization
+        // The account service should handle this, but we'll throw a clear error
+        throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
+      }
+      
       // If getState() itself fails, the client is likely not ready or disconnected
       this.logger.error(`Could not get client state for account ${accountId}: ${stateError.message}`, stateError.stack);
       throw new Error('WhatsApp session is not available. The client may be disconnected. Please reconnect the account.');
@@ -147,43 +166,100 @@ export class WhatsAppGroupService {
         }
       }
 
-      const groupData = {
-        groupId: group.id._serialized,
-        name: group.name,
-        description: group.description || null,
-        memberCount: group.participants.length,
-        accountId,
-        profilePicUrl: profilePicUrl || null,
-      };
+      const groupWhatsappId = group.id._serialized;
+      
+      // Determine account's role in the group
+      const accountParticipant = group.participants.find((p: any) => {
+        const participantId = p.id?._serialized || p.id;
+        const accountInfo = client.info;
+        return participantId === accountInfo?.wid?._serialized || participantId === accountInfo?.wid;
+      });
+      
+      const isAccountAdmin = (accountParticipant as any)?.isAdmin || false;
+      const isAccountSuperAdmin = (accountParticipant as any)?.isSuperAdmin || false;
 
-      // Check if group already exists
-      const existing = await this.db
+      // Check if group already exists globally (by WhatsApp group ID)
+      const existingGroup = await this.db
         .select()
         .from(mktWapGroups)
-        .where(eq(mktWapGroups.groupId, groupData.groupId))
+        .where(eq(mktWapGroups.groupId, groupWhatsappId))
         .limit(1);
 
-      if (existing.length === 0) {
-        // Insert new group
+      let groupRecord;
+      
+      if (existingGroup.length === 0) {
+        // Group doesn't exist - create new global group record (NO accountId)
         const inserted = await this.db
           .insert(mktWapGroups)
-          .values(groupData)
+          .values({
+            groupId: groupWhatsappId,
+            name: group.name,
+            description: group.description || null,
+            memberCount: group.participants.length,
+            profilePicUrl: profilePicUrl || null,
+            isAdminOnlyGroup: (group as any).restrict || false,
+          })
           .returning();
-        return inserted[0];
+        groupRecord = inserted[0];
+        this.logger.log(`Created new global group record: ${groupRecord.id} for WhatsApp group ${groupWhatsappId}`);
       } else {
-        // Update existing group
+        // Group exists - update global metadata (affects all accounts)
         await this.db
           .update(mktWapGroups)
           .set({
-            name: groupData.name,
-            description: groupData.description,
-            memberCount: groupData.memberCount,
-            profilePicUrl: groupData.profilePicUrl,
+            name: group.name,
+            description: group.description || null,
+            memberCount: group.participants.length,
+            profilePicUrl: profilePicUrl || null,
+            isAdminOnlyGroup: (group as any).restrict || false,
             updatedAt: new Date(),
           })
-          .where(eq(mktWapGroups.id, existing[0].id));
-        return existing[0];
+          .where(eq(mktWapGroups.id, existingGroup[0].id));
+        groupRecord = existingGroup[0];
+        this.logger.log(`Updated existing global group: ${groupRecord.id} for WhatsApp group ${groupWhatsappId}`);
       }
+
+      // Create or update account-group mapping
+      const existingMapping = await this.db
+        .select()
+        .from(mktWapGroupAccounts)
+        .where(
+          and(
+            eq(mktWapGroupAccounts.groupId, groupRecord.id),
+            eq(mktWapGroupAccounts.accountId, accountId)
+          )
+        )
+        .limit(1);
+
+      if (existingMapping.length === 0) {
+        // Create new account mapping
+        await this.db
+          .insert(mktWapGroupAccounts)
+          .values({
+            groupId: groupRecord.id,
+            accountId: accountId,
+            isAccountAdmin,
+            isAccountSuperAdmin,
+            isAdminOnlyGroup: (group as any).restrict || false,
+            discoveredAt: new Date(),
+          });
+        this.logger.log(`Created account mapping: Account ${accountId} → Group ${groupRecord.id}`);
+      } else {
+        // Update existing mapping (refresh permissions)
+        await this.db
+          .update(mktWapGroupAccounts)
+          .set({
+            isAccountAdmin,
+            isAccountSuperAdmin,
+            isAdminOnlyGroup: (group as any).restrict || false,
+            lastAccessedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(eq(mktWapGroupAccounts.id, existingMapping[0].id));
+        this.logger.log(`Updated account mapping: Account ${accountId} → Group ${groupRecord.id}`);
+      }
+
+      return groupRecord;
     } catch (error: any) {
       this.logger.error(`Error saving single group for account ${accountId}: ${error.message}`, error.stack);
       throw error;
@@ -212,43 +288,96 @@ export class WhatsAppGroupService {
           this.logger.debug(`Could not get profile picture for group ${group.name}`);
         }
 
-        const groupData = {
-          groupId: group.id._serialized,
-          name: group.name,
-          description: group.description || null,
-          memberCount: group.participants.length,
-          accountId,
-          profilePicUrl: profilePicUrl || null,
-        };
+        const whatsappGroupId = group.id._serialized;
+        
+        // Determine account's role in the group
+        const accountParticipant = group.participants.find((p: any) => {
+          const participantId = p.id?._serialized || p.id;
+          const accountInfo = client.info;
+          return participantId === accountInfo?.wid?._serialized || participantId === accountInfo?.wid;
+        });
+        
+        const isAccountAdmin = (accountParticipant as any)?.isAdmin || false;
+        const isAccountSuperAdmin = (accountParticipant as any)?.isSuperAdmin || false;
 
-        // Check if group already exists
-        const existing = await this.db
+        // Check if group already exists globally (by WhatsApp group ID)
+        const existingGroup = await this.db
           .select()
           .from(mktWapGroups)
-          .where(eq(mktWapGroups.groupId, groupData.groupId))
+          .where(eq(mktWapGroups.groupId, whatsappGroupId))
           .limit(1);
 
-        if (existing.length === 0) {
-          // Insert new group
+        let groupRecord;
+        
+        if (existingGroup.length === 0) {
+          // Group doesn't exist - create new global group record (NO accountId)
           const inserted = await this.db
             .insert(mktWapGroups)
-            .values(groupData)
+            .values({
+              groupId: whatsappGroupId,
+              name: group.name,
+              description: group.description || null,
+              memberCount: group.participants.length,
+              profilePicUrl: profilePicUrl || null,
+              isAdminOnlyGroup: (group as any).restrict || false,
+            })
             .returning();
-          discoveredGroups.push(inserted[0]);
+          groupRecord = inserted[0];
         } else {
-          // Update existing group
+          // Group exists - update global metadata (affects all accounts)
           await this.db
             .update(mktWapGroups)
             .set({
-              name: groupData.name,
-              description: groupData.description,
-              memberCount: groupData.memberCount,
-              profilePicUrl: groupData.profilePicUrl,
+              name: group.name,
+              description: group.description || null,
+              memberCount: group.participants.length,
+              profilePicUrl: profilePicUrl || null,
+              isAdminOnlyGroup: (group as any).restrict || false,
               updatedAt: new Date(),
             })
-            .where(eq(mktWapGroups.id, existing[0].id));
-          discoveredGroups.push(existing[0]);
+            .where(eq(mktWapGroups.id, existingGroup[0].id));
+          groupRecord = existingGroup[0];
         }
+
+        // Create or update account-group mapping (if not exists)
+        const existingMapping = await this.db
+          .select()
+          .from(mktWapGroupAccounts)
+          .where(
+            and(
+              eq(mktWapGroupAccounts.groupId, groupRecord.id),
+              eq(mktWapGroupAccounts.accountId, accountId)
+            )
+          )
+          .limit(1);
+
+        if (existingMapping.length === 0) {
+          // Create new account mapping
+          await this.db
+            .insert(mktWapGroupAccounts)
+            .values({
+              groupId: groupRecord.id,
+              accountId: accountId,
+              isAccountAdmin,
+              isAccountSuperAdmin,
+              isAdminOnlyGroup: (group as any).restrict || false,
+              discoveredAt: new Date(),
+            });
+        } else {
+          // Update existing mapping (refresh permissions)
+          await this.db
+            .update(mktWapGroupAccounts)
+            .set({
+              isAccountAdmin,
+              isAccountSuperAdmin,
+              isAdminOnlyGroup: (group as any).restrict || false,
+              lastAccessedAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(mktWapGroupAccounts.id, existingMapping[0].id));
+        }
+
+        discoveredGroups.push(groupRecord);
       }
 
       return discoveredGroups;
@@ -265,27 +394,87 @@ export class WhatsAppGroupService {
     limit?: number;
     offset?: number;
   }) {
-    let query = this.db.select().from(mktWapGroups);
-
+    // If accountId is provided, join with account mapping table
     if (filters?.accountId) {
-      query = query.where(eq(mktWapGroups.accountId, filters.accountId));
+      let query = this.db
+        .select({
+          // Group fields
+          id: mktWapGroups.id,
+          groupId: mktWapGroups.groupId,
+          name: mktWapGroups.name,
+          description: mktWapGroups.description,
+          memberCount: mktWapGroups.memberCount,
+          isActive: mktWapGroups.isActive,
+          region: mktWapGroups.region,
+          state: mktWapGroups.state,
+          district: mktWapGroups.district,
+          segmentTags: mktWapGroups.segmentTags,
+          profilePicUrl: mktWapGroups.profilePicUrl,
+          notes: mktWapGroups.notes,
+          lastScrapedAt: mktWapGroups.lastScrapedAt,
+          contactsCountAtLastScrape: mktWapGroups.contactsCountAtLastScrape,
+          isHidden: mktWapGroups.isHidden,
+          isFavorite: mktWapGroups.isFavorite,
+          isAdminOnlyGroup: mktWapGroups.isAdminOnlyGroup,
+          internalDescription: mktWapGroups.internalDescription,
+          discoveredAt: mktWapGroups.discoveredAt,
+          createdAt: mktWapGroups.createdAt,
+          updatedAt: mktWapGroups.updatedAt,
+          // Account mapping fields
+          accountId: mktWapGroupAccounts.accountId,
+          isAccountAdmin: mktWapGroupAccounts.isAccountAdmin,
+          isAccountSuperAdmin: mktWapGroupAccounts.isAccountSuperAdmin,
+          canAddContacts: mktWapGroupAccounts.canAddContacts,
+          canPostMessages: mktWapGroupAccounts.canPostMessages,
+          canEditGroupInfo: mktWapGroupAccounts.canEditGroupInfo,
+        })
+        .from(mktWapGroups)
+        .innerJoin(mktWapGroupAccounts, eq(mktWapGroups.id, mktWapGroupAccounts.groupId))
+        .where(eq(mktWapGroupAccounts.accountId, filters.accountId));
+
+      if (filters?.isActive !== undefined) {
+        query = query.where(eq(mktWapGroups.isActive, filters.isActive));
+      }
+
+      if (filters?.includeHidden !== true) {
+        query = query.where(eq(mktWapGroups.isHidden, false));
+      }
+
+      query = query.orderBy(desc(mktWapGroups.createdAt));
+
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      if (filters?.offset) {
+        query = query.offset(filters.offset);
+      }
+
+      return query;
+    } else {
+      // No accountId filter - return all groups (for admin views)
+      let query = this.db.select().from(mktWapGroups);
+
+      if (filters?.isActive !== undefined) {
+        query = query.where(eq(mktWapGroups.isActive, filters.isActive));
+      }
+
+      if (filters?.includeHidden !== true) {
+        query = query.where(eq(mktWapGroups.isHidden, false));
+      }
+
+      query = query.orderBy(desc(mktWapGroups.createdAt));
+
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      if (filters?.offset) {
+        query = query.offset(filters.offset);
+      }
+
+      return query;
     }
-
-    if (filters?.isActive !== undefined) {
-      query = query.where(eq(mktWapGroups.isActive, filters.isActive));
-    }
-
-    query = query.orderBy(desc(mktWapGroups.createdAt));
-
-    if (filters?.limit) {
-      query = query.limit(filters.limit);
-    }
-
-    if (filters?.offset) {
-      query = query.offset(filters.offset);
-    }
-
-    return query;
   }
 
   async getGroupById(groupId: string) {
@@ -399,17 +588,17 @@ export class WhatsAppGroupService {
           .where(eq(mktWapGroupContacts.groupId, groupId));
       }
       
-      // Step 5: Delete all group-account access records for this group
-      const groupAccountAccess = await this.db
+      // Step 5: Delete all group-account mappings for this group
+      const groupAccountMappings = await this.db
         .select()
-        .from(mktWapGroupAccountAccess)
-        .where(eq(mktWapGroupAccountAccess.groupId, groupId));
+        .from(mktWapGroupAccounts)
+        .where(eq(mktWapGroupAccounts.groupId, groupId));
       
-      if (groupAccountAccess.length > 0) {
-        this.logger.log(`Deleting ${groupAccountAccess.length} group-account access records`);
+      if (groupAccountMappings.length > 0) {
+        this.logger.log(`Deleting ${groupAccountMappings.length} group-account mappings`);
         await this.db
-          .delete(mktWapGroupAccountAccess)
-          .where(eq(mktWapGroupAccountAccess.groupId, groupId));
+          .delete(mktWapGroupAccounts)
+          .where(eq(mktWapGroupAccounts.groupId, groupId));
       }
       
       // Step 6: Delete the group itself
@@ -431,14 +620,31 @@ export class WhatsAppGroupService {
       throw new Error('WhatsApp client not initialized');
     }
 
-    // Check client state
+    // Check if client is ready/connected
+    let clientState: string;
     try {
-      const state = await client.getState();
-      if (state !== 'CONNECTED') {
-        throw new Error(`WhatsApp session is not connected (state: ${state}). Please reconnect the account.`);
+      // First check if client.info exists (quick check without accessing Puppeteer)
+      if (!client.info) {
+        throw new Error('WhatsApp session is not available. The client may be disconnected. Please reconnect the account.');
+      }
+
+      clientState = await client.getState();
+      if (clientState !== 'CONNECTED') {
+        throw new Error(`WhatsApp session is not connected (state: ${clientState}). Please reconnect the account.`);
       }
     } catch (stateError: any) {
-      this.logger.error(`Could not get client state for account ${accountId}: ${stateError.message}`);
+      // Check if it's a detached frame error
+      if (stateError.message && (
+        stateError.message.includes('detached Frame') ||
+        stateError.message.includes('Target closed') ||
+        stateError.message.includes('Session closed')
+      )) {
+        throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
+      }
+      // Re-throw if it's already our error message
+      if (stateError.message && (stateError.message.includes('not available') || stateError.message.includes('not connected'))) {
+        throw stateError;
+      }
       throw new Error('WhatsApp session is not available. Please reconnect the account.');
     }
     
@@ -509,14 +715,31 @@ export class WhatsAppGroupService {
       throw new Error('WhatsApp client not initialized');
     }
 
-    // Check client state
+    // Check if client is ready/connected
+    let state: string;
     try {
-      const state = await client.getState();
+      // First check if client.info exists (quick check without accessing Puppeteer)
+      if (!client.info) {
+        throw new Error('WhatsApp session is not available. The client may be disconnected. Please reconnect the account.');
+      }
+
+      state = await client.getState();
       if (state !== 'CONNECTED') {
         throw new Error(`WhatsApp session is not connected (state: ${state}). Please reconnect the account.`);
       }
     } catch (stateError: any) {
-      this.logger.error(`Could not get client state for account ${accountId}: ${stateError.message}`);
+      // Check if it's a detached frame error
+      if (stateError.message && (
+        stateError.message.includes('detached Frame') ||
+        stateError.message.includes('Target closed') ||
+        stateError.message.includes('Session closed')
+      )) {
+        throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
+      }
+      // Re-throw if it's already our error message
+      if (stateError.message && (stateError.message.includes('not available') || stateError.message.includes('not connected'))) {
+        throw stateError;
+      }
       throw new Error('WhatsApp session is not available. Please reconnect the account.');
     }
 
@@ -589,14 +812,31 @@ export class WhatsAppGroupService {
       throw new Error('WhatsApp client not initialized');
     }
 
-    // Check client state
+    // Check if client is ready/connected
+    let state: string;
     try {
-      const state = await client.getState();
+      // First check if client.info exists (quick check without accessing Puppeteer)
+      if (!client.info) {
+        throw new Error('WhatsApp session is not available. The client may be disconnected. Please reconnect the account.');
+      }
+
+      state = await client.getState();
       if (state !== 'CONNECTED') {
         throw new Error(`WhatsApp session is not connected (state: ${state}). Please reconnect the account.`);
       }
     } catch (stateError: any) {
-      this.logger.error(`Could not get client state for account ${accountId}: ${stateError.message}`);
+      // Check if it's a detached frame error
+      if (stateError.message && (
+        stateError.message.includes('detached Frame') ||
+        stateError.message.includes('Target closed') ||
+        stateError.message.includes('Session closed')
+      )) {
+        throw new Error('WhatsApp session is not available. The browser session was closed. Please reconnect the account.');
+      }
+      // Re-throw if it's already our error message
+      if (stateError.message && (stateError.message.includes('not available') || stateError.message.includes('not connected'))) {
+        throw stateError;
+      }
       throw new Error('WhatsApp session is not available. Please reconnect the account.');
     }
 
@@ -939,25 +1179,114 @@ export class WhatsAppGroupService {
   }
 
   async getAccountGroups(accountId: string, includeHidden: boolean = false) {
+    // Return only groups that have mappings for this account (saved groups)
+    // The frontend will merge with live groups separately
     return this.getGroups({ accountId, includeHidden });
   }
 
   async checkDatabaseTables(): Promise<{ exists: boolean; error?: string }> {
     try {
-      // Try to query the new table
+      // Try to query the account mapping table
       await this.db
         .select()
-        .from(mktWapGroupAccountAccess)
+        .from(mktWapGroupAccounts)
         .limit(1);
       return { exists: true };
     } catch (error: any) {
       if (error?.code === '42P01' || error?.message?.includes('does not exist')) {
         return { 
           exists: false, 
-          error: 'Table mkt_wap_group_account_access does not exist. Please run migration 79_mkt_whatsapp_groups_enhancements.sql' 
+          error: 'Table mkt_wap_group_accounts does not exist. Please run migration 80_mkt_whatsapp_multi_account_groups.sql' 
         };
       }
       return { exists: false, error: error?.message || 'Unknown database error' };
+    }
+  }
+
+  /**
+   * Auto-map groups that are already saved by other accounts to the current account
+   * This improves UX by avoiding duplicate work
+   */
+  async autoMapExistingGroups(accountId: string, whatsappGroupIds: string[]): Promise<number> {
+    try {
+      if (!whatsappGroupIds || whatsappGroupIds.length === 0) {
+        return 0;
+      }
+
+      this.logger.log(`Auto-mapping groups for account ${accountId}, checking ${whatsappGroupIds.length} WhatsApp group IDs`);
+
+      // Find groups that exist globally but don't have mapping for this account
+      const existingGroups = await this.db
+        .select({
+          id: mktWapGroups.id,
+          groupId: mktWapGroups.groupId,
+        })
+        .from(mktWapGroups)
+        .where(inArray(mktWapGroups.groupId, whatsappGroupIds));
+
+      if (existingGroups.length === 0) {
+        this.logger.log(`No existing groups found for auto-mapping`);
+        return 0;
+      }
+
+      this.logger.log(`Found ${existingGroups.length} existing groups globally`);
+
+      // Get existing mappings for this account
+      const existingMappings = await this.db
+        .select({ groupId: mktWapGroupAccounts.groupId })
+        .from(mktWapGroupAccounts)
+        .where(eq(mktWapGroupAccounts.accountId, accountId));
+
+      const mappedGroupIds = new Set(existingMappings.map((m: any) => m.groupId));
+      this.logger.log(`Account ${accountId} already has ${mappedGroupIds.size} group mappings`);
+
+      // Find groups that need mapping
+      const groupsToMap = existingGroups.filter((g: any) => !mappedGroupIds.has(g.id));
+
+      if (groupsToMap.length === 0) {
+        this.logger.log(`All existing groups already mapped for account ${accountId}`);
+        return 0;
+      }
+
+      this.logger.log(`Auto-mapping ${groupsToMap.length} groups to account ${accountId}`);
+
+      // Create mappings for groups that don't have one yet
+      // Note: We can't determine permissions without the client, so use defaults
+      const mappingsToInsert = groupsToMap.map((group: any) => ({
+        groupId: group.id,
+        accountId: accountId,
+        isAccountAdmin: false, // Will be updated when group is actually saved
+        isAccountSuperAdmin: false,
+        canAddContacts: false,
+        canPostMessages: true, // Default to true
+        canEditGroupInfo: false,
+        discoveredAt: new Date(),
+      }));
+
+      // Insert mappings, ignoring conflicts (race conditions)
+      let insertedCount = 0;
+      for (const mapping of mappingsToInsert) {
+        try {
+          await this.db
+            .insert(mktWapGroupAccounts)
+            .values(mapping);
+          insertedCount++;
+        } catch (error: any) {
+          // Ignore unique constraint violations (already mapped)
+          if (error?.code === '23505' || error?.message?.includes('unique constraint')) {
+            this.logger.debug(`Group ${mapping.groupId} already mapped to account ${accountId}, skipping`);
+            continue;
+          }
+          this.logger.error(`Error inserting mapping for group ${mapping.groupId}: ${error.message}`);
+          throw error;
+        }
+      }
+
+      this.logger.log(`Successfully auto-mapped ${insertedCount} existing groups to account ${accountId}`);
+      return insertedCount;
+    } catch (error: any) {
+      this.logger.error(`Error auto-mapping groups for account ${accountId}: ${error.message}`, error.stack);
+      return 0;
     }
   }
 }

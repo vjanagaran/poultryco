@@ -56,8 +56,17 @@ export default function WhatsAppAccountsPage() {
   useEffect(() => {
     if (qrDialogOpen && selectedAccount?.id) {
       getWhatsAppAccountById(selectedAccount.id)
-        .then(data => setAccountStatus(data))
+        .then(data => {
+          setAccountStatus(data);
+          // If account has a QR code already, set it
+          if (data.qrCode) {
+            console.log('Found existing QR code in account data');
+          }
+        })
         .catch(err => console.error('Error fetching account:', err));
+    } else {
+      // Clear account status when dialog closes
+      setAccountStatus(null);
     }
   }, [qrDialogOpen, selectedAccount?.id]);
 

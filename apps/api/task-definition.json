@@ -33,6 +33,10 @@
         {
           "name": "CORS_ORIGIN",
           "value": "https://poultryco.net,https://www.poultryco.net,https://admin.poultryco.net,http://localhost:3000,http://localhost:3001"
+        },
+        {
+          "name": "ADMIN_URL",
+          "value": "https://admin.poultryco.net,http://localhost:3001,http://localhost:3000"
         }
       ],
       "secrets": [

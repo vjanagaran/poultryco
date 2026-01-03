@@ -12,7 +12,10 @@ import { Logger } from '@nestjs/common';
 @WebSocketGateway({
   namespace: '/whatsapp',
   cors: {
-    origin: process.env.ADMIN_URL?.split(',') || ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002'],
+    // Use ADMIN_URL if set, otherwise fall back to CORS_ORIGIN, then defaults
+    origin: process.env.ADMIN_URL?.split(',') || 
+            process.env.CORS_ORIGIN?.split(',') || 
+            ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002', 'https://admin.poultryco.net'],
     credentials: true,
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -42,7 +45,9 @@ export class WhatsAppGateway implements OnGatewayInit, OnGatewayConnection, OnGa
         // Ensure CORS headers are set for all transports (including polling)
         server.engine.on('headers', (headers: any, req: any) => {
           const origin = req.headers.origin;
-          const allowedOrigins = process.env.ADMIN_URL?.split(',') || ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002'];
+          const allowedOrigins = process.env.ADMIN_URL?.split(',') || 
+                                 process.env.CORS_ORIGIN?.split(',') || 
+                                 ['http://localhost:3001', 'http://localhost:3000', 'http://localhost:3002', 'https://admin.poultryco.net'];
           
           if (origin && allowedOrigins.includes(origin)) {
             headers['Access-Control-Allow-Origin'] = origin;
@@ -132,13 +137,22 @@ export class WhatsAppGateway implements OnGatewayInit, OnGatewayConnection, OnGa
       timestamp: Date.now(),
     });
     
-    this.server.to(`account:${accountId}`).emit('qr:code', {
+    const qrEvent = {
       accountId,
       qrCode,
       expiresIn,
       timestamp: Date.now(),
-    });
-    this.logger.log(`QR code emitted for account ${accountId}`);
+    };
+    
+    // Get all clients in the room
+    const room = this.server.sockets.adapter.rooms.get(`account:${accountId}`);
+    const clientCount = room ? room.size : 0;
+    
+    this.logger.log(`Emitting QR code for account ${accountId} to ${clientCount} client(s)`);
+    this.logger.debug(`QR code event:`, { accountId, hasQR: !!qrCode, expiresIn, clientCount });
+    
+    this.server.to(`account:${accountId}`).emit('qr:code', qrEvent);
+    this.logger.log(`✅ QR code emitted for account ${accountId}`);
   }
 
   // Emit status update to all clients subscribed to this account

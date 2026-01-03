@@ -339,6 +339,16 @@ export class WhatsAppController {
       this.logger.log(`Get live groups request for account ${accountId}`);
       const result = await this.groupService.getLiveGroups(accountId);
       this.logger.log(`Successfully retrieved ${result.length} live groups for account ${accountId}`);
+      
+      // Auto-map existing groups that are already saved by other accounts
+      const whatsappGroupIds = result.map((g: any) => g.groupId || g.whatsappGroupId).filter(Boolean);
+      if (whatsappGroupIds.length > 0) {
+        const mappedCount = await this.groupService.autoMapExistingGroups(accountId, whatsappGroupIds);
+        if (mappedCount > 0) {
+          this.logger.log(`Auto-mapped ${mappedCount} existing groups to account ${accountId}`);
+        }
+      }
+      
       return result;
     } catch (error: any) {
       this.logger.error(`Error getting live groups for account ${accountId}:`, error);
