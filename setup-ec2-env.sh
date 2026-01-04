@@ -14,6 +14,13 @@ mkdir -p ~/poultryco/logs
 mkdir -p ~/poultryco/apps/api/whatsapp-sessions
 chmod 755 ~/poultryco/apps/api/whatsapp-sessions
 
+# Install unzip if not available (needed for AWS CLI)
+if ! command -v unzip &> /dev/null; then
+    echo "Installing unzip..."
+    sudo apt-get update -y
+    sudo apt-get install -y unzip
+fi
+
 # Check if AWS CLI is installed
 if ! command -v aws &> /dev/null; then
     echo "Installing AWS CLI..."
@@ -21,12 +28,6 @@ if ! command -v aws &> /dev/null; then
     unzip awscliv2.zip
     sudo ./aws/install
     rm -rf aws awscliv2.zip
-fi
-
-# Install unzip if not available (needed for AWS CLI)
-if ! command -v unzip &> /dev/null; then
-    sudo apt-get update -y
-    sudo apt-get install -y unzip
 fi
 
 # Configure AWS region
