@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { signOut as cognitoSignOut } from '@/lib/auth/cognito';
+import { signOut as hybridSignOut } from '@/lib/auth/hybrid-auth';
 import { apiClient } from '@/lib/api/client';
 
 interface User {
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await cognitoSignOut();
+    await hybridSignOut();
     setUser(null);
   };
 

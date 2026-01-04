@@ -53,7 +53,7 @@
 
 **Test:** http://localhost:3000  
 **Build:** `npm run build` (successful)  
-**Deploy:** Push to main (Vercel auto-deploys)
+**Deploy:** Deployed on EC2 with PM2
 
 **Zero errors. Production ready.** ✅
 

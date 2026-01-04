@@ -16,10 +16,8 @@ export class AuthService {
   /**
    * Validate Cognito JWT token and sync user to database
    * @deprecated Cognito is no longer used. Use OTP authentication instead.
+   * @removed This method has been removed as Cognito is no longer supported.
    */
-  async validateCognitoToken(token: string): Promise<{ user: any; profile: any }> {
-    throw new UnauthorizedException('Cognito authentication is deprecated. Please use OTP authentication.');
-  }
 
   /**
    * Get or create user from Cognito payload

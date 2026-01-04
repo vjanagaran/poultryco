@@ -19,7 +19,6 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.490.0",
     "@aws-sdk/client-s3": "^3.490.0",
     "@aws-sdk/s3-request-presigner": "^3.490.0",
     "@nestjs/common": "^10.3.0",
@@ -36,7 +35,6 @@
     "@types/cheerio": "^0.22.35",
     "@types/nodemailer": "^7.0.4",
     "@types/puppeteer": "^5.4.7",
-    "aws-jwt-verify": "^4.0.1",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.1.2",
     "class-transformer": "^0.5.1",

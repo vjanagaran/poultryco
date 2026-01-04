@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   compress: true,
-  output: 'standalone', // Enable standalone output for Docker
+  // output: 'standalone', // Not needed for EC2 deployment
   typescript: {
     // Allow build to succeed even with type errors (not recommended for production)
     ignoreBuildErrors: true,

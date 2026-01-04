@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, signInWithOAuth } from '@/lib/auth/cognito';
+import { signIn, signInWithOAuth } from '@/lib/auth/hybrid-auth';
 
 export default function LoginForm() {
   const router = useRouter();

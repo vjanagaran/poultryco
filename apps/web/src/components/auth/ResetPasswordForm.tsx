@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { confirmPasswordReset } from '@/lib/auth/cognito';
+import { confirmPasswordReset } from '@/lib/auth/hybrid-auth';
 
 export default function ResetPasswordForm() {
   const router = useRouter();

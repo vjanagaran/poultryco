@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signUp, signInWithOAuth } from '@/lib/auth/cognito';
+import { signUp, signInWithOAuth } from '@/lib/auth/hybrid-auth';
 import { apiClient } from '@/lib/api/client';
 
 // Generate unique slug from name

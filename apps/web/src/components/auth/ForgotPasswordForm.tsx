@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { forgotPassword } from '@/lib/auth/cognito';
+import { forgotPassword } from '@/lib/auth/hybrid-auth';
 
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
