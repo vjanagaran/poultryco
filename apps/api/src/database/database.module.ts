@@ -22,18 +22,22 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
         databaseUrl = databaseUrl.trim().replace(/^["']|["']$/g, '');
 
         // URL-encode special characters in the password part
-        // Match: postgresql://user:password@host
-        const urlMatch = databaseUrl.match(/^(postgresql:\/\/[^:]+:)([^@]+)(@.+)$/);
+        // Match: postgresql://user:password@host (password can contain #, @ needs to be escaped)
+        // Use a more robust regex that handles query parameters
+        const urlMatch = databaseUrl.match(/^(postgresql:\/\/[^:]+:)([^@]+)(@.*)$/);
         if (urlMatch) {
           const [, prefix, password, suffix] = urlMatch;
-          // URL-encode special characters in password
+          // URL-encode special characters in password (especially # which becomes %23)
           const encodedPassword = encodeURIComponent(password);
           databaseUrl = `${prefix}${encodedPassword}${suffix}`;
+          console.log(`[DatabaseModule] Password encoded: ${password.substring(0, 10)}... -> ${encodedPassword.substring(0, 15)}...`);
+        } else {
+          console.warn(`[DatabaseModule] Could not parse DATABASE_URL format for password encoding`);
         }
 
         // Log the URL (masked) for debugging
         const maskedUrl = databaseUrl.replace(/:([^:@]+)@/, ':****@');
-        console.log(`[DatabaseModule] Connecting to database: ${maskedUrl.substring(0, 50)}...`);
+        console.log(`[DatabaseModule] Connecting to database: ${maskedUrl.substring(0, 80)}...`);
 
         const client = postgres(databaseUrl, {
           max: 10,
