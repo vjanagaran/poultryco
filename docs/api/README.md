@@ -22,19 +22,15 @@ docs/api/
 
 ### For Developers
 - **[API Overview](../api/README.md)** - API features and tech stack
-- **[EC2 Deployment Guide](../../EC2_DEPLOYMENT_GUIDE.md)** - Complete EC2 deployment guide
-- **[Quick Start](../../EC2_QUICK_DEPLOY.md)** - Quick deployment reference
+- **[EC2 Deployment Guide](../deployment/EC2_DEPLOYMENT_GUIDE.md)** - Complete EC2 deployment guide
 
 ### For DevOps
-- **[EC2 Deployment Guide](../../EC2_DEPLOYMENT_GUIDE.md)** - Full EC2 deployment instructions
-- **[EC2 Troubleshooting](../../EC2_TROUBLESHOOTING.md)** - Common issues and solutions
+- **[EC2 Deployment Guide](../deployment/EC2_DEPLOYMENT_GUIDE.md)** - Full EC2 deployment instructions
 
 ## 📚 Documentation Files
 
 ### Deployment
-- **EC2 Deployment Guide** (`../../EC2_DEPLOYMENT_GUIDE.md`) - Complete EC2 deployment guide
-- **EC2 Quick Deploy** (`../../EC2_QUICK_DEPLOY.md`) - Quick deployment reference
-- **EC2 Troubleshooting** (`../../EC2_TROUBLESHOOTING.md`) - Common issues and solutions
+- **EC2 Deployment Guide** (`../deployment/EC2_DEPLOYMENT_GUIDE.md`) - Complete EC2 deployment guide
 
 ## 🔗 Related Documentation
 

@@ -339,7 +339,7 @@ content/
 
 ### EC2 Production Deployment
 
-The web app is deployed on EC2 using PM2. See [EC2 Deployment Guide](../../EC2_DEPLOYMENT_GUIDE.md) for details.
+The web app is deployed on EC2 using PM2. See [EC2 Deployment Guide](../../docs/deployment/EC2_DEPLOYMENT_GUIDE.md) for details.
 
 **Quick commands:**
 ```bash
