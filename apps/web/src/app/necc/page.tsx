@@ -5,6 +5,9 @@ import { getZonesCount } from "@/lib/api/necc-zones";
 import { TrendingUp, MapPin, BarChart3, Calendar, Table, Zap, Users, Bell } from "lucide-react";
 import { NECCQuickLinks } from "@/components/necc/NECCQuickLinks";
 
+// Force dynamic rendering to avoid build-time API calls
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "NECC Egg Prices - Daily Rates, Trends & Expert Analysis | PoultryCo",
   description: "Get daily NECC egg prices, expert insights, and market analysis. Compare zones, track trends, and make informed decisions.",
@@ -19,12 +22,25 @@ export const metadata: Metadata = {
 };
 
 export default async function NECCHomePage() {
-  // Fetch data in parallel
-  const [todayAvg, yesterdayAvg, zonesCount] = await Promise.all([
-    getTodayAverage(),
-    getYesterdayAverage(),
-    getZonesCount(),
-  ]);
+  // Fetch data in parallel - handle build-time failures gracefully
+  let todayAvg: number | null = null;
+  let yesterdayAvg: number | null = null;
+  let zonesCount: number = 0;
+
+  try {
+    const results = await Promise.allSettled([
+      getTodayAverage(),
+      getYesterdayAverage(),
+      getZonesCount(),
+    ]);
+    
+    todayAvg = results[0].status === 'fulfilled' ? results[0].value : null;
+    yesterdayAvg = results[1].status === 'fulfilled' ? results[1].value : null;
+    zonesCount = results[2].status === 'fulfilled' ? results[2].value : 0;
+  } catch (error) {
+    // During build time, API might not be available - use defaults
+    console.warn('Error fetching NECC data during build:', error);
+  }
 
   const change = todayAvg && yesterdayAvg ? todayAvg - yesterdayAvg : null;
   const changePercent = change && yesterdayAvg ? ((change / yesterdayAvg) * 100).toFixed(1) : null;
