@@ -22,17 +22,35 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
         databaseUrl = databaseUrl.trim().replace(/^["']|["']$/g, '');
 
         // URL-encode special characters in the password part
-        // Match: postgresql://user:password@host (password can contain #, @ needs to be escaped)
-        // Use a more robust regex that handles query parameters
-        const urlMatch = databaseUrl.match(/^(postgresql:\/\/[^:]+:)([^@]+)(@.*)$/);
+        // The # character in passwords causes issues, so we need to manually parse and encode
+        // Format: postgresql://user:password@host:port/database?params
+        const urlPattern = /^(postgresql:\/\/)([^:]+):([^@]+)@(.+)$/;
+        const urlMatch = databaseUrl.match(urlPattern);
+        
         if (urlMatch) {
-          const [, prefix, password, suffix] = urlMatch;
-          // URL-encode special characters in password (especially # which becomes %23)
+          const [, protocol, username, password, rest] = urlMatch;
+          // URL-encode the password (especially # which becomes %23)
           const encodedPassword = encodeURIComponent(password);
-          databaseUrl = `${prefix}${encodedPassword}${suffix}`;
+          // Reconstruct the URL with encoded password
+          databaseUrl = `${protocol}${username}:${encodedPassword}@${rest}`;
           console.log(`[DatabaseModule] Password encoded: ${password.substring(0, 10)}... -> ${encodedPassword.substring(0, 15)}...`);
         } else {
-          console.warn(`[DatabaseModule] Could not parse DATABASE_URL format for password encoding`);
+          // Try alternative parsing if the above doesn't work
+          // Sometimes the URL might already have encoding issues
+          console.warn(`[DatabaseModule] Could not parse DATABASE_URL format, attempting manual encoding`);
+          // Fallback: try to encode # characters manually
+          if (databaseUrl.includes('#')) {
+            const parts = databaseUrl.split('@');
+            if (parts.length === 2) {
+              const [authPart, hostPart] = parts;
+              const [protocolUser, passwordPart] = authPart.split(':');
+              if (passwordPart && passwordPart.includes('#')) {
+                const encodedPassword = encodeURIComponent(passwordPart);
+                databaseUrl = `${protocolUser}:${encodedPassword}@${hostPart}`;
+                console.log(`[DatabaseModule] Manually encoded password containing #`);
+              }
+            }
+          }
         }
 
         // Log the URL (masked) for debugging
