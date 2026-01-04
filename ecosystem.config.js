@@ -27,7 +27,7 @@ module.exports = {
     {
       name: 'poultryco-admin',
       script: 'npm',
-      args: 'start',
+      args: 'run start',
       cwd: '/home/ubuntu/poultryco/apps/admin',
       instances: 1,
       exec_mode: 'fork',
