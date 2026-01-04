@@ -63,8 +63,23 @@ ADMIN_URL=https://admin.poultryco.net,http://localhost:3001,http://localhost:300
 PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Database
-# Note: DATABASE_URL should not be quoted - dotenv handles special characters like # fine
-DATABASE_URL=$(get_secret "poultryco/database-url")
+# Note: URL-encode the password part to handle # character (dotenv treats # as comment)
+# Extract and encode password from DATABASE_URL
+DB_URL=$(get_secret "poultryco/database-url")
+# If password contains #, URL-encode it (convert # to %23)
+if [[ "$DB_URL" == *"#"* ]]; then
+  # Extract parts: postgresql://user:password@host
+  DB_URL_ENCODED=$(echo "$DB_URL" | sed 's/\(postgresql:\/\/[^:]*:\)\([^@]*\)\(@.*\)/\1'"$(echo "$DB_URL" | sed 's/.*:\([^@]*\)@.*/\1/' | sed 's/#/%23/g')"'\3/')
+  # More robust: use perl or python if available, otherwise manual encoding
+  if command -v python3 &> /dev/null; then
+    DATABASE_URL=$(python3 -c "import urllib.parse; url='$DB_URL'; parts=url.split('@'); auth=parts[0]; rest='@'.join(parts[1:]); protocol_user=auth.rsplit(':', 1)[0]; password=auth.rsplit(':', 1)[1] if ':' in auth else ''; encoded_pass=urllib.parse.quote(password, safe=''); print(f'{protocol_user}:{encoded_pass}@{rest}')")
+  else
+    # Fallback: simple sed replacement for # -> %23
+    DATABASE_URL=$(echo "$DB_URL" | sed 's/#/%23/g')
+  fi
+else
+  DATABASE_URL="$DB_URL"
+fi
 
 # JWT Secrets
 JWT_SECRET="$(get_secret "poultryco/jwt-secret")"
