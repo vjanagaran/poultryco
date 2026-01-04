@@ -47,8 +47,7 @@ module.exports = {
     },
     {
       name: 'poultryco-api',
-      script: 'node',
-      args: 'dist/main.js',
+      script: '/home/ubuntu/poultryco/apps/api/start.sh',
       cwd: '/home/ubuntu/poultryco/apps/api',
       instances: 1,
       exec_mode: 'fork',
