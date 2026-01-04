@@ -82,12 +82,22 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
             ? sessionPath
             : path.resolve(process.cwd(), sessionPath);
 
-          if (fs.existsSync(absoluteSessionPath)) {
+          // LocalAuth stores session in a subdirectory - check for both the main dir and session subdir
+          const sessionSubDir = path.join(absoluteSessionPath, '.wwebjs_auth');
+          const sessionSubDir2 = path.join(absoluteSessionPath, 'session');
+          
+          if (fs.existsSync(absoluteSessionPath) && (
+            fs.existsSync(sessionSubDir) || 
+            fs.existsSync(sessionSubDir2) ||
+            fs.readdirSync(absoluteSessionPath).length > 0
+          )) {
             this.logger.log(`Restoring account ${account.accountName} (${account.id})...`);
+            this.logger.log(`Session path: ${absoluteSessionPath}`);
             // Initialize the account - this will restore the session
             await this.initializeAccount(account.id);
           } else {
             this.logger.warn(`Session files not found for account ${account.accountName} - marking as inactive`);
+            this.logger.warn(`Checked paths: ${absoluteSessionPath}, ${sessionSubDir}, ${sessionSubDir2}`);
             // Mark as inactive if session doesn't exist
             await this.updateAccountStatus(account.id, 'inactive', {
               notes: 'Session files not found on startup',
@@ -177,11 +187,78 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
       try {
         const existingClient = this.clients.get(accountId);
         if (existingClient) {
+          // Try to get browser and kill it explicitly
+          try {
+            const browser = (existingClient as any).pupBrowser || (existingClient as any).browser;
+            if (browser) {
+              const pages = await browser.pages();
+              for (const page of pages) {
+                try {
+                  await page.close();
+                } catch (e) {
+                  // Ignore
+                }
+              }
+              await browser.close();
+              this.logger.log(`✅ Closed browser for account ${accountId}`);
+            }
+          } catch (browserError) {
+            this.logger.debug(`Could not close browser directly:`, browserError);
+          }
+          
           await existingClient.destroy();
         }
         this.clients.delete(accountId);
+        
+        // Kill any remaining browser processes for this session
+        // Note: This might not work in all environments, so we wrap it in try-catch
+        try {
+          const { execSync } = require('child_process');
+          const sessionPath = this.getSessionPath(accountId);
+          const absoluteSessionPath = path.isAbsolute(sessionPath)
+            ? sessionPath
+            : path.resolve(process.cwd(), sessionPath);
+          
+          // Try multiple methods to kill browser processes
+          try {
+            // Method 1: Kill by process name and session path
+            execSync(`pkill -9 -f "chromium.*${absoluteSessionPath}" 2>/dev/null || true`, { stdio: 'ignore', timeout: 2000 });
+          } catch (e) {
+            // Ignore
+          }
+          
+          try {
+            // Method 2: Kill all chromium processes (more aggressive)
+            execSync(`killall -9 chromium-browser 2>/dev/null || killall -9 chromium 2>/dev/null || true`, { stdio: 'ignore', timeout: 2000 });
+          } catch (e) {
+            // Ignore
+          }
+          
+          // Remove lock files that might prevent browser startup
+          try {
+            const lockFiles = [
+              path.join(absoluteSessionPath, 'SingletonLock'),
+              path.join(absoluteSessionPath, 'session', 'SingletonLock'),
+              path.join(absoluteSessionPath, '.wwebjs_auth', 'SingletonLock'),
+            ];
+            for (const lockFile of lockFiles) {
+              if (fs.existsSync(lockFile)) {
+                fs.unlinkSync(lockFile);
+                this.logger.log(`🧹 Removed lock file: ${lockFile}`);
+              }
+            }
+          } catch (lockError) {
+            this.logger.debug(`Could not remove lock files:`, lockError);
+          }
+          
+          this.logger.log(`🧹 Cleaned up browser processes and lock files for account ${accountId}`);
+        } catch (killError) {
+          // Ignore - this is a best-effort cleanup
+          this.logger.debug(`Could not kill browser processes (this is OK):`, killError);
+        }
+        
         // Wait for cleanup
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 3000));
       } catch (error) {
         this.logger.error(`Error destroying existing client:`, error);
       }
@@ -200,79 +277,145 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Create client with MINIMAL configuration
-    // Get Chromium path from whatsapp-web.js's bundled Puppeteer
+    // Get Chromium path - check environment variable first (for Docker), then try bundled Puppeteer
     let chromiumPath: string | undefined;
-    try {
-      // Use puppeteer-core's executablePath() - most reliable method
-      const puppeteerCore = require('whatsapp-web.js/node_modules/puppeteer-core');
-      chromiumPath = puppeteerCore.executablePath();
-      
-      const fs = require('fs');
-      if (fs.existsSync(chromiumPath)) {
-        this.logger.log(`✅ Found Chromium at: ${chromiumPath}`);
+    
+    // Priority 1: Check environment variable (set in Dockerfile for Alpine)
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      const envPath = process.env.PUPPETEER_EXECUTABLE_PATH;
+      if (fs.existsSync(envPath)) {
+        chromiumPath = envPath;
+        this.logger.log(`✅ Found Chromium via PUPPETEER_EXECUTABLE_PATH: ${chromiumPath}`);
       } else {
-        // If not found, try constructing path from project root (go up from apps/api)
-        const projectRoot = path.resolve(process.cwd(), '..', '..');
-        const chromiumPathCandidate = path.join(
-          projectRoot,
-          'node_modules',
-          'whatsapp-web.js',
-          'node_modules',
-          'puppeteer-core',
-          '.local-chromium',
-          'mac-1045629',
-          'chrome-mac',
-          'Chromium.app',
-          'Contents',
-          'MacOS',
-          'Chromium'
-        );
+        this.logger.warn(`⚠️ PUPPETEER_EXECUTABLE_PATH set but file not found: ${envPath}`);
+      }
+    }
+    
+    // Priority 2: Try bundled Puppeteer's executablePath (for local development)
+    if (!chromiumPath) {
+      try {
+        const puppeteerCore = require('whatsapp-web.js/node_modules/puppeteer-core');
+        const bundledPath = puppeteerCore.executablePath();
         
-        if (fs.existsSync(chromiumPathCandidate)) {
-          chromiumPath = chromiumPathCandidate;
-          this.logger.log(`✅ Found Chromium at (constructed): ${chromiumPath}`);
+        if (fs.existsSync(bundledPath)) {
+          chromiumPath = bundledPath;
+          this.logger.log(`✅ Found Chromium via bundled Puppeteer: ${chromiumPath}`);
         } else {
-          this.logger.error(`❌ Chromium not found at: ${chromiumPath}`);
-          this.logger.error(`   Also tried: ${chromiumPathCandidate}`);
-          chromiumPath = undefined;
+          this.logger.debug(`Bundled Chromium not found at: ${bundledPath}`);
+        }
+      } catch (error) {
+        this.logger.debug(`Could not get bundled Chromium path:`, error);
+      }
+    }
+    
+    // Priority 3: Try common Alpine Linux paths
+    if (!chromiumPath) {
+      const alpinePaths = [
+        '/usr/bin/chromium-browser',
+        '/usr/bin/chromium',
+        '/usr/local/bin/chromium-browser',
+      ];
+      
+      for (const alpinePath of alpinePaths) {
+        if (fs.existsSync(alpinePath)) {
+          chromiumPath = alpinePath;
+          this.logger.log(`✅ Found Chromium at Alpine path: ${chromiumPath}`);
+          break;
         }
       }
-    } catch (error) {
-      this.logger.error(`❌ Error getting Chromium path:`, error);
-      chromiumPath = undefined;
+    }
+    
+    if (!chromiumPath) {
+      this.logger.warn(`⚠️ Chromium not found - Puppeteer will try to download it automatically`);
+      this.logger.warn(`   This may cause delays. Consider installing Chromium in the Docker image.`);
     }
 
     const client = new Client({
       authStrategy: new LocalAuth({
         dataPath: absoluteSessionPath,
       }),
-      // Minimal Puppeteer config
+      // Puppeteer config optimized for Docker/Alpine stability
+      // Focus on stability over performance to prevent frame detachment
       puppeteer: {
         headless: true,
         ...(chromiumPath ? { executablePath: chromiumPath } : {}), // Only set if found
         args: [
+          // Essential for Docker
           '--no-sandbox',
           '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage', // Critical for Docker (limited /dev/shm)
+          
+          // Stability flags - prevent crashes
+          '--disable-gpu', // GPU not available in containers
+          '--disable-software-rasterizer',
+          '--disable-extensions',
+          '--no-first-run',
+          // Note: --no-zygote and --single-process can cause instability, removed
+          
+          // Memory management
+          '--disable-background-networking',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-features=TranslateUI,BlinkGenPropertyTrees',
+          
+          // Security/automation flags (minimal to avoid detection)
+          '--disable-blink-features=AutomationControlled',
+          '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          
+          // Stability - avoid features that can cause crashes
+          '--disable-features=IsolateOrigins,site-per-process',
+          '--disable-web-security', // Needed for WhatsApp Web
+          
+          // IPC and stability
+          '--disable-ipc-flooding-protection', // Prevent IPC issues
         ],
+        // Timeout settings for stability
+        timeout: 60000, // 60 seconds
+        protocolTimeout: 60000,
       },
       // No webVersionCache - let library handle it automatically
     });
 
     // Set up event handlers BEFORE initialize
     this.setupEventHandlers(client, accountId);
+    
+    // Add browser/page lifecycle monitoring to detect crashes
+    this.setupBrowserLifecycleHandlers(client, accountId);
 
     // Store client
     this.clients.set(accountId, client);
 
-    // Initialize client
+    // Initialize client with better error handling
     try {
       this.logger.log(`Initializing WhatsApp client for account ${accountId}...`);
+      this.logger.log(`Using Chromium path: ${chromiumPath || 'auto-detect'}`);
+      this.logger.log(`Session path: ${absoluteSessionPath}`);
       this.whatsappLogger.log(`Initializing WhatsApp client for account ${accountId}...`, accountId);
+      
       await client.initialize();
-      this.logger.log(`Client initialization started for account ${accountId}`);
+      
+      this.logger.log(`✅ Client initialization started for account ${accountId}`);
+      this.logger.log(`⏳ Waiting for QR code... (this may take 10-30 seconds)`);
       this.whatsappLogger.log(`Client initialization started for account ${accountId}`, accountId);
-    } catch (error) {
-      this.logger.error(`Error initializing client for account ${accountId}:`, error);
+    } catch (error: any) {
+      const errorMessage = error?.message || String(error);
+      const errorStack = error?.stack || '';
+      
+      this.logger.error(`❌ Error initializing client for account ${accountId}:`, errorMessage);
+      this.logger.error(`Error details:`, errorStack);
+      
+      // Check for common issues
+      if (errorMessage.includes('Executable doesn\'t exist') || errorMessage.includes('Could not find Chromium')) {
+        this.logger.error(`🔴 CHROMIUM NOT FOUND - This is likely a Docker environment issue`);
+        this.logger.error(`   Solution: Ensure Chromium is installed in the Docker image`);
+        this.logger.error(`   Check Dockerfile for: apk add chromium`);
+      } else if (errorMessage.includes('Permission denied')) {
+        this.logger.error(`🔴 PERMISSION ERROR - Check file permissions for Chromium or session directory`);
+      } else if (errorMessage.includes('ENOENT')) {
+        this.logger.error(`🔴 FILE NOT FOUND - Check if all required files exist`);
+      }
+      
       this.whatsappLogger.error(`Error initializing client for account ${accountId}`, error, accountId);
       this.clients.delete(accountId);
       throw error;
@@ -297,14 +440,26 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
       }).catch(err => this.logger.error(`Error updating account status:`, err));
 
       // Emit via WebSocket
-      this.gateway.emitQRCode(accountId, qr, 20);
-      this.gateway.emitStatus(accountId, 'qr_pending', { qrCode: qr });
+      this.logger.log(`📡 Calling gateway.emitQRCode for account ${accountId}`);
+      try {
+        this.gateway.emitQRCode(accountId, qr, 20);
+        this.logger.log(`✅ Gateway.emitQRCode called successfully for account ${accountId}`);
+      } catch (error: any) {
+        this.logger.error(`❌ Error calling gateway.emitQRCode:`, error);
+      }
+      
+      try {
+        this.gateway.emitStatus(accountId, 'qr_pending', { qrCode: qr });
+        this.logger.log(`✅ Gateway.emitStatus called successfully for account ${accountId}`);
+      } catch (error: any) {
+        this.logger.error(`❌ Error calling gateway.emitStatus:`, error);
+      }
     });
 
     // Ready event
     client.on('ready', async () => {
-      this.logger.log(`✅ WhatsApp client ready for account ${accountId}`);
-      this.whatsappLogger.log(`✅ WhatsApp client ready for account ${accountId}`, accountId);
+      this.logger.log(`🎉🎉🎉 WhatsApp client READY for account ${accountId} - ready event fired!`);
+      this.whatsappLogger.log(`🎉🎉🎉 WhatsApp client READY for account ${accountId} - ready event fired!`, accountId);
       this.currentQRCodes.delete(accountId);
       
       // Stop any existing polling
@@ -314,7 +469,7 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
         this.phoneExtractionPolling.delete(accountId);
       }
 
-      // Update status to active
+      // Update status to active immediately
       await this.updateAccountStatus(accountId, 'active', {
         lastConnectedAt: new Date(),
       }).catch(err => {
@@ -324,29 +479,49 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
       this.gateway.emitConnectionState(accountId, 'connected');
 
       try {
+        // Check client state
+        const state = await client.getState();
+        this.logger.log(`📊 Client state after ready: ${state}`);
+        this.whatsappLogger.log(`📊 Client state after ready: ${state}`, accountId);
+        
         // Wait a bit for client.info to populate (sometimes it's not immediately available)
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // But try multiple times with shorter delays
+        let phoneNumber: string | null = null;
+        let attempts = 0;
+        const maxAttempts = 5;
         
-        // Log client.info state for debugging
-        const clientInfo = client.info;
-        this.logger.debug(`Client info in ready event:`, {
-          hasInfo: !!clientInfo,
-          hasWid: !!(clientInfo?.wid),
-          hasUser: !!(clientInfo?.wid?.user),
-          pushname: clientInfo?.pushname,
-        });
-        this.whatsappLogger.debug(`Client info in ready event: hasInfo=${!!clientInfo}, hasWid=${!!(clientInfo?.wid)}, hasUser=${!!(clientInfo?.wid?.user)}`, accountId);
-        
-        // Try to extract phone number with more retries
-        const phoneNumber = await this.extractPhoneNumberWithRetry(client, accountId, 10);
+        while (!phoneNumber && attempts < maxAttempts) {
+          attempts++;
+          if (attempts > 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempts)); // 1s, 2s, 3s, 4s, 5s
+          }
+          
+          // Log client.info state for debugging
+          const clientInfo = client.info;
+          this.logger.debug(`Client info check (attempt ${attempts}/${maxAttempts}):`, {
+            hasInfo: !!clientInfo,
+            hasWid: !!(clientInfo?.wid),
+            hasUser: !!(clientInfo?.wid?.user),
+            pushname: clientInfo?.pushname,
+            state: state,
+          });
+          this.whatsappLogger.debug(`Client info check (attempt ${attempts}/${maxAttempts}): hasInfo=${!!clientInfo}, hasWid=${!!(clientInfo?.wid)}, hasUser=${!!(clientInfo?.wid?.user)}, state=${state}`, accountId);
+          
+          // Try to extract phone number
+          phoneNumber = await this.extractPhoneNumberWithRetry(client, accountId, 3);
+          
+          if (phoneNumber) {
+            break;
+          }
+        }
         
         if (phoneNumber) {
           this.logger.log(`✅✅✅ Account ${accountId} ready and phone number extracted: ${phoneNumber}`);
           this.whatsappLogger.log(`✅✅✅ Account ${accountId} ready and phone number extracted: ${phoneNumber}`, accountId);
         } else {
           // Phone number not available - start polling as fallback
-          this.logger.warn(`⚠️ Phone number not available in ready event for account ${accountId} - starting polling`);
-          this.whatsappLogger.warn(`⚠️ Phone number not available in ready event for account ${accountId} - starting polling`, accountId);
+          this.logger.warn(`⚠️ Phone number not available in ready event for account ${accountId} after ${maxAttempts} attempts - starting polling`);
+          this.whatsappLogger.warn(`⚠️ Phone number not available in ready event for account ${accountId} after ${maxAttempts} attempts - starting polling`, accountId);
           this.pollForPhoneNumber(accountId, client).catch(err => {
             this.logger.error(`Error in phone number polling:`, err);
             this.whatsappLogger.error(`Error in phone number polling`, err, accountId);
@@ -366,22 +541,98 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
 
     // Authenticated event
     client.on('authenticated', async () => {
-      this.logger.log(`✅ Account ${accountId} authenticated`);
-      this.whatsappLogger.log(`✅ Account ${accountId} authenticated - starting phone number polling`, accountId);
-      await this.updateAccountStatus(accountId, 'authenticating', {
+      this.logger.log(`✅ Account ${accountId} authenticated - session saved, waiting for ready event...`);
+      this.whatsappLogger.log(`✅ Account ${accountId} authenticated - session saved, waiting for ready event...`, accountId);
+      
+      // Log client state immediately after authentication
+      try {
+        const state = await client.getState();
+        this.logger.log(`📊 Client state immediately after authentication: ${state}`);
+        this.whatsappLogger.log(`📊 Client state immediately after authentication: ${state}`, accountId);
+      } catch (stateError) {
+        this.logger.warn(`Could not get client state after authentication:`, stateError);
+      }
+      
+      // Use 'warming' status (valid DB status) instead of 'authenticating'
+      await this.updateAccountStatus(accountId, 'warming', {
         lastConnectedAt: new Date(), // Use Date object
+        notes: 'Authenticated, waiting for ready event',
       }).catch(err => {
         this.logger.error(`Error updating account status:`, err);
         this.whatsappLogger.error(`Error updating account status`, err, accountId);
       });
       this.gateway.emitConnectionState(accountId, 'authenticated');
-      this.gateway.emitStatus(accountId, 'authenticating');
+      this.gateway.emitStatus(accountId, 'warming');
       
-      // Start aggressive polling for phone number extraction
-      this.pollForPhoneNumber(accountId, client).catch(err => {
-        this.logger.error(`Error in phone number polling:`, err);
-        this.whatsappLogger.error(`Error in phone number polling`, err, accountId);
-      });
+      // Don't start polling immediately - wait for ready event first
+      // The ready event handler will start polling if phone extraction fails
+      // But we'll set a timeout to start polling if ready doesn't fire within 30 seconds
+      setTimeout(async () => {
+        // Check if ready event fired (status should be 'active' if it did)
+        try {
+          const accounts = await this.db.select({ status: mktWapAccounts.status })
+            .from(mktWapAccounts)
+            .where(eq(mktWapAccounts.id, accountId))
+            .limit(1);
+          
+          if (accounts.length > 0 && accounts[0].status !== 'active') {
+            this.logger.warn(`⚠️ Ready event not fired after 30s for account ${accountId} (current status: ${accounts[0].status}) - starting polling as fallback`);
+            this.whatsappLogger.warn(`⚠️ Ready event not fired after 30s for account ${accountId} (current status: ${accounts[0].status}) - starting polling as fallback`, accountId);
+            
+            // Validate client first
+            const isValid = await this.validateClient(accountId);
+            if (!isValid) {
+              this.logger.error(`❌ Client is invalid after 30s timeout for account ${accountId} - cleaning up`);
+              this.whatsappLogger.error(`❌ Client is invalid after 30s timeout - cleaning up`, null, accountId);
+              await this.cleanupInvalidClient(accountId);
+              return;
+            }
+            
+            // Check client state
+            try {
+              const state = await client.getState();
+              this.logger.log(`📊 Client state after 30s timeout: ${state}`);
+              this.whatsappLogger.log(`📊 Client state after 30s timeout: ${state}`, accountId);
+              
+              // If client is CONNECTED, try to extract phone number directly
+              if (state === 'CONNECTED') {
+                this.logger.log(`✅ Client is CONNECTED - attempting phone extraction...`);
+                const phoneNumber = await this.extractPhoneNumberWithRetry(client, accountId, 3);
+                if (phoneNumber) {
+                  this.logger.log(`✅ Phone number extracted via timeout fallback: ${phoneNumber}`);
+                  return; // Success, don't start polling
+                }
+              } else if (state === null) {
+                this.logger.warn(`⚠️ Client state is null after 30s timeout - client may be invalid`);
+                await this.cleanupInvalidClient(accountId);
+                return;
+              }
+            } catch (stateError: any) {
+              this.logger.error(`Error checking client state:`, stateError);
+              // If error suggests invalid client, clean up
+              if (stateError?.message && (
+                stateError.message.includes('detached') ||
+                stateError.message.includes('Target closed') ||
+                stateError.message.includes('Session closed')
+              )) {
+                this.logger.error(`❌ Client appears to be invalid (detached/closed) - cleaning up`);
+                await this.cleanupInvalidClient(accountId);
+                return;
+              }
+            }
+            
+            // Start polling as fallback
+            this.pollForPhoneNumber(accountId, client).catch(err => {
+              this.logger.error(`Error in phone number polling:`, err);
+              this.whatsappLogger.error(`Error in phone number polling`, err, accountId);
+            });
+          } else {
+            this.logger.log(`✅ Ready event fired successfully for account ${accountId} (status: ${accounts[0]?.status})`);
+          }
+        } catch (dbError) {
+          this.logger.error(`Error checking account status:`, dbError);
+        }
+      }, 30000); // 30 seconds
     });
 
     // Authentication failure
@@ -398,25 +649,161 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
     // Disconnected event
     client.on('disconnected', async (reason) => {
       this.logger.warn(`⚠️ Account ${accountId} disconnected:`, reason);
+      this.whatsappLogger.warn(`⚠️ Account ${accountId} disconnected: ${reason}`, accountId);
+      
+      // Check if this is a LOGOUT right after authentication (common issue)
+      const account = await this.db
+        .select({ status: mktWapAccounts.status, notes: mktWapAccounts.notes })
+        .from(mktWapAccounts)
+        .where(eq(mktWapAccounts.id, accountId))
+        .limit(1)
+        .catch(() => []);
+      
+      const currentStatus = account[0]?.status || 'unknown';
+      const isLogoutAfterAuth = reason === 'LOGOUT' && (currentStatus === 'warming' || currentStatus === 'authenticating');
+      
+      if (isLogoutAfterAuth) {
+        this.logger.error(`❌ CRITICAL: Account ${accountId} logged out immediately after authentication! This usually means:`);
+        this.logger.error(`   1. Account is already logged in elsewhere (phone or another session)`);
+        this.logger.error(`   2. Session conflict detected by WhatsApp`);
+        this.logger.error(`   3. WhatsApp detected automation/bot behavior`);
+        this.logger.error(`   4. Browser/client crashed after authentication`);
+        this.whatsappLogger.error(`❌ CRITICAL: Account ${accountId} logged out immediately after authentication (reason: ${reason})`, null, accountId);
+        
+        // Clean up the client
+        try {
+          if (this.clients.has(accountId)) {
+            const clientToClean = this.clients.get(accountId);
+            if (clientToClean) {
+              await clientToClean.destroy().catch(() => {});
+            }
+            this.clients.delete(accountId);
+          }
+        } catch (cleanupError) {
+          this.logger.error(`Error cleaning up client after LOGOUT:`, cleanupError);
+        }
+      }
+      
       await this.updateAccountStatus(accountId, 'inactive', {
         lastDisconnectedAt: new Date(), // Use Date object
-        notes: `Disconnected: ${reason}`, // Store reason in notes field
+        notes: `Disconnected: ${reason}${isLogoutAfterAuth ? ' (logged out immediately after authentication - possible session conflict)' : ''}`, // Store reason in notes field
+      }).catch(err => {
+        this.logger.error(`Error updating account status after disconnect:`, err);
       });
+      
       this.gateway.emitConnectionState(accountId, 'disconnected', { reason });
       this.gateway.emitStatus(accountId, 'disconnected', { reason });
       this.currentQRCodes.delete(accountId);
+      
+      // If it's a LOGOUT after auth, emit a specific error
+      if (isLogoutAfterAuth) {
+        this.gateway.emitError(accountId, 'Session Conflict', {
+          message: 'Account was logged out immediately after authentication. This usually means the account is already logged in elsewhere or there is a session conflict. Please log out from all other devices and try again.',
+          action: 'retry',
+        });
+      }
     });
 
     // Loading screen
     client.on('loading_screen', (percent, message) => {
-      this.logger.log(`📱 Account ${accountId} loading: ${percent}% - ${message}`);
-      this.gateway.emitStatus(accountId, 'loading', { percent, message });
+      const percentNum = typeof percent === 'string' ? parseFloat(percent) : percent;
+      this.logger.log(`📱 Account ${accountId} loading: ${percentNum}% - ${message}`);
+      this.whatsappLogger.log(`📱 Account ${accountId} loading: ${percentNum}% - ${message}`, accountId);
+      this.gateway.emitStatus(accountId, 'loading', { percent: percentNum, message });
+      
+      // Update status to warming (valid DB status) if not already active
+      if (percentNum < 100) {
+        this.updateAccountStatus(accountId, 'warming', {
+          notes: `Loading: ${percentNum}% - ${message}`,
+        }).catch(err => this.logger.error(`Error updating loading status:`, err));
+      } else {
+        // At 100%, we should be close to ready - update status
+        this.logger.log(`📱 Account ${accountId} loading complete (100%) - waiting for ready event...`);
+        this.updateAccountStatus(accountId, 'warming', {
+          notes: 'Loading complete, waiting for ready',
+        }).catch(err => this.logger.error(`Error updating status:`, err));
+      }
     });
 
     // Message event (for future use)
     client.on('message', async (msg: Message) => {
       // Handle incoming messages if needed
     });
+  }
+
+  /**
+   * Monitor browser and page lifecycle to detect crashes
+   */
+  private setupBrowserLifecycleHandlers(client: Client, accountId: string): void {
+    try {
+      // Access the browser instance - try after a delay to allow initialization
+      setTimeout(async () => {
+        try {
+          const browser = (client as any).pupBrowser || (client as any).browser;
+          if (!browser) {
+            this.logger.debug(`Browser instance not available yet for account ${accountId}`);
+            return;
+          }
+
+          this.logger.log(`🔍 Setting up browser lifecycle monitoring for account ${accountId}`);
+
+          // Monitor browser disconnect (browser crashed)
+          browser.on('disconnected', () => {
+            this.logger.error(`❌ Browser disconnected (crashed) for account ${accountId}`);
+            this.whatsappLogger.error(`❌ Browser disconnected (crashed) for account ${accountId}`, null, accountId);
+            this.gateway.emitError(accountId, 'Browser Crashed', {
+              message: 'The browser instance crashed. This may be due to resource constraints or browser instability.',
+              action: 'reinitialize',
+            });
+          });
+
+          // Monitor browser target created (new page/tab)
+          browser.on('targetcreated', async (target: any) => {
+            try {
+              const page = await target.page();
+              if (page) {
+                this.logger.debug(`📄 New page created for account ${accountId}`);
+                
+                // Monitor page close
+                page.on('close', () => {
+                  this.logger.warn(`⚠️ Page closed for account ${accountId} - this may cause connection issues`);
+                  this.whatsappLogger.warn(`⚠️ Page closed for account ${accountId}`, accountId);
+                });
+
+                // Monitor page errors
+                page.on('error', (error: Error) => {
+                  this.logger.error(`❌ Page error for account ${accountId}:`, error.message);
+                  this.whatsappLogger.error(`❌ Page error for account ${accountId}`, error, accountId);
+                });
+
+                // Monitor page crash
+                page.on('crash', () => {
+                  this.logger.error(`❌ Page crashed for account ${accountId}`);
+                  this.whatsappLogger.error(`❌ Page crashed for account ${accountId}`, null, accountId);
+                  this.gateway.emitError(accountId, 'Page Crashed', {
+                    message: 'The WhatsApp Web page crashed. This may be due to resource constraints.',
+                    action: 'reinitialize',
+                  });
+                });
+              }
+            } catch (error) {
+              this.logger.debug(`Could not set up page monitoring:`, error);
+            }
+          });
+
+          // Monitor browser target destroyed (page/tab closed)
+          browser.on('targetdestroyed', (target: any) => {
+            this.logger.warn(`⚠️ Browser target destroyed for account ${accountId} - page may have closed`);
+            this.whatsappLogger.warn(`⚠️ Browser target destroyed for account ${accountId}`, accountId);
+          });
+
+        } catch (error) {
+          this.logger.debug(`Could not set up browser lifecycle monitoring for account ${accountId}:`, error);
+        }
+      }, 3000); // Wait 3 seconds for browser to initialize
+    } catch (error) {
+      this.logger.debug(`Could not set up browser lifecycle monitoring for account ${accountId}:`, error);
+    }
   }
 
   /**
@@ -701,13 +1088,53 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
           return;
         }
         
+        // Validate client first
+        const isValid = await this.validateClient(accountId);
+        if (!isValid) {
+          this.logger.error(`❌ Client is invalid for account ${accountId} (attempt ${attempts}/${maxAttempts}) - cleaning up`);
+          this.whatsappLogger.error(`❌ Client is invalid for account ${accountId} - cleaning up`, null, accountId);
+          clearInterval(pollInterval);
+          this.phoneExtractionPolling.delete(accountId);
+          await this.cleanupInvalidClient(accountId);
+          return;
+        }
+        
         // Check client state
-        let state: string;
+        let state: string | null;
         try {
           state = await client.getState();
-        } catch (error) {
-          this.logger.warn(`Error getting client state (attempt ${attempts}/${maxAttempts}):`, error);
+        } catch (error: any) {
+          this.logger.warn(`Error getting client state (attempt ${attempts}/${maxAttempts}):`, error?.message || error);
+          // If error suggests invalid client, clean up
+          if (error?.message && (
+            error.message.includes('detached') ||
+            error.message.includes('Target closed') ||
+            error.message.includes('Session closed')
+          )) {
+            this.logger.error(`❌ Client appears to be invalid (detached/closed) - cleaning up`);
+            clearInterval(pollInterval);
+            this.phoneExtractionPolling.delete(accountId);
+            await this.cleanupInvalidClient(accountId);
+            return;
+          }
           state = 'UNKNOWN';
+        }
+        
+        // Handle null state (client might be in invalid state)
+        if (state === null) {
+          this.logger.warn(`⚠️ Client state is null for account ${accountId} (attempt ${attempts}/${maxAttempts}) - client may be invalid`);
+          this.whatsappLogger.debug(`Client state is null (attempt ${attempts})`, accountId);
+          
+          // If state is null for too long, assume client is invalid
+          if (attempts >= 10) {
+            this.logger.error(`❌ Client state has been null for ${attempts} attempts - cleaning up invalid client`);
+            clearInterval(pollInterval);
+            this.phoneExtractionPolling.delete(accountId);
+            await this.cleanupInvalidClient(accountId);
+            return;
+          }
+          // Continue polling, might recover
+          return;
         }
         
         this.logger.log(`🔍 Polling attempt ${attempts}/${maxAttempts} for account ${accountId} - State: ${state}`);

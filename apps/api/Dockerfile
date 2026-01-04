@@ -29,6 +29,23 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Install Chromium and required dependencies for Puppeteer in Alpine
+# These are needed for whatsapp-web.js to work in Docker
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto-emoji \
+    && rm -rf /var/cache/apk/*
+
+# Set Chromium path for Puppeteer
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
@@ -47,6 +64,11 @@ RUN npm install uuid@^9.0.1 --no-save --legacy-peer-deps || true
 
 # Copy built application
 COPY --from=builder /app/apps/api/dist ./dist
+
+# Create session directory with proper permissions
+RUN mkdir -p /app/whatsapp-sessions && \
+    chown -R nestjs:nodejs /app/whatsapp-sessions && \
+    chmod -R 755 /app/whatsapp-sessions
 
 USER nestjs
 

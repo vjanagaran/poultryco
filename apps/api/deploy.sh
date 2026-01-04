@@ -40,12 +40,24 @@ echo "⬆️  Step 3: Pushing image to ECR..."
 docker push ${ECR_URI}:${IMAGE_TAG}
 docker push ${ECR_URI}:latest
 
-# Step 4: Update ECS service
+# Step 4: Register new task definition
 echo ""
-echo "🔄 Step 4: Updating ECS service..."
+echo "📋 Step 4: Registering new task definition..."
+TASK_DEFINITION=$(aws ecs register-task-definition \
+  --cli-input-json file://apps/api/task-definition.json \
+  --region ${AWS_REGION} \
+  --query 'taskDefinition.taskDefinitionArn' \
+  --output text)
+
+echo "✅ Task definition registered: ${TASK_DEFINITION}"
+
+# Step 5: Update ECS service with new task definition
+echo ""
+echo "🔄 Step 5: Updating ECS service with new task definition..."
 aws ecs update-service \
   --cluster ${ECS_CLUSTER} \
   --service ${ECS_SERVICE} \
+  --task-definition ${TASK_DEFINITION} \
   --force-new-deployment \
   --region ${AWS_REGION} > /dev/null
 

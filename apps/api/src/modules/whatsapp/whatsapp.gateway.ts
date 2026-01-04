@@ -130,29 +130,70 @@ export class WhatsAppGateway implements OnGatewayInit, OnGatewayConnection, OnGa
 
   // Emit QR code to all clients subscribed to this account
   emitQRCode(accountId: string, qrCode: string, expiresIn: number = 20) {
-    // Store QR code for new subscribers
-    this.currentQRCodes.set(accountId, {
-      qrCode,
-      expiresIn,
-      timestamp: Date.now(),
-    });
-    
-    const qrEvent = {
-      accountId,
-      qrCode,
-      expiresIn,
-      timestamp: Date.now(),
-    };
-    
-    // Get all clients in the room
-    const room = this.server.sockets.adapter.rooms.get(`account:${accountId}`);
-    const clientCount = room ? room.size : 0;
-    
-    this.logger.log(`Emitting QR code for account ${accountId} to ${clientCount} client(s)`);
-    this.logger.debug(`QR code event:`, { accountId, hasQR: !!qrCode, expiresIn, clientCount });
-    
-    this.server.to(`account:${accountId}`).emit('qr:code', qrEvent);
-    this.logger.log(`✅ QR code emitted for account ${accountId}`);
+    try {
+      // Store QR code for new subscribers
+      this.currentQRCodes.set(accountId, {
+        qrCode,
+        expiresIn,
+        timestamp: Date.now(),
+      });
+      
+      const qrEvent = {
+        accountId,
+        qrCode,
+        expiresIn,
+        timestamp: Date.now(),
+      };
+      
+      // Get all clients in the room
+      const room = this.server?.sockets?.adapter?.rooms?.get(`account:${accountId}`);
+      const clientCount = room ? room.size : 0;
+      
+      this.logger.log(`📡 Emitting QR code for account ${accountId} to ${clientCount} client(s)`);
+      this.logger.log(`📡 QR code details: accountId=${accountId}, hasQR=${!!qrCode}, qrLength=${qrCode?.length || 0}, expiresIn=${expiresIn}`);
+      
+      if (!this.server) {
+        this.logger.error(`❌ Cannot emit QR code - WebSocket server not initialized`);
+        return;
+      }
+      
+      if (clientCount === 0) {
+        this.logger.warn(`⚠️ No clients subscribed to account ${accountId} - QR code will be sent when client subscribes`);
+      }
+      
+      // Emit to all clients in the room
+      this.server.to(`account:${accountId}`).emit('qr:code', qrEvent);
+      
+      // Also emit to all connected clients for this account (fallback)
+      const accountClients = this.connectedClients.get(accountId);
+      if (accountClients && accountClients.size > 0 && this.server?.sockets) {
+        this.logger.log(`📡 Also emitting to ${accountClients.size} directly tracked client(s)`);
+        accountClients.forEach((socketId) => {
+          try {
+            // Try different ways to get the socket
+            let socket = null;
+            if (this.server.sockets.sockets && typeof this.server.sockets.sockets.get === 'function') {
+              socket = this.server.sockets.sockets.get(socketId);
+            } else if (this.server.sockets.adapter && typeof this.server.sockets.adapter.sids === 'function') {
+              // Alternative way to get socket
+              const sockets = Array.from(this.server.sockets.sockets?.values() || []);
+              socket = sockets.find((s: any) => s.id === socketId);
+            }
+            
+            if (socket) {
+              socket.emit('qr:code', qrEvent);
+            }
+          } catch (err: any) {
+            this.logger.warn(`Could not emit to socket ${socketId}:`, err?.message);
+          }
+        });
+      }
+      
+      this.logger.log(`✅ QR code emitted for account ${accountId} (${clientCount} clients in room)`);
+    } catch (error: any) {
+      this.logger.error(`❌ Error emitting QR code for account ${accountId}:`, error);
+      this.logger.error(`Error stack:`, error?.stack);
+    }
   }
 
   // Emit status update to all clients subscribed to this account

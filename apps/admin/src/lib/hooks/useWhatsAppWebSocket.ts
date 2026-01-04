@@ -200,25 +200,33 @@ export function useWhatsAppWebSocket(accountId: string | null) {
         setQrCode(data.qrCode);
         setQrExpiresIn(data.expiresIn);
         
-        // Start countdown
+        // Clear existing countdown
         if (countdownIntervalRef.current) {
           clearInterval(countdownIntervalRef.current);
+          countdownIntervalRef.current = null;
         }
         
-        let remaining = data.expiresIn;
-        setQrExpiresIn(remaining);
+        // Start countdown using state updater function to avoid closure issues
+        const startTime = Date.now();
+        const initialExpiresIn = data.expiresIn;
         
         countdownIntervalRef.current = setInterval(() => {
-          remaining -= 1;
-          setQrExpiresIn(remaining);
-          
-          if (remaining <= 0) {
-            if (countdownIntervalRef.current) {
-              clearInterval(countdownIntervalRef.current);
+          setQrExpiresIn((prev) => {
+            // Calculate remaining time based on elapsed time
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const remaining = Math.max(0, initialExpiresIn - elapsed);
+            
+            if (remaining <= 0) {
+              if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+                countdownIntervalRef.current = null;
+              }
+              setQrCode(null);
+              return 0;
             }
-            setQrCode(null);
-            setQrExpiresIn(0);
-          }
+            
+            return remaining;
+          });
         }, 1000);
       } else {
         console.log('❌ QR code event ignored - accountId mismatch:', { eventAccountId: data.accountId, currentAccountId: accountId });
