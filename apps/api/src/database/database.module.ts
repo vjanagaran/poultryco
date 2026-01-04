@@ -12,11 +12,28 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
     {
       provide: DATABASE_CONNECTION,
       useFactory: (configService: ConfigService) => {
-        const databaseUrl = configService.get<string>('DATABASE_URL');
+        let databaseUrl = configService.get<string>('DATABASE_URL');
         
         if (!databaseUrl) {
           throw new Error('DATABASE_URL is not defined in environment variables');
         }
+
+        // Remove any surrounding quotes that might have been included
+        databaseUrl = databaseUrl.trim().replace(/^["']|["']$/g, '');
+
+        // URL-encode special characters in the password part
+        // Match: postgresql://user:password@host
+        const urlMatch = databaseUrl.match(/^(postgresql:\/\/[^:]+:)([^@]+)(@.+)$/);
+        if (urlMatch) {
+          const [, prefix, password, suffix] = urlMatch;
+          // URL-encode special characters in password
+          const encodedPassword = encodeURIComponent(password);
+          databaseUrl = `${prefix}${encodedPassword}${suffix}`;
+        }
+
+        // Log the URL (masked) for debugging
+        const maskedUrl = databaseUrl.replace(/:([^:@]+)@/, ':****@');
+        console.log(`[DatabaseModule] Connecting to database: ${maskedUrl.substring(0, 50)}...`);
 
         const client = postgres(databaseUrl, {
           max: 10,
