@@ -32,11 +32,26 @@ export const DATABASE_CONNECTION = 'DATABASE_CONNECTION';
         if (urlMatch && urlMatch.length >= 5) {
           const [, protocol, username, password, rest] = urlMatch;
           console.log(`[DatabaseModule] Regex matched - Username: ${username}, Password length: ${password.length}, Has #: ${password.includes('#')}`);
-          // URL-encode the password (especially # which becomes %23)
-          const encodedPassword = encodeURIComponent(password);
+          
+          // Check if password is already URL-encoded (contains % followed by hex digits)
+          const isAlreadyEncoded = /%[0-9A-Fa-f]{2}/.test(password);
+          
+          let encodedPassword: string;
+          if (isAlreadyEncoded) {
+            // Password is already URL-encoded, use it as-is
+            console.log(`[DatabaseModule] Password is already URL-encoded, using as-is`);
+            encodedPassword = password;
+          } else if (password.includes('#')) {
+            // Password contains # but is not encoded, encode it
+            encodedPassword = encodeURIComponent(password);
+            console.log(`[DatabaseModule] Password encoded: ${password.substring(0, 15)}... -> ${encodedPassword.substring(0, 20)}...`);
+          } else {
+            // Password doesn't need encoding
+            encodedPassword = password;
+          }
+          
           // Reconstruct the URL with encoded password
           databaseUrl = `${protocol}${username}:${encodedPassword}@${rest}`;
-          console.log(`[DatabaseModule] Password encoded: ${password.substring(0, 15)}... -> ${encodedPassword.substring(0, 20)}...`);
         } else {
           // Try alternative parsing if the above doesn't work
           console.warn(`[DatabaseModule] Regex did not match. URL pattern: ${databaseUrl.substring(0, 60)}...`);
