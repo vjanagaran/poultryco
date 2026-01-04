@@ -48,6 +48,7 @@ get_secret() {
 }
 
 # Fetch secrets and create .env file
+# Note: Values are quoted to handle spaces and special characters
 cat > ~/poultryco/apps/api/.env << EOF
 # Environment
 NODE_ENV=production
@@ -62,23 +63,24 @@ ADMIN_URL=https://admin.poultryco.net,http://localhost:3001,http://localhost:300
 PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Database
+# Note: DATABASE_URL should not be quoted - dotenv handles special characters like # fine
 DATABASE_URL=$(get_secret "poultryco/database-url")
 
 # JWT Secrets
-JWT_SECRET=$(get_secret "poultryco/jwt-secret")
-ADMIN_JWT_SECRET=$(get_secret "poultryco/admin-jwt-secret")
+JWT_SECRET="$(get_secret "poultryco/jwt-secret")"
+ADMIN_JWT_SECRET="$(get_secret "poultryco/admin-jwt-secret")"
 
 # AWS SES
-SES_SMTP_HOST=$(get_secret "poultryco/ses-smtp-host")
-SES_SMTP_USERNAME=$(get_secret "poultryco/ses-smtp-username")
-SES_SMTP_PASSWORD=$(get_secret "poultryco/ses-smtp-password")
-SES_SENDER_EMAIL=$(get_secret "poultryco/ses-sender-email")
-AWS_REGION=$(get_secret "poultryco/aws-region")
+SES_SMTP_HOST="$(get_secret "poultryco/ses-smtp-host")"
+SES_SMTP_USERNAME="$(get_secret "poultryco/ses-smtp-username")"
+SES_SMTP_PASSWORD="$(get_secret "poultryco/ses-smtp-password")"
+SES_SENDER_EMAIL="$(get_secret "poultryco/ses-sender-email")"
+AWS_REGION="$(get_secret "poultryco/aws-region")"
 
 # S3
-S3_BUCKET_NAME=$(get_secret "poultryco/s3-bucket-name")
-AWS_ACCESS_KEY_ID=$(get_secret "poultryco/aws-access-key-id")
-AWS_SECRET_ACCESS_KEY=$(get_secret "poultryco/aws-secret-access-key")
+S3_BUCKET_NAME="$(get_secret "poultryco/s3-bucket-name")"
+AWS_ACCESS_KEY_ID="$(get_secret "poultryco/aws-access-key-id")"
+AWS_SECRET_ACCESS_KEY="$(get_secret "poultryco/aws-secret-access-key")"
 EOF
 
 echo "✅ Environment file created"

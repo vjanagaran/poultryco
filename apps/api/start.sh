@@ -1,15 +1,11 @@
 #!/bin/bash
-# Wrapper script to load .env file before starting NestJS API
+# Wrapper script to ensure correct working directory for NestJS API
+# NestJS ConfigModule automatically loads .env files from the current working directory
 
+# Change to API directory (NestJS ConfigModule looks for .env here)
 cd /home/ubuntu/poultryco/apps/api
 
-# Load .env file if it exists (using set -a to export all variables)
-if [ -f .env ]; then
-  set -a
-  source .env
-  set +a
-fi
-
 # Start the application
+# NestJS ConfigModule.forRoot() will automatically load .env file
 exec node dist/main.js
 
