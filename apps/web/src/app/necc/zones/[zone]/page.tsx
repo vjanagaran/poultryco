@@ -12,6 +12,9 @@ import { ZoneActionToolbar } from "@/components/necc/ZoneActionToolbar";
 import { AllTimeViewWrapper } from "@/components/necc/AllTimeViewWrapper";
 import { NECCQuickLinks } from "@/components/necc/NECCQuickLinks";
 
+// Force dynamic rendering to avoid build-time API calls
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ zone: string }>;
   searchParams: Promise<{ period?: string; year?: string; month?: string; type?: string }>;

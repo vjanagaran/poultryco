@@ -1,30 +1,13 @@
 /**
  * AWS Cognito Authentication Utilities
- * Replaces Supabase authentication
+ * NOTE: Cognito is NOT used - all authentication is handled via API backend
+ * This file is kept for backward compatibility but all functions are no-ops
  */
 
-import {
-  CognitoUserPool,
-  CognitoUser,
-  AuthenticationDetails,
-  CognitoUserAttribute,
-  CognitoUserSession,
-} from 'amazon-cognito-identity-js';
 import { apiClient } from '../api/client';
 
-const USER_POOL_ID = process.env.NEXT_PUBLIC_AWS_COGNITO_USER_POOL_ID!;
-const CLIENT_ID = process.env.NEXT_PUBLIC_AWS_COGNITO_CLIENT_ID!;
-
-if (!USER_POOL_ID || !CLIENT_ID) {
-  console.warn('AWS Cognito credentials not configured');
-}
-
-const poolData = {
-  UserPoolId: USER_POOL_ID,
-  ClientId: CLIENT_ID,
-};
-
-export const userPool = USER_POOL_ID && CLIENT_ID ? new CognitoUserPool(poolData) : null;
+// Cognito is disabled - userPool is always null
+export const userPool = null;
 
 export interface SignUpParams {
   email: string;
@@ -50,12 +33,16 @@ export interface AuthResult {
   };
 }
 
+// Type placeholder for CognitoUserSession (not actually used)
+type CognitoUserSession = any;
+
 /**
- * Sign up a new user (proxied through backend to handle SECRET_HASH)
+ * Sign up a new user - uses API backend (not Cognito)
  */
 export async function signUp(params: SignUpParams): Promise<{ success: boolean; error?: string }> {
   try {
-    const result = await apiClient.post('/auth/cognito/signup', {
+    // Use API backend for signup instead of Cognito
+    const result = await apiClient.post('/auth/signup', {
       email: params.email,
       password: params.password,
       fullName: params.fullName,
@@ -72,11 +59,12 @@ export async function signUp(params: SignUpParams): Promise<{ success: boolean; 
 }
 
 /**
- * Sign in with email and password (proxied through backend to handle SECRET_HASH)
+ * Sign in with email and password - uses API backend (not Cognito)
  */
 export async function signIn(params: SignInParams): Promise<AuthResult> {
   try {
-    const result = await apiClient.post<AuthResult>('/auth/cognito/signin', {
+    // Use API backend for signin instead of Cognito
+    const result = await apiClient.post<AuthResult>('/auth/signin', {
       email: params.email,
       password: params.password,
     });
@@ -91,52 +79,16 @@ export async function signIn(params: SignInParams): Promise<AuthResult> {
 }
 
 /**
- * Sign in with OAuth (Google, LinkedIn)
+ * Sign in with OAuth - disabled (Cognito not used)
  */
 export async function signInWithOAuth(provider: 'google' | 'linkedin'): Promise<void> {
-  if (!userPool) {
-    throw new Error('Cognito not configured');
-  }
-
-  const domain = process.env.NEXT_PUBLIC_AWS_COGNITO_DOMAIN;
-  if (!domain) {
-    throw new Error('Cognito domain not configured');
-  }
-
-  const redirectUri = typeof window !== 'undefined'
-    ? `${window.location.origin}/auth/callback`
-    : '/auth/callback';
-
-  const clientId = CLIENT_ID;
-  const responseType = 'code';
-  const scope = 'email openid profile';
-  const providerName = provider === 'google' ? 'Google' : 'LinkedIn';
-
-  const authUrl = `https://${domain}/oauth2/authorize?` +
-    `client_id=${clientId}&` +
-    `response_type=${responseType}&` +
-    `scope=${scope}&` +
-    `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-    `identity_provider=${providerName}`;
-
-  if (typeof window !== 'undefined') {
-    window.location.href = authUrl;
-  }
+  throw new Error('OAuth is not available - Cognito is not configured');
 }
 
 /**
- * Sign out
+ * Sign out - clears app token only
  */
 export async function signOut(): Promise<void> {
-  if (!userPool) {
-    return;
-  }
-
-  const cognitoUser = userPool.getCurrentUser();
-  if (cognitoUser) {
-    cognitoUser.signOut();
-  }
-
   // Clear app token
   apiClient.setToken(null);
 
@@ -147,143 +99,40 @@ export async function signOut(): Promise<void> {
 }
 
 /**
- * Get current session
+ * Get current session - returns null (Cognito not used)
  */
 export async function getCurrentSession(): Promise<CognitoUserSession | null> {
-  if (!userPool) {
-    return null;
-  }
-
-  return new Promise((resolve) => {
-    const cognitoUser = userPool.getCurrentUser();
-    if (!cognitoUser) {
-      resolve(null);
-      return;
-    }
-
-    cognitoUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
-      if (err || !session || !session.isValid()) {
-        resolve(null);
-        return;
-      }
-      resolve(session);
-    });
-  });
+  return null;
 }
 
 /**
- * Get current user
+ * Get current user - returns null (Cognito not used)
  */
 export async function getCurrentUser(): Promise<{ id: string; email: string } | null> {
-  const session = await getCurrentSession();
-  if (!session) {
-    return null;
-  }
-
-  const idToken = session.getIdToken();
-  const payload = idToken.getPayload();
-
-  return {
-    id: payload.sub,
-    email: payload.email || '',
-  };
+  return null;
 }
 
 /**
- * Refresh token
+ * Refresh token - throws error (Cognito not used)
  */
 export async function refreshToken(): Promise<AuthResult> {
-  const session = await getCurrentSession();
-  if (!session) {
-    throw new Error('No active session');
-  }
-
-  return new Promise((resolve, reject) => {
-    const cognitoUser = userPool!.getCurrentUser();
-    if (!cognitoUser) {
-      reject(new Error('No user found'));
-      return;
-    }
-
-    cognitoUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
-      if (err || !session) {
-        reject(err || new Error('Session not found'));
-        return;
-      }
-
-      session.refreshSession(session.getRefreshToken(), async (refreshErr, refreshedSession) => {
-        if (refreshErr || !refreshedSession) {
-          reject(refreshErr || new Error('Failed to refresh session'));
-          return;
-        }
-
-        try {
-          const idToken = refreshedSession.getIdToken().getJwtToken();
-          const result = await apiClient.post<AuthResult>('/auth/cognito/validate', {
-            token: idToken,
-          });
-
-          apiClient.setToken(result.accessToken);
-          resolve(result);
-        } catch (error: any) {
-          reject(error);
-        }
-      });
-    });
-  });
+  throw new Error('Token refresh not available - Cognito is not configured');
 }
 
 /**
- * Forgot password - initiate
+ * Forgot password - disabled (Cognito not used)
  */
 export async function forgotPassword(email: string): Promise<{ success: boolean; error?: string }> {
-  if (!userPool) {
-    return { success: false, error: 'Cognito not configured' };
-  }
-
-  return new Promise((resolve) => {
-    const cognitoUser = new CognitoUser({
-      Username: email,
-      Pool: userPool,
-    });
-
-    cognitoUser.forgotPassword({
-      onSuccess: () => {
-        resolve({ success: true });
-      },
-      onFailure: (err) => {
-        resolve({ success: false, error: err.message || 'Failed to initiate password reset' });
-      },
-    });
-  });
+  return { success: false, error: 'Password reset not available - Cognito is not configured' };
 }
 
 /**
- * Confirm password reset
+ * Confirm password reset - disabled (Cognito not used)
  */
 export async function confirmPasswordReset(
   email: string,
   code: string,
   newPassword: string
 ): Promise<{ success: boolean; error?: string }> {
-  if (!userPool) {
-    return { success: false, error: 'Cognito not configured' };
-  }
-
-  return new Promise((resolve) => {
-    const cognitoUser = new CognitoUser({
-      Username: email,
-      Pool: userPool,
-    });
-
-    cognitoUser.confirmPassword(code, newPassword, {
-      onSuccess: () => {
-        resolve({ success: true });
-      },
-      onFailure: (err) => {
-        resolve({ success: false, error: err.message || 'Failed to reset password' });
-      },
-    });
-  });
+  return { success: false, error: 'Password reset not available - Cognito is not configured' };
 }
-

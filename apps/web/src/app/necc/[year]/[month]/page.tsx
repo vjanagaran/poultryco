@@ -4,6 +4,9 @@ import Link from "next/link";
 import { getMonthPrices, getPriceStats } from "@/lib/api/necc-prices";
 import { getMonthName, getDaysInMonth, getMonthDateRange, formatDateShort } from "@/lib/utils/necc-date";
 
+// Force dynamic rendering to avoid build-time API calls
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ year: string; month: string }>;
 }

@@ -3,6 +3,9 @@ import { getTodayPrices, getYesterdayPrices } from "@/lib/api/necc-prices";
 import { formatDateDisplay, getTodayDate } from "@/lib/utils/necc-date";
 import { NECCQuickLinks } from "@/components/necc/NECCQuickLinks";
 
+// Force dynamic rendering to avoid build-time API calls
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "Today's NECC Egg Prices | PoultryCo",
   description: "Today's NECC egg prices for all zones. Compare with yesterday's rates and get expert insights.",
@@ -20,10 +23,21 @@ export default async function TodayPage() {
   const today = getTodayDate();
   const todayStr = formatDateDisplay(today);
   
-  const [todayPrices, yesterdayPrices] = await Promise.all([
-    getTodayPrices(),
-    getYesterdayPrices(),
-  ]);
+  // Handle API failures gracefully during build
+  let todayPrices: any[] = [];
+  let yesterdayPrices: any[] = [];
+  
+  try {
+    const results = await Promise.allSettled([
+      getTodayPrices(),
+      getYesterdayPrices(),
+    ]);
+    
+    todayPrices = results[0].status === 'fulfilled' ? results[0].value : [];
+    yesterdayPrices = results[1].status === 'fulfilled' ? results[1].value : [];
+  } catch (error) {
+    console.warn('Error fetching NECC prices:', error);
+  }
 
   // Create a map of yesterday's prices for comparison
   const yesterdayMap = new Map(

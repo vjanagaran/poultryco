@@ -9,6 +9,9 @@ import { ShareableInfographicCard } from "@/components/necc/ShareableInfographic
 import { AnalysisFilters } from "@/components/necc/AnalysisFilters";
 import { NECCQuickLinks } from "@/components/necc/NECCQuickLinks";
 
+// Force dynamic rendering to avoid build-time API calls
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "NECC Egg Price Analysis - Trends, Insights & Expert Reviews | PoultryCo",
   description: "Comprehensive NECC egg price analysis with interactive charts, expert insights, and AI-powered predictions.",

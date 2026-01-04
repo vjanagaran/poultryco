@@ -8,6 +8,9 @@ import { ShareableInfographicCard } from "@/components/necc/ShareableInfographic
 import { PriceTrendChart } from "@/components/necc/PriceTrendChart";
 import { CrossLinkSection } from "@/components/necc/CrossLinkSection";
 
+// Force dynamic rendering to avoid build-time API calls
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ year: string; month: string; day: string }>;
 }

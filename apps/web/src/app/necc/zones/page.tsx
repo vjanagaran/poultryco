@@ -4,18 +4,36 @@ import { getAllZones, getZonesByType } from "@/lib/api/necc-zones";
 import { getTodayPrices } from "@/lib/api/necc-prices";
 import { NECCQuickLinks } from "@/components/necc/NECCQuickLinks";
 
+// Force dynamic rendering to avoid build-time API calls
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: "NECC Zones - All Production & Consumption Centers | PoultryCo",
   description: "View all NECC zones with current prices, trends, and analysis.",
 };
 
 export default async function ZonesPage() {
-  const [allZones, productionZones, consumptionZones, todayPrices] = await Promise.all([
-    getAllZones(),
-    getZonesByType('production_center'),
-    getZonesByType('consumption_center'),
-    getTodayPrices(),
-  ]);
+  // Handle API failures gracefully
+  let allZones: any[] = [];
+  let productionZones: any[] = [];
+  let consumptionZones: any[] = [];
+  let todayPrices: any[] = [];
+
+  try {
+    const results = await Promise.allSettled([
+      getAllZones(),
+      getZonesByType('production_center'),
+      getZonesByType('consumption_center'),
+      getTodayPrices(),
+    ]);
+    
+    allZones = results[0].status === 'fulfilled' ? results[0].value : [];
+    productionZones = results[1].status === 'fulfilled' ? results[1].value : [];
+    consumptionZones = results[2].status === 'fulfilled' ? results[2].value : [];
+    todayPrices = results[3].status === 'fulfilled' ? results[3].value : [];
+  } catch (error) {
+    console.warn('Error fetching NECC zones data:', error);
+  }
 
   // Create a map of today's prices by zone
   const todayPriceMap = new Map(
