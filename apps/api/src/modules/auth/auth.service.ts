@@ -282,21 +282,8 @@ export class AuthService {
         throw new UnauthorizedException('Authentication failed');
       }
 
-      // Validate token and get app JWT
-      const idToken = response.AuthenticationResult.IdToken!;
-      const result = await this.validateCognitoToken(idToken);
-      const appToken = await this.generateToken(result.user);
-
-      return {
-        ...appToken,
-        refreshToken: response.AuthenticationResult.RefreshToken,
-        expiresIn: response.AuthenticationResult.ExpiresIn,
-        user: {
-          id: result.user.id,
-          email: result.user.email,
-          profile: result.profile,
-        },
-      };
+      // Cognito authentication is deprecated - use OTP authentication instead
+      throw new UnauthorizedException('Cognito authentication is no longer supported. Please use OTP authentication.');
     } catch (error: any) {
       throw new UnauthorizedException(error.message || 'Sign in failed');
     }
@@ -558,10 +545,8 @@ export class AuthService {
           },
         }));
 
-        if (authResponse.AuthenticationResult) {
-          const idToken = authResponse.AuthenticationResult.IdToken!;
-          return await this.handleSuccessfulAuth(idToken, identifier, email, phone, fullName, deviceFingerprint);
-        }
+        // Cognito authentication is deprecated
+        throw new UnauthorizedException('Cognito OTP verification is no longer supported. Please use /auth/otp/verify endpoint.');
       }
 
       throw new UnauthorizedException('Authentication failed');
@@ -580,6 +565,7 @@ export class AuthService {
 
   /**
    * Handle successful authentication after OTP verification
+   * @deprecated This method used Cognito tokens. Use OtpAuthService instead.
    */
   private async handleSuccessfulAuth(
     idToken: string,
@@ -589,83 +575,8 @@ export class AuthService {
     fullName?: string,
     deviceFingerprint?: string
   ) {
-    // Validate token and get/create user
-    const result = await this.validateCognitoToken(idToken);
-    let user = result.user;
-
-    // If new user and fullName provided, update profile
-    if (fullName && user.profile) {
-      const nameParts = fullName.trim().split(' ');
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      await this.db
-        .update(profiles)
-        .set({
-          firstName,
-          lastName,
-          displayName: fullName,
-          updatedAt: new Date(),
-        })
-        .where(eq(profiles.userId, user.id));
-    }
-
-    // Update email/phone if provided and different
-    if (email && user.email !== email) {
-      await this.db
-        .update(authUsers)
-        .set({ email, updatedAt: new Date() })
-        .where(eq(authUsers.id, user.id));
-      
-      await this.db
-        .update(profiles)
-        .set({ email, updatedAt: new Date() })
-        .where(eq(profiles.userId, user.id));
-    }
-
-    if (phone && user.profile && user.profile.phone !== phone) {
-      await this.db
-        .update(profiles)
-        .set({ phone, updatedAt: new Date() })
-        .where(eq(profiles.userId, user.id));
-    }
-
-    // Store device fingerprint (device ID + browser, no IP)
-    if (deviceFingerprint) {
-      // TODO: Store device fingerprint in a devices table
-      // For now, we'll add it to metadata
-      const metadata = user.profile?.metadata || {};
-      const devices = metadata.devices || [];
-      
-      if (!devices.find((d: any) => d.fingerprint === deviceFingerprint)) {
-        devices.push({
-          fingerprint: deviceFingerprint,
-          lastSeen: new Date().toISOString(),
-        });
-        
-        await this.db
-          .update(profiles)
-          .set({ 
-            metadata: { ...metadata, devices },
-            lastActiveAt: new Date(),
-          })
-          .where(eq(profiles.userId, user.id));
-      }
-    }
-
-    // Generate app JWT token (365 days for refresh token)
-    const appToken = await this.generateToken(user);
-
-    return {
-      ...appToken,
-      refreshToken: 'cognito-refresh-token', // Use Cognito's refresh token
-      expiresIn: 31536000, // 365 days in seconds
-      user: {
-        id: user.id,
-        email: user.email,
-        profile: user.profile,
-      },
-    };
+    // Cognito authentication is deprecated - use OtpAuthService instead
+    throw new UnauthorizedException('Cognito authentication is no longer supported. Please use OTP authentication.');
   }
 
   /**
