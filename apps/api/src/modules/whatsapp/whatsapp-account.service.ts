@@ -371,8 +371,8 @@ export class WhatsAppAccountService implements OnModuleInit, OnModuleDestroy {
           '--disable-ipc-flooding-protection', // Prevent IPC issues
         ],
         // Timeout settings for stability
-        timeout: 60000, // 60 seconds
-        protocolTimeout: 60000,
+        timeout: 120000, // 120 seconds (2 minutes) - increased for group fetching
+        protocolTimeout: 180000, // 180 seconds (3 minutes) - increased for Runtime.callFunctionOn operations
       },
       // No webVersionCache - let library handle it automatically
     });

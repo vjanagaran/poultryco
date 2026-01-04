@@ -79,8 +79,33 @@ export class WhatsAppGroupService {
     }
 
     try {
-      const chats = await client.getChats();
+      // Get chats with retry logic for timeout errors
+      let chats: any[] | undefined;
+      let retries = 0;
+      const maxRetries = 2;
+      
+      while (retries <= maxRetries) {
+        try {
+          this.logger.debug(`Fetching chats for account ${accountId} (attempt ${retries + 1}/${maxRetries + 1})`);
+          chats = await client.getChats();
+          break; // Success, exit retry loop
+        } catch (chatError: any) {
+          if (chatError?.message?.includes('timeout') && retries < maxRetries) {
+            retries++;
+            this.logger.warn(`Timeout fetching chats (attempt ${retries}), retrying in 2 seconds...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            continue;
+          }
+          throw chatError; // Re-throw if not a timeout or max retries reached
+        }
+      }
+      
+      if (!chats) {
+        throw new Error('Failed to fetch chats after retries');
+      }
+      
       const groups = chats.filter(chat => chat.isGroup) as GroupChat[];
+      this.logger.log(`Found ${groups.length} groups for account ${accountId}`);
       
       const liveGroups = [];
       
