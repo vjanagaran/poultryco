@@ -40,7 +40,7 @@
 
 - **`.env.example`** - Template file (committed to git)
 - **`.env.local`** - Local development (gitignored)
-- **`.env.production`** - Production (gitignored, set in AWS ECS task definition)
+- **`.env.production`** - Production (gitignored, set on EC2 server)
 
 ## Authentication
 
@@ -48,18 +48,6 @@ The admin app uses JWT tokens from the API:
 - Login endpoint: `POST /admin/auth/login`
 - Token stored in cookie: `admin_token`
 - Token included in API requests automatically
-
-## Migration from Supabase
-
-**Old variables (no longer needed):**
-- ❌ `NEXT_PUBLIC_SUPABASE_URL`
-- ❌ `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- ❌ `SUPABASE_SERVICE_ROLE_KEY`
-
-**New variable:**
-- ✅ `NEXT_PUBLIC_API_URL`
-
-All database operations now go through the REST API.
 
 ## Troubleshooting
 
@@ -75,9 +63,9 @@ All database operations now go through the REST API.
 
 ## Production Deployment
 
-For AWS ECS deployment:
-1. Set environment variables in ECS task definition
+For EC2 deployment:
+1. Set environment variables in `.env` file on EC2
 2. Add environment variable: `NEXT_PUBLIC_API_URL`
-3. Set value to production API URL
-4. Redeploy
+3. Set value to production API URL: `https://api.poultryco.net/v1`
+4. Restart PM2 process: `pm2 restart poultryco-admin`
 

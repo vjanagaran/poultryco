@@ -14,9 +14,7 @@ docs/api/
 │   ├── QUICK_START.md          # Quick start guide
 │   └── README_DEPLOYMENT.md    # Deployment README
 ├── guides/                      # Setup and configuration guides
-│   ├── BUILD_AND_DEPLOY.md     # Build and deployment steps
-│   ├── CREATE_SECRETS_GUIDE.md # AWS Secrets Manager setup
-│   └── DOCKER_SETUP.md         # Docker installation guide
+│   └── (guides removed - using EC2 deployment)
 └── [Other API docs]             # Migration, endpoints, etc.
 ```
 
@@ -24,35 +22,25 @@ docs/api/
 
 ### For Developers
 - **[API Overview](../api/README.md)** - API features and tech stack
-- **[Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)** - Complete AWS ECS deployment
-- **[Quick Start](./deployment/QUICK_START.md)** - Get started quickly
+- **[EC2 Deployment Guide](../../EC2_DEPLOYMENT_GUIDE.md)** - Complete EC2 deployment guide
+- **[Quick Start](../../EC2_QUICK_DEPLOY.md)** - Quick deployment reference
 
 ### For DevOps
-- **[Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)** - Full deployment instructions
-- **[Secrets Setup](./guides/CREATE_SECRETS_GUIDE.md)** - AWS Secrets Manager configuration
-- **[Docker Setup](./guides/DOCKER_SETUP.md)** - Docker installation
-- **[Build & Deploy](./guides/BUILD_AND_DEPLOY.md)** - Build and deployment process
+- **[EC2 Deployment Guide](../../EC2_DEPLOYMENT_GUIDE.md)** - Full EC2 deployment instructions
+- **[EC2 Troubleshooting](../../EC2_TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## 📚 Documentation Files
 
 ### Deployment
-- **DEPLOYMENT_GUIDE.md** - Comprehensive guide for deploying to AWS ECS Fargate
-- **DEPLOYMENT_COMPLETE.md** - Current deployment status and verification
-- **QUICK_DEPLOY.md** - Quick deployment checklist
-- **QUICK_START.md** - Quick reference for common tasks
-- **README_DEPLOYMENT.md** - Deployment overview
-
-### Guides
-- **BUILD_AND_DEPLOY.md** - Step-by-step build and deployment instructions
-- **CREATE_SECRETS_GUIDE.md** - How to set up AWS Secrets Manager secrets
-- **DOCKER_SETUP.md** - Docker Desktop installation and setup
+- **EC2 Deployment Guide** (`../../EC2_DEPLOYMENT_GUIDE.md`) - Complete EC2 deployment guide
+- **EC2 Quick Deploy** (`../../EC2_QUICK_DEPLOY.md`) - Quick deployment reference
+- **EC2 Troubleshooting** (`../../EC2_TROUBLESHOOTING.md`) - Common issues and solutions
 
 ## 🔗 Related Documentation
 
 - **API Source Code:** `apps/api/`
-- **Deployment Scripts:** `apps/api/*.sh`
-- **Task Definition:** `apps/api/task-definition.json`
-- **Dockerfile:** `apps/api/Dockerfile`
+- **PM2 Configuration:** `ecosystem.config.js`
+- **Start Script:** `apps/api/start.sh`
 
 ## 📝 Status
 

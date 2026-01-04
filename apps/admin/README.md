@@ -2,7 +2,7 @@
 
 **Version:** 1.0.0  
 **URL:** admin.poultryco.net (production) | http://localhost:3001 (development)  
-**Tech Stack:** Next.js 15 + React 19 + TypeScript + AWS ECS
+**Tech Stack:** Next.js 15 + React 19 + TypeScript + EC2 + PM2
 
 ---
 
@@ -96,7 +96,7 @@ apps/admin/
 
 ## 🔐 Authentication
 
-The admin portal uses Supabase Auth with JWT tokens.
+The admin portal uses JWT tokens from the REST API.
 
 ### Login
 - Email/password authentication
@@ -213,18 +213,22 @@ See [API Documentation](../../docs/api/) for complete API reference.
 
 ## 🚀 Deployment
 
-### AWS ECS Fargate (Production)
+### EC2 Production Deployment
 
+The admin app is deployed on EC2 using PM2. See [EC2 Deployment Guide](../../EC2_DEPLOYMENT_GUIDE.md) for details.
+
+**Quick commands:**
 ```bash
-# Build and deploy using deploy script
-cd apps/admin
-./deploy.sh
+# On EC2 server
+cd ~/poultryco
+pm2 restart poultryco-admin
+pm2 logs poultryco-admin
 ```
 
 ### Custom Domain
 - Point `admin.poultryco.net` to AWS ALB
 - Configure SSL via ACM (automatic)
-- Set up redirects via ALB listener rules
+- ALB routes to EC2 instance on port 3001
 
 ---
 

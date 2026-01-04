@@ -20,7 +20,7 @@ This is the marketing website for PoultryCo, built with Next.js 14 (App Router),
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
 - **Fonts:** Inter (primary), Poppins (secondary)
-- **Hosting:** AWS ECS Fargate
+- **Hosting:** EC2 + PM2
 - **Analytics:** Google Analytics 4 (to be added)
 
 ---
@@ -337,18 +337,23 @@ content/
 
 ## 🚀 Deployment
 
-### AWS ECS Fargate (Production)
+### EC2 Production Deployment
 
+The web app is deployed on EC2 using PM2. See [EC2 Deployment Guide](../../EC2_DEPLOYMENT_GUIDE.md) for details.
+
+**Quick commands:**
 ```bash
-# Build and deploy using deploy script
-cd apps/web
-./deploy.sh
+# On EC2 server
+cd ~/poultryco
+pm2 restart poultryco-web
+pm2 logs poultryco-web
 ```
 
 ### Environment Variables
-Set environment variables in AWS ECS task definition:
-- Settings → Environment Variables
-- Add for Production, Preview, Development
+Set environment variables in `.env` file on EC2:
+- Create `.env` file in `apps/web/` directory
+- Add required environment variables
+- Restart PM2: `pm2 restart poultryco-web`
 
 ### Custom Domain
 1. Configure domain in Route 53 or your DNS provider
@@ -487,7 +492,7 @@ import Image from 'next/image'
 ## 🔗 Quick Links
 
 - **Live Site:** https://www.poultryco.net (when deployed)
-- **Deployment:** AWS ECS Fargate
+- **Deployment:** EC2 + PM2
 - **Analytics:** Google Analytics dashboard
 - **AWS Console:** https://console.aws.amazon.com
 - **Design Figma:** [Link when available]

@@ -61,7 +61,7 @@ Empower poultry professionals worldwide with the tools and network they need to 
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
 - **UI Components:** Radix UI (Admin), Custom components (Web)
-- **Deployment:** Vercel
+- **Deployment:** EC2 + PM2
 
 ### Backend
 - **API:** NestJS 10 (REST API with Socket.io)
@@ -73,7 +73,7 @@ Empower poultry professionals worldwide with the tools and network they need to 
 ### DevOps
 - **Monorepo:** Turborepo
 - **Package Manager:** npm workspaces
-- **CI/CD:** Vercel (web/admin), Expo EAS (mobile)
+- **CI/CD:** Manual deployment to EC2, Expo EAS (mobile)
 - **Version Control:** Git + GitHub
 
 ---
@@ -137,7 +137,7 @@ poultryco/
    cp apps/admin/.env.local.example apps/admin/.env.local
    cp apps/mobile/.env.example apps/mobile/.env
    
-   # Edit with your Supabase credentials
+   # Edit with your database and API credentials
    ```
 
 4. **Run development servers**
@@ -169,7 +169,7 @@ For detailed setup instructions, see [QUICK_START.md](docs/QUICK_START.md).
 ### By Topic
 - **Features:** [docs/03-features/](docs/03-features/) - All platform features
 - **Authentication:** [docs/03-features/authentication/](docs/03-features/authentication/) - OAuth & login
-- **Database:** [supabase/schema/INDEX.md](supabase/schema/INDEX.md) - Schema reference
+- **Database:** [aws/database/schema/](aws/database/schema/) - PostgreSQL schema files
 - **Deployment:** [docs/deployment/](docs/deployment/) - Deploy guides
 - **Brand:** [docs/brand/](docs/brand/) - Brand guidelines
 - **Marketing:** [docs/website/](docs/website/) - Marketing strategy
@@ -266,9 +266,8 @@ For questions, feedback, or partnership inquiries:
 
 ## 🙏 Acknowledgments
 
-- Supabase for providing an excellent backend platform
 - Expo for simplifying React Native development
-- Vercel for seamless Next.js deployments
+- AWS for infrastructure and services
 - The open-source community for amazing tools and libraries
 
 ---
